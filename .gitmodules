@@ -1,21 +1,28 @@
 [submodule "ext/http-parser"]
 	path = ext/http-parser
 	url = https://github.com/nodejs/http-parser.git
+	ignore = dirty
 [submodule "ext/libuv"]
 	path = ext/libuv
 	url = https://github.com/libuv/libuv.git
+	ignore = dirty
 [submodule "ext/botan"]
 	path = ext/botan
 	url = https://github.com/randombit/botan.git
+	ignore = dirty
 [submodule "ext/msgpack-c"]
 	path = ext/msgpack-c
 	url = https://github.com/msgpack/msgpack-c.git
+	ignore = dirty
 [submodule "ext/rapidjson"]
 	path = ext/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+	ignore = dirty
 [submodule "ext/yajl"]
 	path = ext/yajl
 	url = https://github.com/lloyd/yajl.git
+	ignore = dirty
 [submodule "ext/uriparser"]
 	path = ext/uriparser
 	url = git://git.code.sf.net/p/uriparser/git
+	ignore = dirty
