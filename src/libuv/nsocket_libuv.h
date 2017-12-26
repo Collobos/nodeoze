@@ -41,6 +41,28 @@
 #include <errno.h>
 #include <uv.h>
 
+#if defined( WIN32 )
+
+int
+uv_tcp_open_stream(uv_tcp_t* handle, uv_os_sock_t sock)
+{
+  int r = uv_tcp_open(handle, sock);
+  if (r == 0) {
+    uv_connection_init((uv_stream_t*)handle);
+    handle->flags |= UV_HANDLE_BOUND | UV_HANDLE_READABLE | UV_HANDLE_WRITABLE;
+  }
+
+  return r;
+}
+
+#else
+
+# define uv_tcp_open_stream uv_tcp_open
+
+#endif
+
+
+
 namespace nodeoze {
 
 namespace ip {
