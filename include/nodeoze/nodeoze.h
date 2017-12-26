@@ -44,6 +44,7 @@
 #include <nodeoze/nendian.h>
 #include <nodeoze/nendpoint.h>
 #include <nodeoze/nenum.h>
+#include <nodeoze/nevent.h>
 #include <nodeoze/nexpected.h>
 #include <nodeoze/nfs.h>
 #include <nodeoze/nkeychain.h>
