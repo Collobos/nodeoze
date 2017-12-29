@@ -22,3 +22,7 @@
 	path = ext/uriparser
 	url = git://git.code.sf.net/p/uriparser/git
 	ignore = dirty
+[submodule "ext/yajl"]
+	path = ext/yajl
+	url = https://github.com/edgeofmagic/yajl.git
+	ignore = dirty

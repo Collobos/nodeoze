@@ -113,7 +113,7 @@ else()
 
 	if ( APPLE )
 		
-		set(NODEOZE_SRCS ${NODEOZE_SRCS} ../ext/libuv/src/unix/darwin.c ../ext/libuv/src/unix/darwin-proctitle.c ../ext/libuv/src/unix/kqueue.c ../ext/libuv/src/unix/fsevents.c ../ext/libuv/src/unix/pthread-barrier.c ../src/apple/narp_apple.cpp ../src/apple/nfs_apple.mm ../src/apple/nkeychain_apple.mm ../src/apple/nlog_apple.mm ../src/apple/nmachine_apple.mm ../src/apple/nprocess_apple.mm ../src/apple/npath_apple.mm)
+		set(NODEOZE_SRCS ${NODEOZE_SRCS} ../ext/libuv/src/unix/darwin.c ../ext/libuv/src/unix/darwin-proctitle.c ../ext/libuv/src/unix/kqueue.c ../ext/libuv/src/unix/fsevents.c ../src/apple/narp_apple.cpp ../src/apple/nfs_apple.mm ../src/apple/nkeychain_apple.mm ../src/apple/nlog_apple.mm ../src/apple/nmachine_apple.mm ../src/apple/nprocess_apple.mm ../src/apple/npath_apple.mm)
     
 	elseif (LINUX)
 		
