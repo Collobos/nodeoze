@@ -304,7 +304,10 @@ private:
 					auto saved = m_state;
 #endif
 					transition->second.second();
+#if defined( DEBUG )
 					assert( m_state == saved );
+#endif
+
 					dispatch_observers( last, m_state );
 
 					if ( !m_event_queue.empty() )
