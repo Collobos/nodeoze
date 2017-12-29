@@ -37,7 +37,5 @@
 .AppleDouble
 .LSOverride
 
-build/**
-!build/CMakeLists.txt
-html/
+build/
 

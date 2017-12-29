@@ -57,7 +57,7 @@ message( "nodeoze library is already defined" )
 
 else()
 
-include_directories(../include ../src/win32 ../ext/libuv/include ../ext/libuv/src ../ext/rapidjson/include ../ext/botan ../../openssl/include-darwin ../ext/sqlite ../ext/http-parser ../ext/yajl/src/api ../ext/uriparser/include ../ext/msgpack-c/include ../../boost )
+include_directories( include src/win32 ext/libuv/include ext/libuv/src ext/rapidjson/include ext/botan ../openssl/include-darwin ext/sqlite ext/http-parser ext/yajl/src/api ext/uriparser/include ext/msgpack-c/include ../boost )
 
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_OMIT_LOAD_EXTENSION=1 -DSQLITE_ENABLE_SESSION -DSQLITE_ENABLE_PREUPDATE_HOOK -DSQLITE_ENABLE_JSON1")
@@ -84,8 +84,8 @@ if ( APPLE )
 	find_library(SECURITY_FRAMEWORK Security)
 	find_library(OPEN_DIRECTORY_FRAMEWORK OpenDirectory)
 	set(LIBRESOLV			"${CMAKE_OSX_SYSROOT_LIB}/libresolv.tbd") 
-	set(LIBSSL				"${CMAKE_CURRENT_SOURCE_DIR}/../../openssl/lib/mac/libssl.a")
-	set(LIBCRYPTO			"${CMAKE_CURRENT_SOURCE_DIR}/../../openssl/lib/mac/libcrypto.a")
+	set(LIBSSL				"${CMAKE_CURRENT_SOURCE_DIR}/../openssl/lib/mac/libssl.a")
+	set(LIBCRYPTO			"${CMAKE_CURRENT_SOURCE_DIR}/../openssl/lib/mac/libcrypto.a")
 	list(APPEND OPENSSL_LIBRARIES ${LIBSSL})
 	list(APPEND OPENSSL_LIBRARIES ${LIBCRYPTO})
 	list(APPEND LIB_LIST ${FOUNDATION_FRAMEWORK})
@@ -148,10 +148,10 @@ endif()
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 add_custom_target(doc
 ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/..
+WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 COMMENT "Generating API documentation with Doxygen" VERBATIM
 )
 endif(DOXYGEN_FOUND)
