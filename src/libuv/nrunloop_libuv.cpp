@@ -174,7 +174,7 @@ runloop::create( native_socket_type fd, int mask )
 	int			err;
 	
 	event = new uv_event( uv_event::type_t::poll );
-	err = uv_poll_init_socket( uv_default_loop(), &event->m_data.poll.m_handle, fd );
+	err = uv_poll_init( uv_default_loop(), &event->m_data.poll.m_handle, fd );
 	ncheck_error_action_quiet( err == 0, delete event; event = nullptr, exit );
 	
 	event->m_data.poll.m_handle.data = event;
