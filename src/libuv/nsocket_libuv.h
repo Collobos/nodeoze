@@ -43,6 +43,8 @@
 
 #if defined( WIN32 )
 
+#include <win/stream-inl.h>
+
 int
 uv_tcp_open_stream(uv_tcp_t* handle, uv_os_sock_t sock)
 {
