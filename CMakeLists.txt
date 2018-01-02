@@ -37,7 +37,7 @@ message( "nodeoze library is already defined" )
 
 else()
 
-include_directories( ./include ./src/win32 ./ext/libuv/include ./ext/libuv/src ext/rapidjson/include ext/botan ../openssl/include-darwin ext/sqlite ext/http-parser ext/yajl/src/api ext/uriparser/include ext/msgpack-c/include ../boost )
+include_directories( include src/win32 ext/libuv/include ext/libuv/src ext/rapidjson/include ext/botan ../openssl/include-darwin ext/sqlite ext/http-parser ext/yajl/src/api ext/uriparser/include ext/msgpack-c/include )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_OMIT_LOAD_EXTENSION=1 -DSQLITE_ENABLE_SESSION -DSQLITE_ENABLE_PREUPDATE_HOOK -DSQLITE_ENABLE_JSON1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_OMIT_LOAD_EXTENSION=1 -DSQLITE_ENABLE_SESSION -DSQLITE_ENABLE_PREUPDATE_HOOK -DSQLITE_ENABLE_JSON1")
