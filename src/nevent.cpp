@@ -31,11 +31,75 @@
 
 using namespace nodeoze;
 
+class derived_emitter : public nodeoze::event::emitter
+{
+public:
+	DECLARE_EVENTS( "test", "error");
+};
+
+DEFINE_EVENTS(derived_emitter);
+
 TEST_CASE( "nodeoze: emitter" )
 {
-	SUBCASE( "void" )
+	static const std::size_t TEST = 0;
+	static const std::size_t ERROR = 1;
+	
+	SUBCASE( "void base" )
 	{
 		event::emitter e;
+		bool invoked = false;
+
+		auto id = e.on( TEST, [&]()
+		{
+			invoked = true;
+		} );
+
+		REQUIRE( id != 0 );
+
+		e.emit( TEST );
+
+		REQUIRE( invoked == true );
+	}
+
+	SUBCASE( "int base" )
+	{
+		event::emitter e;
+		bool invoked = false;
+
+		auto id = e.on( TEST, [&]( int i )
+		{
+			REQUIRE( i == 7 );
+			invoked = true;
+		} );
+
+		REQUIRE( id != 0 );
+
+		e.emit( TEST, 7 );
+
+		REQUIRE( invoked == true );
+	}
+
+	SUBCASE( "error base" )
+	{
+		event::emitter e;
+		bool invoked = false;
+
+		auto id = e.on( ERROR, [&]( std::error_code err )
+		{
+			REQUIRE( static_cast< std::errc >( err.value() ) == std::errc::invalid_argument );
+			invoked = true;
+		} );
+
+		REQUIRE( id != 0 );
+
+		e.emit( ERROR, std::make_error_code( std::errc::invalid_argument ) );
+
+		REQUIRE( invoked == true );
+	}
+
+	SUBCASE( "void derived" )
+	{
+		derived_emitter e;
 		bool invoked = false;
 
 		auto id = e.on( "test", [&]()
@@ -50,12 +114,12 @@ TEST_CASE( "nodeoze: emitter" )
 		REQUIRE( invoked == true );
 	}
 
-	SUBCASE( "int" )
+	SUBCASE( "int derived" )
 	{
-		event::emitter e;
+		derived_emitter e;
 		bool invoked = false;
 
-		auto id = e.on( "test", [&]( int i ) 
+		auto id = e.on( "test", [&]( int i )
 		{
 			REQUIRE( i == 7 );
 			invoked = true;
@@ -68,12 +132,12 @@ TEST_CASE( "nodeoze: emitter" )
 		REQUIRE( invoked == true );
 	}
 
-	SUBCASE( "error" )
+	SUBCASE( "error derived" )
 	{
-		event::emitter e;
+		derived_emitter e;
 		bool invoked = false;
 
-		auto id = e.on( "error", [&]( std::error_code err ) 
+		auto id = e.on( "error", [&]( std::error_code err )
 		{
 			REQUIRE( static_cast< std::errc >( err.value() ) == std::errc::invalid_argument );
 			invoked = true;
@@ -85,4 +149,5 @@ TEST_CASE( "nodeoze: emitter" )
 
 		REQUIRE( invoked == true );
 	}
+
 }

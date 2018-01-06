@@ -88,6 +88,7 @@ endif()
 add_library( nodeoze_objects OBJECT ${NODEOZE_SRCS})
 add_library( nodeoze STATIC $<TARGET_OBJECTS:nodeoze_objects> src/dummy.cpp ) 
 add_dependencies( nodeoze nodeoze_objects )
+add_dependencies( nodeoze nodeoze_test )
 set_target_properties(nodeoze PROPERTIES PREFIX "")
 
 add_executable(nodeoze_test ${NODEOZE_TEST_SRCS} $<TARGET_OBJECTS:nodeoze_objects>)

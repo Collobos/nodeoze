@@ -36,15 +36,103 @@
 #include <unordered_map>
 #include <string>
 
+
+#define DECLARE_EVENTS(...)															\
+	static constexpr char const * id_strings[] =									\
+	{																				\
+		__VA_ARGS__																	\
+	};																				\
+	static constexpr std::size_t index_map(char const *id_str, std::size_t i)		\
+	{																				\
+		return (i < event::array_size(id_strings)) ?								\
+			(event::constexpr_string_equals(id_strings[i], id_str) ?				\
+			 i : index_map(id_str, i+1)) : 0 ;										\
+	}																				\
+	static constexpr std::size_t index_of(char const *id_str)						\
+	{																				\
+		return index_map(id_str, 0);												\
+	}																				\
+	struct id_type																	\
+	{																				\
+		inline bool																	\
+		operator==(id_type const& rhs) const										\
+		{																			\
+			return value == rhs.value;												\
+		}																			\
+		inline																		\
+		id_type(char const *id_str)													\
+		{																			\
+			value = index_of(id_str);												\
+		}																			\
+		std::size_t value;															\
+	};																				\
+    template <typename... Args>														\
+    listener_id_t																	\
+	add_listener( const id_type &id, std::function< void ( Args... )> listener )	\
+	{																				\
+		return event::emitter::add_listener(id.value, listener);					\
+	}																				\
+	listener_id_t																	\
+	add_listener( const id_type &id, std::function< void ()> listener )				\
+	{																				\
+		return event::emitter::add_listener(id.value, listener);					\
+	}																				\
+    template<typename Listener>														\
+    inline listener_id_t															\
+	add_listener( const id_type &id, Listener listener )							\
+	{																				\
+		return event::emitter::add_listener( id.value, listener );					\
+    }																				\
+    template <typename... Args>														\
+	listener_id_t																	\
+	on( const id_type &id, std::function< void ( Args... )> listener )				\
+	{																				\
+		return event::emitter::on(id.value, listener);								\
+	}																				\
+	listener_id_t																	\
+	on( const id_type &id, std::function< void () > listener )						\
+	{																				\
+		return event::emitter::on(id.value, listener);								\
+	}																				\
+    template<typename Listener>														\
+	listener_id_t																	\
+	on( const id_type &id, Listener listener )										\
+	{																				\
+		return event::emitter::on( id.value, listener );							\
+    }																				\
+    template< typename... Args >													\
+    void																			\
+	emit( const id_type &id, Args... args )											\
+	{																				\
+		event::emitter::emit( id.value, args... );									\
+	}																				\
+/**/
+
+#define DEFINE_EVENTS(classname)													\
+constexpr char const * classname::id_strings[];										\
+/**/
+
 namespace nodeoze {
 
 namespace event {
+
+template<typename T, std::size_t sz>
+constexpr std::size_t array_size(T(&)[sz])
+{
+    return sz;
+}
+
+constexpr bool constexpr_string_equals(char const *lhs, char const *rhs)
+{
+    return !*lhs && !*rhs ? true : (*lhs == *rhs && constexpr_string_equals(lhs+1, rhs+1));
+}
 
 class emitter
 {
 public:
 
-	typedef std::string		id_t;
+//	typedef std::string		id_t;
+	typedef std::size_t		id_t;
 	typedef std::uint64_t	listener_id_t;
     
 	emitter()
@@ -160,6 +248,7 @@ private:
 	std::unordered_map< id_t, std::vector< std::shared_ptr< listener_base > > >	m_listeners;
     listener_id_t																m_last_listener = 0;
 
+	static int m_some_hungarian_shit_; // to force static library build for retarded IDE
 };
 
 
