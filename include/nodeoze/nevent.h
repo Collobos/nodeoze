@@ -37,103 +37,41 @@
 #include <string>
 
 
-#define DECLARE_EVENTS(...)															\
-	static constexpr char const * id_strings[] =									\
-	{																				\
-		__VA_ARGS__																	\
-	};																				\
-	static constexpr std::size_t index_map(char const *id_str, std::size_t i)		\
-	{																				\
-		return (i < event::array_size(id_strings)) ?								\
-			(event::constexpr_string_equals(id_strings[i], id_str) ?				\
-			 i : index_map(id_str, i+1)) : 0 ;										\
-	}																				\
-	static constexpr std::size_t index_of(char const *id_str)						\
-	{																				\
-		return index_map(id_str, 0);												\
-	}																				\
-	struct id_type																	\
-	{																				\
-		inline bool																	\
-		operator==(id_type const& rhs) const										\
-		{																			\
-			return value == rhs.value;												\
-		}																			\
-		inline																		\
-		id_type(char const *id_str)													\
-		{																			\
-			value = index_of(id_str);												\
-		}																			\
-		std::size_t value;															\
-	};																				\
-    template <typename... Args>														\
-    listener_id_t																	\
-	add_listener( const id_type &id, std::function< void ( Args... )> listener )	\
-	{																				\
-		return event::emitter::add_listener(id.value, listener);					\
-	}																				\
-	listener_id_t																	\
-	add_listener( const id_type &id, std::function< void ()> listener )				\
-	{																				\
-		return event::emitter::add_listener(id.value, listener);					\
-	}																				\
-    template<typename Listener>														\
-    inline listener_id_t															\
-	add_listener( const id_type &id, Listener listener )							\
-	{																				\
-		return event::emitter::add_listener( id.value, listener );					\
-    }																				\
-    template <typename... Args>														\
-	listener_id_t																	\
-	on( const id_type &id, std::function< void ( Args... )> listener )				\
-	{																				\
-		return event::emitter::on(id.value, listener);								\
-	}																				\
-	listener_id_t																	\
-	on( const id_type &id, std::function< void () > listener )						\
-	{																				\
-		return event::emitter::on(id.value, listener);								\
-	}																				\
-    template<typename Listener>														\
-	listener_id_t																	\
-	on( const id_type &id, Listener listener )										\
-	{																				\
-		return event::emitter::on( id.value, listener );							\
-    }																				\
-    template< typename... Args >													\
-    void																			\
-	emit( const id_type &id, Args... args )											\
-	{																				\
-		event::emitter::emit( id.value, args... );									\
-	}																				\
-/**/
-
-#define DEFINE_EVENTS(classname)													\
-constexpr char const * classname::id_strings[];										\
-/**/
-
 namespace nodeoze {
 
 namespace event {
 
-template<typename T, std::size_t sz>
-constexpr std::size_t array_size(T(&)[sz])
+namespace detail {
+
+struct listener_base
 {
-    return sz;
+	typedef std::uint64_t id_type;
+	listener_base()
+	{
+	}
+
+	listener_base( id_type id )
+	:
+		m_id( id )
+	{
+	}
+
+	virtual ~listener_base()
+	{
+	}
+
+	id_type m_id;
+};
+
 }
 
-constexpr bool constexpr_string_equals(char const *lhs, char const *rhs)
-{
-    return !*lhs && !*rhs ? true : (*lhs == *rhs && constexpr_string_equals(lhs+1, rhs+1));
-}
-
+template< class Key = std::string, class Table = std::unordered_map< Key, std::vector< std::shared_ptr< detail::listener_base > > > >
 class emitter
 {
 public:
 
-//	typedef std::string		id_t;
-	typedef std::size_t		id_t;
-	typedef std::uint64_t	listener_id_t;
+	typedef Key								id_type;
+	typedef detail::listener_base::id_type	listener_id_type;
     
 	emitter()
 	{
@@ -153,70 +91,122 @@ public:
 	emitter&
 	operator=( emitter&& ) = delete;
 
-    template <typename... Args>
-    listener_id_t
-	add_listener( const id_t &id, std::function< void ( Args... )> listener );
+	inline listener_id_type
+	add_listener( const id_type &id, std::function< void ()> handler )
+	{
+		auto listener_id = listener_id_type( 0 );
 
-	listener_id_t
-	add_listener( const id_t &id, std::function< void ()> listener );
+		if ( handler )
+		{
+			auto it	= m_listeners.find( id );
+
+			listener_id = ++m_last_listener;
+
+			if ( it == m_listeners.end() )
+			{
+				m_listeners[ id ] = std::vector< std::shared_ptr< detail::listener_base > >();
+				it = m_listeners.find( id );
+			}
+
+			it->second.emplace_back( std::make_shared< listener<> >( listener_id, handler ) );
+		}
+
+		return listener_id;        
+	}
+
+    template <typename... Args>
+	inline listener_id_type
+	add_listener( const id_type &id, std::function< void ( Args... )> handler )
+	{
+		auto listener_id = listener_id_type( 0 );
+
+		if ( handler )
+		{
+			auto it	= m_listeners.find( id );
+
+			listener_id = ++m_last_listener;
+
+			if ( it == m_listeners.end() )
+			{
+				m_listeners[ id ] = std::vector< std::shared_ptr< detail::listener_base > >();
+				it = m_listeners.find( id );
+			}
+
+			it->second.emplace_back( std::make_shared< listener< Args... > >( listener_id, handler ) );
+		}
+
+		return listener_id;        
+	}
 
     template<typename Listener>
-    inline listener_id_t
-	add_listener( const id_t &id, Listener listener )
+    inline listener_id_type
+	add_listener( const id_type &id, Listener listener )
 	{
 		return add_listener( id, make_function( listener ) );
     }
 
-    template <typename... Args>
-	listener_id_t
-	on( const id_t &id, std::function< void ( Args... )> listener );
-    
-	listener_id_t
-	on( const id_t &id, std::function< void () > listener );
+	inline listener_id_type
+	on( const id_type &id, std::function< void () > listener )
+	{
+		return add_listener( id, listener );
+	}
 
+    template <typename... Args>
+	inline listener_id_type
+	on( const id_type &id, std::function< void ( Args... )> listener )
+	{
+		return add_listener( id, listener );
+	}
+    
     template<typename Listener>
-	listener_id_t
-	on( const id_t &id, Listener listener )
+	listener_id_type
+	on( const id_type &id, Listener listener )
 	{
 		return on( id, make_function( listener ) );
     }
 
 	void
-	remove_listener( listener_id_t listener_id );
+	remove_listener( listener_id_type listener_id );
 
     template< typename... Args >
-    void
-	emit( const id_t &id, Args... args );
+	inline void
+	emit( const id_type &id, Args... args )
+	{
+		auto it = m_listeners.find( id );
+
+		if ( it != m_listeners.end() )
+		{
+			std::vector< std::shared_ptr< listener< Args... > > > listeners;
+
+			listeners.reserve( it->second.size() );
+
+			for ( auto base : it->second )
+			{
+				auto l = std::dynamic_pointer_cast< listener< Args...> >( base );
+
+				if ( l )
+				{
+					listeners.emplace_back( std::move( l ) );
+				}
+			}
+					
+			for ( auto &listener : listeners )
+			{
+				listener->m_handler( args... );
+			}
+		}
+	}
 
 private:
 
-    struct listener_base
-    {
-		listener_base()
-		{
-		}
-
-		listener_base( listener_id_t id )
-        :
-			m_id( id )
-		{
-		}
-
-        virtual ~listener_base()
-		{
-		}
-
-		listener_id_t m_id;
-    };
-
 	template <typename... Args>
-	struct listener : public listener_base
+	struct listener : public detail::listener_base
     {
 		listener()
 		{
 		}
 
-		listener( listener_id_t id, std::function< void ( Args...)> handler )
+		listener( id_type id, std::function< void ( Args...)> handler )
 		:
 			listener_base( id ),
 			m_handler( std::move( handler ) )
@@ -245,105 +235,9 @@ private:
 		return (typename function_traits<L>::f_type)(l);
 	}
 
-	std::unordered_map< id_t, std::vector< std::shared_ptr< listener_base > > >	m_listeners;
-    listener_id_t																m_last_listener = 0;
-
-	static int m_some_hungarian_shit_; // to force static library build for retarded IDE
+	Table				m_listeners;
+    listener_id_type	m_last_listener = 0;
 };
-
-
-inline emitter::listener_id_t
-emitter::add_listener( const id_t &id, std::function< void () > handler )
-{
-	auto listener_id = listener_id_t( 0 );
-
-	if ( handler )
-	{
-		auto it	= m_listeners.find( id );
-
-		listener_id = ++m_last_listener;
-
-		if ( it == m_listeners.end() )
-		{
-			m_listeners[ id ] = std::vector< std::shared_ptr< listener_base > >();
-			it = m_listeners.find( id );
-		}
-
-		it->second.emplace_back( std::make_shared< listener<> >( listener_id, handler ) );
-	}
-
-    return listener_id;        
-}
-
-
-template <typename... Args>
-inline emitter::listener_id_t
-emitter::add_listener( const id_t &id, std::function< void ( Args...)> handler )
-{
-	auto listener_id = listener_id_t( 0 );
-
-	if ( handler )
-	{
-		auto it	= m_listeners.find( id );
-
-		listener_id = ++m_last_listener;
-
-		if ( it == m_listeners.end() )
-		{
-			m_listeners[ id ] = std::vector< std::shared_ptr< listener_base > >();
-			it = m_listeners.find( id );
-		}
-
-		it->second.emplace_back( std::make_shared< listener< Args... > >( listener_id, handler ) );
-	}
-
-    return listener_id;        
-}
-
-
-inline emitter::listener_id_t
-emitter::on( const id_t &id, std::function< void ()> handler )
-{
-	return add_listener( id, handler );
-}
-
-
-template <typename... Args>
-inline emitter::listener_id_t
-emitter::on( const id_t &id, std::function< void ( Args... )> handler )
-{
-    return add_listener( id, handler );
-}
-
-
-template < typename... Args >
-inline void
-emitter::emit( const id_t &id, Args... args )
-{
-	auto it = m_listeners.find( id );
-
-	if ( it != m_listeners.end() )
-	{
-		std::vector< std::shared_ptr< listener< Args... > > > listeners;
-
-		listeners.reserve( it->second.size() );
-
-		for ( auto base : it->second )
-		{
-			auto l = std::dynamic_pointer_cast< listener< Args...> >( base );
-
-			if ( l )
-			{
-				listeners.emplace_back( std::move( l ) );
-			}
-		}
-				
-    	for ( auto &listener : listeners )
-		{
-			listener->m_handler( args... );
-    	}
-	}
-}
 
 }
 
