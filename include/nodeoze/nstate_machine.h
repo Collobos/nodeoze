@@ -160,7 +160,7 @@ public:
 	};
 
 	typedef context_t< State >													state_t;
-	typedef std::function< void ( const state_t &last, const state_t &next ) >	observe_f;
+	typedef std::function< bool ( const state_t &last, const state_t &next ) >	observe_f;
 	typedef std::function< void () >											action_f;
 
 	state_machine( const std::string &name, const state_t &initial )
@@ -214,7 +214,7 @@ public:
 		m_machine.emplace( std::piecewise_construct, std::forward_as_tuple( std::make_pair( state, event ) ), std::forward_as_tuple( std::make_pair( next, action ) ) );
 	}
 
-	scoped_operation
+	inline void
 	observe( const std::vector< State > &states, observe_f observer )
 	{
 		auto id = ++m_observer_id;
@@ -222,20 +222,6 @@ public:
 		mlog( marker::state_machine, log::level_t::info, "adding observer to %", m_name );
 
 		m_observers.emplace( std::piecewise_construct, std::forward_as_tuple( id ), std::forward_as_tuple( std::make_pair( states, observer ) ) );
-
-		return scoped_operation::create( [=]( void *v ) mutable
-		{
-			nunused( v );
-
-			mlog( marker::state_machine, log::level_t::info, "removing observer from %", m_name );
-
-			auto it = m_observers.find( id );
-
-			if ( it != m_observers.end() )
-			{
-				m_observers.erase( it );
-			}
-		} );
 	}
 
 	inline const std::string
@@ -286,12 +272,12 @@ private:
 			
 			if ( transition != m_machine.end() )
 			{
+				auto last = m_state;
+
 				if ( m_state != transition->second.first )
 				{
 					mlog( marker::state_machine, log::level_t::info, "% %:% => %", m_name, m_state, event, transition->second.first );
 				
-					auto last = m_state;
-
 					m_in_transition = true;
 					m_state			=
 					{
@@ -307,23 +293,24 @@ private:
 #if defined( DEBUG )
 					assert( m_state == saved );
 #endif
-					dispatch_observers( last, m_state );
-
-					if ( !m_event_queue.empty() )
-					{
-						runloop::shared().dispatch( [=]() mutable
-						{
-							auto event = m_event_queue.front();
-
-							m_event_queue.pop_front();
-
-							post( event.value(), std::move( event.data() ), event.err() );
-						} );
-					}
 				}
 				else
 				{
-					mlog( marker::state_machine, log::level_t::info, "% %:% ignored", m_name, m_state, event );
+					mlog( marker::state_machine, log::level_t::info, "% %:% ignoring transition but invoking observers", m_name, m_state, event );
+				}
+
+				dispatch_observers( last, m_state );
+
+				if ( !m_event_queue.empty() )
+				{
+					runloop::shared().dispatch( [=]() mutable
+					{
+						auto event = m_event_queue.front();
+
+						m_event_queue.pop_front();
+
+						post( event.value(), std::move( event.data() ), event.err() );
+					} );
 				}
 			}
 			else
@@ -359,7 +346,16 @@ private:
 		{
 			if ( ( it.second.first.size() == 0 ) || ( std::find( it.second.first.begin(), it.second.first.end(), next.value() ) != it.second.first.end() ) )
 			{
-				it.second.second( last, next );
+				if ( !it.second.second( last, next ) )
+				{
+					auto eit = m_observers.find( it.first );
+
+					if ( eit != m_observers.end() )
+					{
+						mlog( marker::state_machine, log::level_t::info, "removing observer from %", m_name );
+						m_observers.erase( eit );
+					}
+				}
 			}
 		}
 	}
