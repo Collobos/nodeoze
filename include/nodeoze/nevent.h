@@ -31,11 +31,11 @@
 #include <map>
 #include <memory>
 #include <list>
-#include <vector>
 #include <algorithm>
 #include <unordered_map>
 #include <string>
-
+#include <cassert>
+#include <vector>
 
 namespace nodeoze {
 
@@ -65,12 +65,93 @@ struct listener_base
 
 }
 
-template< class Key = std::string, class Table = std::unordered_map< Key, std::vector< std::shared_ptr< detail::listener_base > > > >
+struct string
+{
+	/*
+	 * modified from https://stackoverflow.com/questions/2111667/compile-time-string-hashing#9842857
+	 */
+
+	constexpr std::size_t
+	hash_string( const char* input )
+	{
+		size_t hash = sizeof(size_t) == 8 ? 0xcbf29ce484222325 : 0x811c9dc5;
+		const size_t prime = sizeof(size_t) == 8 ? 0x00000100000001b3 : 0x01000193;
+
+		while (*input)
+		{
+			hash ^= static_cast<size_t>(*input);
+			hash *= prime;
+			++input;
+		}
+
+		return hash;
+	}
+
+	/*
+	 * modified from https://stackoverflow.com/questions/27123306/is-it-possible-to-use-stdstring-in-a-constexpr
+	 */
+
+	template< std::size_t N >
+	constexpr string( char const( &s )[ N ] )
+	:
+		str( s ),
+		size( N - 1 ),
+		hash( hash_string( s ) ),
+		del( false )
+    {
+	}
+
+	string( const std::string &s )
+	:
+		str( ::strdup( s.c_str() ) ),
+		size( s.size() ),
+		hash( hash_string( str ) ),
+		del( true )
+	{
+	}
+
+	string( const string &rhs ) = delete;
+
+	string( string &&rhs )
+	:
+		str( rhs.str ),
+		size( rhs.size ),
+		hash( rhs.hash ),
+		del( rhs.del )
+	{
+		rhs.str		= nullptr;
+		rhs.size	= 0;
+		rhs.hash	= 0;
+		rhs.del		= false;
+	}
+
+	~string()
+	{
+		if ( del && str )
+		{
+			free( ( void* ) str );
+		}
+	}
+
+	inline bool
+	operator==( const string &rhs ) const
+	{
+		return ( str == rhs.str ) || ( size && str && rhs.str && ( size == rhs.size ) && ( ::memcmp( str, rhs.str, size ) == 0 ) );
+	}
+
+    char const	*str;
+    std::size_t	size;
+	std::size_t	hash;
+	bool		del;
+};
+
+template< class Key = string, class Table = std::unordered_map< Key, std::vector< std::shared_ptr< detail::listener_base > > > >
 class emitter
 {
 public:
 
-	typedef Key								id_type;
+	typedef Key								key_type;
+	typedef Table							table_type;
 	typedef detail::listener_base::id_type	listener_id_type;
     
 	emitter()
@@ -92,7 +173,7 @@ public:
 	operator=( emitter&& ) = delete;
 
 	inline listener_id_type
-	add_listener( const id_type &id, std::function< void ()> handler )
+	add_listener( key_type id, std::function< void ()> handler )
 	{
 		auto listener_id = listener_id_type( 0 );
 
@@ -104,11 +185,12 @@ public:
 
 			if ( it == m_listeners.end() )
 			{
-				m_listeners[ id ] = std::vector< std::shared_ptr< detail::listener_base > >();
-				it = m_listeners.find( id );
+				it = m_listeners.emplace( std::piecewise_construct, std::forward_as_tuple( std::move( id ) ), std::forward_as_tuple( std::vector< std::shared_ptr< detail::listener_base > >() ) ).first;
 			}
 
-			it->second.emplace_back( std::make_shared< listener<> >( listener_id, handler ) );
+			assert( it != m_listeners.end() );
+
+			it->second.emplace_back( std::make_shared< listener<> >( listener_id, std::move( handler ) ) );
 		}
 
 		return listener_id;        
@@ -116,7 +198,7 @@ public:
 
     template <typename... Args>
 	inline listener_id_type
-	add_listener( const id_type &id, std::function< void ( Args... )> handler )
+	add_listener( key_type id, std::function< void ( Args... )> handler )
 	{
 		auto listener_id = listener_id_type( 0 );
 
@@ -128,11 +210,12 @@ public:
 
 			if ( it == m_listeners.end() )
 			{
-				m_listeners[ id ] = std::vector< std::shared_ptr< detail::listener_base > >();
-				it = m_listeners.find( id );
+				it = m_listeners.emplace( std::piecewise_construct, std::forward_as_tuple( std::move( id ) ), std::forward_as_tuple( std::vector< std::shared_ptr< detail::listener_base > >() ) ).first;
 			}
 
-			it->second.emplace_back( std::make_shared< listener< Args... > >( listener_id, handler ) );
+			assert( it != m_listeners.end() );
+
+			it->second.emplace_back( std::make_shared< listener< Args... > >( listener_id, std::move( handler ) ) );
 		}
 
 		return listener_id;        
@@ -140,29 +223,29 @@ public:
 
     template<typename Listener>
     inline listener_id_type
-	add_listener( const id_type &id, Listener listener )
+	add_listener( key_type id, Listener listener )
 	{
-		return add_listener( id, make_function( listener ) );
+		return add_listener( std::move( id ), make_function( std::move( listener ) ) );
     }
 
 	inline listener_id_type
-	on( const id_type &id, std::function< void () > listener )
+	on( key_type id, std::function< void () > listener )
 	{
-		return add_listener( id, listener );
+		return add_listener( std::move( id ), std::move( listener ) );
 	}
 
     template <typename... Args>
 	inline listener_id_type
-	on( const id_type &id, std::function< void ( Args... )> listener )
+	on( key_type id, std::function< void ( Args... )> listener )
 	{
-		return add_listener( id, listener );
+		return add_listener( std::move( id ), std::move( listener ) );
 	}
     
     template<typename Listener>
 	listener_id_type
-	on( const id_type &id, Listener listener )
+	on( key_type id, Listener listener )
 	{
-		return on( id, make_function( listener ) );
+		return on( std::move( id ), make_function( std::move( listener ) ) );
     }
 
 	void
@@ -170,7 +253,7 @@ public:
 
     template< typename... Args >
 	inline void
-	emit( const id_type &id, Args... args )
+	emit( key_type id, Args... args )
 	{
 		auto it = m_listeners.find( id );
 
@@ -235,7 +318,7 @@ private:
 		return (typename function_traits<L>::f_type)(l);
 	}
 
-	Table				m_listeners;
+	table_type			m_listeners;
     listener_id_type	m_last_listener = 0;
 };
 
@@ -243,4 +326,20 @@ private:
 
 }
 
+namespace std {
+
+template <>
+struct hash< nodeoze::event::string >
+{
+	std::size_t
+	operator()( const nodeoze::event::string& val ) const
+	{
+		assert( val.str );
+		assert( val.hash );
+
+		return val.hash;
+	}
+};
+
+}
 #endif
