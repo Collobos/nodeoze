@@ -73,7 +73,7 @@ TEST_CASE( "nodeoze: emitter" )
 		event::emitter<> e;
 		bool invoked = false;
 
-		auto id = e.on( "error", [&]( std::error_code err )
+		auto id = e.on( "error", [&]( std::error_code err ) mutable
 		{
 			REQUIRE( static_cast< std::errc >( err.value() ) == std::errc::invalid_argument );
 			invoked = true;

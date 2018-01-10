@@ -299,23 +299,30 @@ private:
         std::function< void ( Args... ) > m_handler;
     };
 
-    template <typename T>
+    template< typename T >
     struct function_traits
 	:
-		public function_traits< decltype( &T::operator() ) >
+		public function_traits< decltype ( &T::operator() ) >
 	{
 	};
 
-    template <typename ClassType, typename ReturnType, typename... Args>
-	struct function_traits<ReturnType(ClassType::*)(Args...) const>
+    template< typename ClassType, typename ReturnType, typename... Args >
+	struct function_traits< ReturnType ( ClassType::*)( Args... ) >
 	{
-		typedef std::function<ReturnType (Args...)> f_type;
+		typedef std::function< ReturnType ( Args... )> f_type;
 	};
 
-    template <typename L> 
-    typename function_traits<L>::f_type make_function(L l)
+    template< typename ClassType, typename ReturnType, typename... Args >
+	struct function_traits< ReturnType ( ClassType::*)( Args... ) const >
 	{
-		return (typename function_traits<L>::f_type)(l);
+		typedef std::function< ReturnType ( Args... )> f_type;
+	};
+
+    template < typename L >
+    typename function_traits< L >::f_type
+	make_function( L l )
+	{
+		return ( typename function_traits< L >::f_type )( l );
 	}
 
 	table_type			m_listeners;
