@@ -158,9 +158,33 @@ rpc::manager::bind_notification( const std::string &method, std::size_t num_para
 
 
 void
+rpc::manager::unbind_notification( const std::string &method )
+{
+	auto it = m_notification_handlers.find( method );
+
+	if ( it != m_notification_handlers.end() )
+	{
+		m_notification_handlers.erase( it );
+	}
+}
+
+
+void
 rpc::manager::bind_request( const std::string &method, std::size_t num_params, server_request_f func )
 {
 	m_request_handlers[ method ] = std::make_pair( num_params, func );
+}
+
+
+void
+rpc::manager::unbind_request( const std::string &method )
+{
+	auto it = m_request_handlers.find( method );
+
+	if ( it != m_request_handlers.end() )
+	{
+		m_request_handlers.erase( it );
+	}
 }
 
 

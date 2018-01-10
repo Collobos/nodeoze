@@ -91,9 +91,15 @@ public:
 	
 	void
 	bind_notification( const std::string &method, std::size_t num_params, server_notification_f func );
+
+	void
+	unbind_notification( const std::string &method );
 	
 	void
 	bind_request( const std::string &method, std::size_t num_params, server_request_f func );
+
+	void
+	unbind_request( const std::string &method );
 	
 	template < class T >
 	inline void
