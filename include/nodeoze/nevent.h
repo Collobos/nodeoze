@@ -103,11 +103,13 @@ struct string
 
 	string( const std::string &s )
 	:
-		str( ::strdup( s.c_str() ) ),
+		str( new char[ s.size() + 1 ] ),
 		size( s.size() ),
-		hash( hash_string( str ) ),
+		hash( hash_string( s.c_str() ) ),
 		del( true )
 	{
+		::memcpy( const_cast< char* >( str ), s.c_str(), size );
+		const_cast< char* >( str )[ size ] = '\0';
 	}
 
 	string( const string &rhs ) = delete;
@@ -129,7 +131,7 @@ struct string
 	{
 		if ( del && str )
 		{
-			free( ( void* ) str );
+			delete [] str;
 		}
 	}
 

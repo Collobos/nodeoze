@@ -46,32 +46,35 @@ class state_machine
 
 public:
 
+	typedef State	state_type;
+	typedef Event	event_type;
+
 	template< class T >
-	struct context_t
+	struct context
 	{
 	public:
 
-		context_t( T value )
+		context( T value )
 		:
 			m_value( value )
 		{
 		}
 
-		context_t( T value, nodeoze::any &&data )
+		context( T value, nodeoze::any &&data )
 		:
 			m_value( value ),
 			m_data( std::move( data ) )
 		{
 		}
 
-		context_t( T value, std::error_code err )
+		context( T value, std::error_code err )
 		:
 			m_value( value ),
 			m_err( err )
 		{
 		}
 
-		context_t( T value, nodeoze::any &&data, std::error_code err )
+		context( T value, nodeoze::any &&data, std::error_code err )
 		:
 			m_value( value ),
 			m_data( std::move( data ) ),
@@ -79,7 +82,7 @@ public:
 		{
 		}
 
-		context_t( const context_t &rhs )
+		context( const context &rhs )
 		:
 			m_value( rhs.m_value ),
 			m_data( rhs.m_data ),
@@ -87,7 +90,7 @@ public:
 		{
 		}
 
-		context_t( context_t &&rhs )
+		context( context &&rhs )
 		:
 			m_value( rhs.m_value ),
 			m_data( std::move( rhs.m_data ) ),
@@ -95,8 +98,8 @@ public:
 		{
 		}
 
-		inline context_t&
-		operator=( const context_t &rhs )
+		inline context&
+		operator=( const context &rhs )
 		{
 			m_value	= rhs.m_value;
 			m_data	= rhs.m_data;
@@ -105,8 +108,8 @@ public:
 			return *this;
 		}
 
-		inline context_t&
-		operator=( context_t &&rhs )
+		inline context&
+		operator=( context &&rhs )
 		{
 			m_value	= rhs.m_value;
 			m_data	= std::move( rhs.m_data );
@@ -116,13 +119,13 @@ public:
 		}
 
 		inline bool
-		operator==( const context_t &rhs ) const
+		operator==( const context &rhs ) const
 		{
 			return ( m_value == rhs.m_value );
 		}
 
 		inline bool
-		operator!=( const context_t &rhs ) const
+		operator!=( const context &rhs ) const
 		{
 			return ( m_value != rhs.m_value );
 		}
@@ -146,7 +149,7 @@ public:
 		}
 
 		friend inline std::ostream&
-		operator<<( std::ostream &os, const context_t &c )
+		operator<<( std::ostream &os, const context &c )
 		{
 			os << c.value();
 			return os;
@@ -159,14 +162,14 @@ public:
 		std::error_code	m_err;
 	};
 
-	typedef context_t< State >													state_t;
-	typedef std::function< bool ( const state_t &last, const state_t &next ) >	observe_f;
-	typedef std::function< void () >											action_f;
+	typedef context< state_type >																		context_state_type;
+	typedef std::function< bool ( const context_state_type &last, const context_state_type &next ) >	observe_f;
+	typedef std::function< void () >																	action_f;
 
-	state_machine( const std::string &name, const state_t &initial )
+	state_machine( const std::string &name )
 	:
 		m_name( name ),
-		m_state( initial )
+		m_state( state_type::start )
 	{
 	}
 
@@ -185,37 +188,58 @@ public:
 	}
 
 	inline bool
-	can_change_state( const state_t &next )
+	can_change_state( const context_state_type &next )
 	{
 		return m_machine.find( std::make_pair( m_state.value(), next.value() ) ) != m_machine.end();
 	}
 
 	inline void
-	post( Event e )
+	post( event_type e )
 	{
-		post( e, nodeoze::any::null(), std::error_code() );
+		really_post( e, nodeoze::any::null(), std::error_code() );
 	}
 
 	inline void
-	post( Event e, nodeoze::any data )
+	post( event_type e, nodeoze::any data )
 	{
-		post( e, std::move( data ), std::error_code() );
+		really_post( e, std::move( data ), std::error_code() );
 	}
 
 	inline void
-	post( Event e, std::error_code err )
+	post( event_type e, std::error_code err )
 	{
-		post( e, nodeoze::any::null(), err );
+		really_post( e, nodeoze::any::null(), err );
+	}
+
+	inline promise< void >
+	post( event_type e, std::vector< state_type > good, std::vector< state_type > bad )
+	{
+		really_post( e, nodeoze::any::null(), std::error_code() );
+		return notify_on_transition( std::move( good ), std::move( bad ) );
+	}
+
+	inline promise< void >
+	post( event_type e, nodeoze::any data, std::vector< state_type > good, std::vector< state_type > bad )
+	{
+		really_post( e, std::move( data ), std::error_code() );
+		return notify_on_transition( std::move( good ), std::move( bad ) );
+	}
+
+	inline promise< void >
+	post( event_type e, std::error_code err, std::vector< state_type > good, std::vector< state_type > bad )
+	{
+		really_post( e, nodeoze::any::null(), err );
+		return notify_on_transition( std::move( good ), std::move( bad ) );
 	}
 
 	inline void
-	on_transition( State state, Event event, State next, action_f action )
+	on_transition( state_type state, event_type event, state_type next, action_f action )
 	{
 		m_machine.emplace( std::piecewise_construct, std::forward_as_tuple( std::make_pair( state, event ) ), std::forward_as_tuple( std::make_pair( next, action ) ) );
 	}
 
 	inline void
-	observe( const std::vector< State > &states, observe_f observer )
+	observe( const std::vector< state_type > &states, observe_f observer )
 	{
 		auto id = ++m_observer_id;
 
@@ -230,7 +254,7 @@ public:
 		return m_name;
 	}
 	
-	inline const state_t&
+	inline const context_state_type&
 	state() const
 	{
 		return m_state;
@@ -239,7 +263,7 @@ public:
 	inline void
 	inflate( const nodeoze::any &root )
 	{
-		m_state = static_cast< State >( root[ "state" ].to_uint32() );
+		m_state = static_cast< state_type >( root[ "state" ].to_uint32() );
 	}
 
 	inline void
@@ -250,21 +274,21 @@ public:
 
 private:
 
-	typedef context_t< Event >				event_t;
-	typedef std::pair< State, Event >		key_t;
-	typedef std::pair< State, action_f >	val_t;
+	typedef context< event_type >				context_event_type;
+	typedef std::pair< state_type, event_type >	key_type;
+	typedef std::pair< state_type, action_f >	val_type;
 
-	struct hash_t
+	struct hash_type
 	{
 		inline std::size_t
-		operator()( const key_t &key ) const
+		operator()( const key_type &key ) const
 		{
 			return static_cast< std::size_t >( key.first ) + static_cast<std::size_t>( key.second );
 		}
 	};
 
 	inline void
-	post( Event event, nodeoze::any data, std::error_code err )
+	really_post( event_type event, nodeoze::any data, std::error_code err )
 	{
 		if ( !m_in_transition )
 		{
@@ -305,11 +329,14 @@ private:
 				{
 					runloop::shared().dispatch( [=]() mutable
 					{
-						auto event = m_event_queue.front();
+						if ( !m_event_queue.empty() )
+						{
+							auto event = m_event_queue.front();
 
-						m_event_queue.pop_front();
+							m_event_queue.pop_front();
 
-						post( event.value(), std::move( event.data() ), event.err() );
+							really_post( event.value(), std::move( event.data() ), event.err() );
+						}
 					} );
 				}
 			}
@@ -338,7 +365,7 @@ private:
 	}
 
 	inline void
-	dispatch_observers( const state_t &last, const state_t &next )
+	dispatch_observers( const context_state_type &last, const context_state_type &next )
 	{
 		auto observers = m_observers;
 
@@ -360,13 +387,37 @@ private:
 		}
 	}
 
-	std::unordered_map< key_t, val_t, hash_t >											m_machine;
-	nodeoze::deque< event_t >															m_event_queue;
+	inline promise< void >
+	notify_on_transition( std::vector< state_type > good, std::vector< state_type > bad )
+	{
+		auto ret = promise< void >();
+
+		observe( {}, [=, good{ std::move( good ) }, bad{ std::move( bad ) }]( auto &last, auto &next ) mutable
+		{
+			nunused( last );
+
+			if ( std::find( good.begin(), good.end(), next.value() ) != good.end() )
+			{
+				ret.resolve();
+			}
+			else if ( std::find( bad.begin(), bad.end(), next.value() ) != bad.end() )
+			{
+				ret.reject( std::make_error_code( std::errc::state_not_recoverable ) );
+			}
+
+			return !ret.is_finished();
+		} );
+
+		return ret;
+	}
+
+	std::unordered_map< key_type, val_type, hash_type >									m_machine;
+	nodeoze::deque< context_event_type >												m_event_queue;
 	bool																				m_in_transition		= false;
 	std::uint64_t																		m_observer_id		= 0;
-	std::unordered_map< std::uint64_t, std::pair< std::vector< State >, observe_f > >	m_observers;
+	std::unordered_map< std::uint64_t, std::pair< std::vector< state_type >, observe_f > >	m_observers;
 	std::string																			m_name;
-	state_t																				m_state;
+	context_state_type																	m_state;
 };
 
 }

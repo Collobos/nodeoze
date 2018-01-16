@@ -31,7 +31,7 @@
 
 using namespace nodeoze;
 
-TEST_CASE( "nodeoze: emitter" )
+TEST_CASE( "nodeoze: smoke: emitter" )
 {
 	SUBCASE( "void base" )
 	{
@@ -82,6 +82,24 @@ TEST_CASE( "nodeoze: emitter" )
 		REQUIRE( id != 0 );
 
 		e.emit( "error", std::make_error_code( std::errc::invalid_argument ) );
+
+		REQUIRE( invoked == true );
+	}
+
+	SUBCASE( "std::string" )
+	{
+		event::emitter<> e;
+		bool invoked = false;
+
+		auto id = e.on( std::string( "error" ), [&]( std::error_code err ) mutable
+		{
+			REQUIRE( static_cast< std::errc >( err.value() ) == std::errc::invalid_argument );
+			invoked = true;
+		} );
+
+		REQUIRE( id != 0 );
+
+		e.emit( std::string( "error" ), std::make_error_code( std::errc::invalid_argument ) );
 
 		REQUIRE( invoked == true );
 	}
