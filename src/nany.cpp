@@ -349,7 +349,7 @@ any::patch( const any &patches )
 {
 	auto ret = std::error_code();
 	
-	ncheck_error_action( patches.is_array(), ret = std::make_error_code( std::errc::invalid_argument ), exit, "patches must be array" );
+	ncheck_error_action( patches.is_array(), ret = make_error_code( std::errc::invalid_argument ), exit, "patches must be array" );
 	
 	for ( auto i = 0u; i < patches.size(); i++ )
 	{
@@ -375,13 +375,13 @@ any::apply( const any &patch )
 	auto from	= patch[ "from" ];
 	auto ret	= std::error_code();
 	
-	ncheck_error_action( op != patch_opcode_t::invalid, ret = std::make_error_code( std::errc::invalid_argument ), exit, "op is not valid (%)", patch[ "op" ] );
-	ncheck_error_action( path.is_string(), ret = std::make_error_code( std::errc::invalid_argument ), exit, "path must be string" );
+	ncheck_error_action( op != patch_opcode_t::invalid, ret = make_error_code( std::errc::invalid_argument ), exit, "op is not valid (%)", patch[ "op" ] );
+	ncheck_error_action( path.is_string(), ret = make_error_code( std::errc::invalid_argument ), exit, "path must be string" );
 	
 	if ( op == patch_opcode_t::test )
 	{
 		auto find = this->find( path.to_string() );
-		ncheck_error_action( find, ret = std::make_error_code( std::errc::invalid_argument ), exit, "bad path" );
+		ncheck_error_action( find, ret = make_error_code( std::errc::invalid_argument ), exit, "bad path" );
 	}
 	else if ( path.size() == 0 )
 	{
@@ -393,7 +393,7 @@ any::apply( const any &patch )
 		if ( ( op == patch_opcode_t::replace ) || ( op == patch_opcode_t::add ) )
 		{
 			auto value = patch[ "value" ];
-			ncheck_error_action( !value.is_null(), ret = std::make_error_code( std::errc::invalid_argument ), exit, "no value for replace/add" );
+			ncheck_error_action( !value.is_null(), ret = make_error_code( std::errc::invalid_argument ), exit, "no value for replace/add" );
 			*this = std::move( value );
 		}
 	}
@@ -409,16 +409,16 @@ any::apply( const any &patch )
 			{
 				value = patch[ "value" ];
 				
-				ncheck_error_action( find || ( find.token_mismatch_distance() == 1 ), ret = std::make_error_code( std::errc::invalid_argument ), exit, "no value for replace/add" );
-				ncheck_error_action( find.parent, ret = std::make_error_code( std::errc::invalid_argument ), exit, "bad path" );
-				ncheck_error_action( !value.is_null(), ret = std::make_error_code( std::errc::invalid_argument ), exit, "no value for add" );
+				ncheck_error_action( find || ( find.token_mismatch_distance() == 1 ), ret = make_error_code( std::errc::invalid_argument ), exit, "no value for replace/add" );
+				ncheck_error_action( find.parent, ret = make_error_code( std::errc::invalid_argument ), exit, "bad path" );
+				ncheck_error_action( !value.is_null(), ret = make_error_code( std::errc::invalid_argument ), exit, "no value for add" );
 			}
 			break;
 			
 			case patch_opcode_t::remove:
 			{
-				ncheck_error_action( find, ret = std::make_error_code( std::errc::invalid_argument ), exit, "bad path %", path.to_string() );
-				ncheck_error_action( find.parent, ret = std::make_error_code( std::errc::invalid_argument ), exit, "bad path %", path.to_string() );
+				ncheck_error_action( find, ret = make_error_code( std::errc::invalid_argument ), exit, "bad path %", path.to_string() );
+				ncheck_error_action( find.parent, ret = make_error_code( std::errc::invalid_argument ), exit, "bad path %", path.to_string() );
 				
 				if ( find.parent->is_array() )
 				{
@@ -445,9 +445,9 @@ any::apply( const any &patch )
 					nlog( log::level_t::info, "uhoh" );
 				}
 				
-				ncheck_error_action( find, ret = std::make_error_code( std::errc::invalid_argument ), exit, "path not found" );
-				ncheck_error_action( find.parent, ret = std::make_error_code( std::errc::invalid_argument ), exit, "no parent" );
-				ncheck_error_action( !value.is_null(), ret = std::make_error_code( std::errc::invalid_argument ), exit, "no value for add" );
+				ncheck_error_action( find, ret = make_error_code( std::errc::invalid_argument ), exit, "path not found" );
+				ncheck_error_action( find.parent, ret = make_error_code( std::errc::invalid_argument ), exit, "no parent" );
+				ncheck_error_action( !value.is_null(), ret = make_error_code( std::errc::invalid_argument ), exit, "no value for add" );
 
 				if ( find.parent->is_array() )
 				{
@@ -466,11 +466,11 @@ any::apply( const any &patch )
 			{
 				auto from		= find_t();
 				auto from_spec	= patch[ "from" ];
-				ncheck_error_action( from_spec.is_string(), ret = std::make_error_code( std::errc::invalid_argument ), exit, "from not string" );
+				ncheck_error_action( from_spec.is_string(), ret = make_error_code( std::errc::invalid_argument ), exit, "from not string" );
 				find = this->find( path.to_string() );
-				ncheck_error_action( find || ( find.token_mismatch_distance() == 1 ), ret = std::make_error_code( std::errc::invalid_argument ), exit, "bad path" );
+				ncheck_error_action( find || ( find.token_mismatch_distance() == 1 ), ret = make_error_code( std::errc::invalid_argument ), exit, "bad path" );
 				from = this->find( from_spec.to_string() );
-				ncheck_error_action( from, ret = std::make_error_code( std::errc::invalid_argument ), exit, "bad from" );
+				ncheck_error_action( from, ret = make_error_code( std::errc::invalid_argument ), exit, "bad from" );
 				
 				if ( from.parent->is_array() )
 				{
@@ -487,11 +487,11 @@ any::apply( const any &patch )
 			{
 				auto from		= find_t();
 				auto from_spec	= patch[ "from" ];
-				ncheck_error_action( from_spec.is_string(), ret = std::make_error_code( std::errc::invalid_argument ), exit, "from not string" );
+				ncheck_error_action( from_spec.is_string(), ret = make_error_code( std::errc::invalid_argument ), exit, "from not string" );
 				find = this->find( path.to_string() );
-				ncheck_error_action( find || ( find.token_mismatch_distance() == 1 ), ret = std::make_error_code( std::errc::invalid_argument ), exit, "bad path" );
+				ncheck_error_action( find || ( find.token_mismatch_distance() == 1 ), ret = make_error_code( std::errc::invalid_argument ), exit, "bad path" );
 				from = this->find( from_spec.to_string() );
-				ncheck_error_action( from, ret = std::make_error_code( std::errc::invalid_argument ), exit, "bad from" );
+				ncheck_error_action( from, ret = make_error_code( std::errc::invalid_argument ), exit, "bad from" );
 				
 				if ( from.parent->is_array() )
 				{

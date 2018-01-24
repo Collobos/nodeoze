@@ -205,7 +205,7 @@ connection::connect()
 					handle_resolve( dest, dummy, ret );
 				} );
 				
-				ncheck_error_action_quiet( found, ret.reject( std::make_error_code( std::errc::owner_dead ) ), exit );
+				ncheck_error_action_quiet( found, ret.reject( make_error_code( std::errc::owner_dead ) ), exit );
 				
 			exit:
 			
@@ -218,7 +218,7 @@ connection::connect()
 		}
 		else
 		{
-			ret.reject( std::make_error_code( std::errc::invalid_argument ) );
+			ret.reject( make_error_code( std::errc::invalid_argument ) );
 		}
 	}
 	
@@ -312,7 +312,7 @@ connection::handle_resolve( const uri &resource, std::deque< ip::address > addrs
 			recv();
 		} ) )
 		{
-			ret.reject( std::make_error_code( std::errc::owner_dead ) );
+			ret.reject( make_error_code( std::errc::owner_dead ) );
 		}
 	},
 	[=]( auto err ) mutable
@@ -327,7 +327,7 @@ connection::handle_resolve( const uri &resource, std::deque< ip::address > addrs
 			ret.reject( err );
 		} ) )
 		{
-			ret.reject( std::make_error_code( std::errc::owner_dead ) );
+			ret.reject( make_error_code( std::errc::owner_dead ) );
 		}
 	} );
 }

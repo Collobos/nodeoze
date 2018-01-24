@@ -81,7 +81,7 @@ TEST_CASE( "nodeoze: smoke: emitter" )
 
 		REQUIRE( id != 0 );
 
-		e.emit( "error", std::make_error_code( std::errc::invalid_argument ) );
+		e.emit( "error", make_error_code( std::errc::invalid_argument ) );
 
 		REQUIRE( invoked == true );
 	}
@@ -99,7 +99,7 @@ TEST_CASE( "nodeoze: smoke: emitter" )
 
 		REQUIRE( id != 0 );
 
-		e.emit( std::string( "error" ), std::make_error_code( std::errc::invalid_argument ) );
+		e.emit( std::string( "error" ), make_error_code( std::errc::invalid_argument ) );
 
 		REQUIRE( invoked == true );
 	}

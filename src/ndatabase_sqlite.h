@@ -109,7 +109,7 @@ public:
 		bool ok = true;
 		if ( ! m_stmt )
 		{
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 			ok = false;
 		}
 		else
@@ -118,17 +118,17 @@ public:
 			
 			if ( result == SQLITE_ROW )
 			{
-				m_status = std::make_error_code( database::code_t::ok );
+				m_status = make_error_code( database::code_t::ok );
 				ok = true;
 			}
 			else if ( result == SQLITE_OK || result == SQLITE_DONE )
 			{
-				m_status = std::make_error_code( database::code_t::ok );
+				m_status = make_error_code( database::code_t::ok );
 				ok = false;
 			}
 			else
 			{
-				m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+				m_status = make_error_code( static_cast< database::code_t >( result ) );
 				ok = false;
 			}
 		}
@@ -142,11 +142,11 @@ public:
 		{
 			sqlite3_reset( m_stmt );
 			sqlite3_clear_bindings( m_stmt );
-			m_status = std::make_error_code( database::code_t::ok );
+			m_status = make_error_code( database::code_t::ok );
 		}
 		else
 		{
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		
 		return m_status;
@@ -178,16 +178,16 @@ public:
 
 			if ( result == SQLITE_DONE || result == SQLITE_OK || result == SQLITE_ROW )
 			{
-				m_status = std::make_error_code( database::code_t::ok );
+				m_status = make_error_code( database::code_t::ok );
 			}
 			else
 			{
-				m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+				m_status = make_error_code( static_cast< database::code_t >( result ) );
 			}
 		}
 		else
 		{
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return m_status;
 	}
@@ -249,7 +249,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 		
 		if ( m_stmt )
 		{
@@ -257,7 +257,7 @@ public:
 			if ( index < 1 )
 			{
 				ok = false;
-				m_status = std::make_error_code( std::errc::invalid_argument );
+				m_status = make_error_code( std::errc::invalid_argument );
 			}
 			else
 			{
@@ -265,14 +265,14 @@ public:
 				if ( result != SQLITE_OK )
 				{
 					ok = false;
-					m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+					m_status = make_error_code( static_cast< database::code_t >( result ) );
 				}
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -282,7 +282,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -290,13 +290,13 @@ public:
 			if ( result != SQLITE_OK )
 			{
 				ok = false;
-				m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+				m_status = make_error_code( static_cast< database::code_t >( result ) );
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -306,7 +306,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -314,7 +314,7 @@ public:
 			if ( index < 1 )
 			{
 				ok = false;
-				m_status = std::make_error_code( std::errc::invalid_argument );
+				m_status = make_error_code( std::errc::invalid_argument );
 			}
 			else
 			{
@@ -322,14 +322,14 @@ public:
 				if ( result != SQLITE_OK )
 				{
 					ok = false;
-					m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+					m_status = make_error_code( static_cast< database::code_t >( result ) );
 				}
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -339,7 +339,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -347,13 +347,13 @@ public:
 			if ( result != SQLITE_OK )
 			{
 				ok = false;
-				m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+				m_status = make_error_code( static_cast< database::code_t >( result ) );
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -363,7 +363,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -371,7 +371,7 @@ public:
 			if ( index < 1 )
 			{
 				ok = false;
-				m_status = std::make_error_code( std::errc::invalid_argument );
+				m_status = make_error_code( std::errc::invalid_argument );
 			}
 			else
 			{
@@ -379,14 +379,14 @@ public:
 				if ( result != SQLITE_OK )
 				{
 					ok = false;
-					m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+					m_status = make_error_code( static_cast< database::code_t >( result ) );
 				}
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -396,7 +396,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -404,13 +404,13 @@ public:
 			if ( result != SQLITE_OK )
 			{
 				ok = false;
-				m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+				m_status = make_error_code( static_cast< database::code_t >( result ) );
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -420,7 +420,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -428,7 +428,7 @@ public:
 			if ( index < 1 )
 			{
 				ok = false;
-				m_status = std::make_error_code( std::errc::invalid_argument );
+				m_status = make_error_code( std::errc::invalid_argument );
 			}
 			else
 			{
@@ -436,14 +436,14 @@ public:
 				if (  result != SQLITE_OK )
 				{
 					ok = false;
-					m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+					m_status = make_error_code( static_cast< database::code_t >( result ) );
 				}
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -453,7 +453,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 		
 		if ( m_stmt )
 		{
@@ -462,13 +462,13 @@ public:
 			if ( result != SQLITE_OK )
 			{
 				ok = false;
-				m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+				m_status = make_error_code( static_cast< database::code_t >( result ) );
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -478,7 +478,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -489,7 +489,7 @@ public:
 			if ( index < 1 )
 			{
 				ok = false;
-				m_status = std::make_error_code( std::errc::invalid_argument );
+				m_status = make_error_code( std::errc::invalid_argument );
 			}
 			else
 			{
@@ -497,14 +497,14 @@ public:
 				if ( result != SQLITE_OK )
 				{
 					ok = false;
-					m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+					m_status = make_error_code( static_cast< database::code_t >( result ) );
 				}
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -514,7 +514,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -523,13 +523,13 @@ public:
 			if ( result != SQLITE_OK )
 			{
 				ok = false;
-				m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+				m_status = make_error_code( static_cast< database::code_t >( result ) );
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -539,7 +539,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -547,7 +547,7 @@ public:
 			if ( index < 1 )
 			{
 				ok = false;
-				m_status = std::make_error_code( std::errc::invalid_argument );
+				m_status = make_error_code( std::errc::invalid_argument );
 			}
 			else
 			{
@@ -555,14 +555,14 @@ public:
 				if ( result != SQLITE_OK )
 				{
 					ok = false;
-					m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+					m_status = make_error_code( static_cast< database::code_t >( result ) );
 				}
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -572,7 +572,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -580,13 +580,13 @@ public:
 			if ( result != SQLITE_OK )
 			{
 				ok = false;
-				m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+				m_status = make_error_code( static_cast< database::code_t >( result ) );
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -596,7 +596,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -604,7 +604,7 @@ public:
 			if ( index < 1 )
 			{
 				ok = false;
-				m_status = std::make_error_code( std::errc::invalid_argument );
+				m_status = make_error_code( std::errc::invalid_argument );
 			}
 			else
 			{
@@ -614,7 +614,7 @@ public:
 					if ( result != SQLITE_OK )
 					{
 						ok = false;
-						m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+						m_status = make_error_code( static_cast< database::code_t >( result ) );
 					}
 				}
 				else
@@ -630,7 +630,7 @@ public:
 					if ( result != SQLITE_OK )
 					{
 						ok = false;
-						m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+						m_status = make_error_code( static_cast< database::code_t >( result ) );
 					}
 				}
 			}
@@ -638,7 +638,7 @@ public:
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -648,7 +648,7 @@ public:
 	{
 		auto ok = true;
 		
-		m_status = std::make_error_code( database::code_t::ok );
+		m_status = make_error_code( database::code_t::ok );
 
 		if ( m_stmt )
 		{
@@ -658,7 +658,7 @@ public:
 				if ( result != SQLITE_OK )
 				{
 					ok = false;
-					m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+					m_status = make_error_code( static_cast< database::code_t >( result ) );
 				}
 			}
 			else
@@ -674,14 +674,14 @@ public:
 				if ( result != SQLITE_OK )
 				{
 					ok = false;
-					m_status = std::make_error_code( static_cast< database::code_t >( result ) );
+					m_status = make_error_code( static_cast< database::code_t >( result ) );
 				}
 			}
 		}
 		else
 		{
 			ok = false;
-			m_status = std::make_error_code( database::code_t::internal_error );
+			m_status = make_error_code( database::code_t::internal_error );
 		}
 		return ok;
 	}
@@ -738,21 +738,21 @@ public:
 	exec_prepared()
 	{
 		assert(0);
-		return std::make_error_code( database::code_t::internal_error );
+		return make_error_code( database::code_t::internal_error );
 	}
 
 	std::error_code
 	reset_prepared()
 	{
 		assert(0);
-		return std::make_error_code( database::code_t::internal_error );
+		return make_error_code( database::code_t::internal_error );
 	}
 	
 	std::error_code
 	last_error() const
 	{
 		assert(0);
-		return std::make_error_code( database::code_t::internal_error );
+		return make_error_code( database::code_t::internal_error );
 	}
 	
 	bool

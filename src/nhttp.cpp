@@ -1379,7 +1379,7 @@ http::connection::process( const buffer &buf )
 		if ( !m_reset_parser && ( processed != std::streamsize( buf.size() ) ) )
 		{
 			nlog( log::level_t::info, "http_parser_execute() failed: bytes read = %, processed = %, state = %", buf.size(), processed, m_parser.get()->state );
-			err = std::make_error_code( std::errc::bad_message );
+			err = make_error_code( std::errc::bad_message );
 		}
 		
 		if ( m_in_message_type == message::type_t::request )
@@ -1397,7 +1397,7 @@ http::connection::close()
 {
 	if ( m_in_message_type == message::type_t::response )
 	{
-		maybe_invoke_reply( std::make_error_code( std::errc::not_connected ), m_in_message );
+		maybe_invoke_reply( make_error_code( std::errc::not_connected ), m_in_message );
 	}
 	
 	nodeoze::connection::close();
@@ -1600,7 +1600,7 @@ http::connection::message_was_received( http_parser *parser )
 		}
 		else
 		{
-			self->maybe_invoke_reply( std::make_error_code( self->m_in_message->code() ), self->m_in_message );
+			self->maybe_invoke_reply( make_error_code( self->m_in_message->code() ), self->m_in_message );
 		}
 	}
 	else if ( ( self->m_in_message->code() == http::code_t::proxy_authentication ) && proxy::manager::shared().auth_challenge() )
@@ -1640,7 +1640,7 @@ http::connection::message_was_received( http_parser *parser )
 	else
 	{
 		self->m_in_message->on_end();
-		self->maybe_invoke_reply( std::make_error_code( self->m_in_message->code() ), self->m_in_message );
+		self->maybe_invoke_reply( make_error_code( self->m_in_message->code() ), self->m_in_message );
 	}
 	
 	return ret;
@@ -1731,7 +1731,7 @@ http::loopback::send( buffer buf )
 	}
 	else
 	{
-		ret.reject( std::make_error_code( std::errc::not_connected ) );
+		ret.reject( make_error_code( std::errc::not_connected ) );
 	}
 
 	return ret;

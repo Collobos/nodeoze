@@ -90,9 +90,9 @@ manager_impl::open( const std::string &s )
 	}
 	
 #if defined( UNICODE )
-	m_error = std::make_error_code( static_cast< code_t >( sqlite3_open16( widen( s ).c_str(), &m_db ) ) );
+	m_error = make_error_code( static_cast< code_t >( sqlite3_open16( widen( s ).c_str(), &m_db ) ) );
 #else
-	m_error = std::make_error_code( static_cast< code_t >( sqlite3_open( s.c_str(), &m_db ) ) );
+	m_error = make_error_code( static_cast< code_t >( sqlite3_open( s.c_str(), &m_db ) ) );
 #endif
 
 	if ( !m_error )
@@ -142,7 +142,7 @@ database::manager_impl::close()
 		}
 		else
 		{
-			m_error = std::make_error_code( static_cast< database::code_t >( err ) );
+			m_error = make_error_code( static_cast< database::code_t >( err ) );
 		}
 	}
 	
@@ -165,11 +165,11 @@ manager_impl::exec( const std::string &str )
 	{
 		nlog( log::level_t::error, "sqlite3_exec() failed: %, %", err, error );
 		nlog( log::level_t::error, "exec string: %", str );
-		m_error = std::make_error_code( static_cast< database::code_t >( err ) );
+		m_error = make_error_code( static_cast< database::code_t >( err ) );
 	}
 	else
 	{
-		m_error = std::make_error_code( database::code_t::ok );
+		m_error = make_error_code( database::code_t::ok );
 	}
 	
 	if ( error )
@@ -336,12 +336,12 @@ database::manager_impl::prepare( const std::string &str )
 	if ( err == SQLITE_OK )
 	{
 		ret.reset( new statement_impl( stmt ) );
-		m_error = std::make_error_code( database::code_t::ok );
+		m_error = make_error_code( database::code_t::ok );
 		m_prepared_statements.push_back( ret );
 	}
 	else
 	{
-		m_error = std::make_error_code( static_cast< database::code_t >( err ) );
+		m_error = make_error_code( static_cast< database::code_t >( err ) );
 nlog( log::level_t::info, "err % (%)", m_error.value(), m_error.message() );
 		ret.reset( new statement_impl( NULL ) );
 	}
@@ -362,7 +362,7 @@ database::manager_impl::prepare( const std::string &str, std::function< std::err
 	{
 		sqlite3_stmt *stmt;
 
-		err = std::make_error_code( static_cast< database::code_t >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, NULL ) ) );
+		err = make_error_code( static_cast< database::code_t >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, NULL ) ) );
 		ncheck_error_quiet( !err, exit );
 
 		m_prepared_statement_map.emplace( std::piecewise_construct, std::forward_as_tuple( str ), std::forward_as_tuple( stmt ) );
@@ -444,7 +444,7 @@ database::manager_impl::backup( const std::string &dest, backup_hook_f hook )
 	sqlite3			*dest_db	= nullptr;
 	auto			ret			= std::error_code();
 
-	ret = std::make_error_code( static_cast< code_t >( sqlite3_open( dest.c_str(), &dest_db ) ) );
+	ret = make_error_code( static_cast< code_t >( sqlite3_open( dest.c_str(), &dest_db ) ) );
 
 	if ( ret )
 	{
@@ -457,7 +457,7 @@ database::manager_impl::backup( const std::string &dest, backup_hook_f hook )
 
 		char *error = NULL;
 	
-		ret = std::make_error_code( static_cast< code_t >( sqlite3_exec( dest_db, s.c_str(), 0, 0, &error ) ) );
+		ret = make_error_code( static_cast< code_t >( sqlite3_exec( dest_db, s.c_str(), 0, 0, &error ) ) );
 	
 		if ( ret )
 		{
@@ -469,7 +469,7 @@ database::manager_impl::backup( const std::string &dest, backup_hook_f hook )
 
 	if ( !backup )
 	{
-		ret = std::make_error_code( static_cast< code_t >( sqlite3_errcode( dest_db ) ) );
+		ret = make_error_code( static_cast< code_t >( sqlite3_errcode( dest_db ) ) );
 		goto exit;
     }
 
@@ -502,20 +502,20 @@ database::manager_impl::restore( const std::string &from, restore_hook_f hook )
 
 	if ( !raw )
 	{
-		ret = std::make_error_code( std::errc::invalid_argument );
+		ret = make_error_code( std::errc::invalid_argument );
 		goto exit;
 	}
 
 	filename = raw;
 
-	ret = std::make_error_code( static_cast< code_t >( sqlite3_close( m_db ) ) );
+	ret = make_error_code( static_cast< code_t >( sqlite3_close( m_db ) ) );
 
 	if ( ret )
 	{
 		goto exit;
 	}
 
-	ret = std::make_error_code( static_cast< code_t >( sqlite3_open( filename.c_str(), &m_db ) ) );
+	ret = make_error_code( static_cast< code_t >( sqlite3_open( filename.c_str(), &m_db ) ) );
 
 	if ( ret )
 	{
@@ -528,7 +528,7 @@ database::manager_impl::restore( const std::string &from, restore_hook_f hook )
 
 		char *error = NULL;
 	
-		ret = std::make_error_code( static_cast< code_t >( sqlite3_exec( m_db, s.c_str(), 0, 0, &error ) ) );
+		ret = make_error_code( static_cast< code_t >( sqlite3_exec( m_db, s.c_str(), 0, 0, &error ) ) );
 	
 		if ( ret )
 		{
@@ -550,7 +550,7 @@ database::manager_impl::backup_database( const nodeoze::path& backup_path, const
 	sqlite3* backup_db;
 	sqlite3_backup* backup_info;
 	
-	ret = std::make_error_code( static_cast< code_t >( sqlite3_open( backup_path.to_string().c_str(), &backup_db ) ) );
+	ret = make_error_code( static_cast< code_t >( sqlite3_open( backup_path.to_string().c_str(), &backup_db ) ) );
 	
 	ncheck_error_quiet( !ret, exit );
 
@@ -558,7 +558,7 @@ database::manager_impl::backup_database( const nodeoze::path& backup_path, const
 	{
 		char *error	= nullptr;
 		
-		ret = std::make_error_code( static_cast< code_t >( sqlite3_exec( backup_db, statement.c_str(), nullptr, nullptr, &error ) ) );
+		ret = make_error_code( static_cast< code_t >( sqlite3_exec( backup_db, statement.c_str(), nullptr, nullptr, &error ) ) );
 
 		if ( ret )
 		{
@@ -578,11 +578,11 @@ database::manager_impl::backup_database( const nodeoze::path& backup_path, const
 
 	backup_info = sqlite3_backup_init( backup_db, "main", m_db, "main" );
 
-	ncheck_error_action( backup_info, ret = std::make_error_code( std::errc::invalid_argument ), close_backup, "error initializing backup" );
+	ncheck_error_action( backup_info, ret = make_error_code( std::errc::invalid_argument ), close_backup, "error initializing backup" );
 	
 	do
 	{
-		ret = std::make_error_code( static_cast< code_t >( sqlite3_backup_step(backup_info, static_cast< int >( step_size ) ) ) );
+		ret = make_error_code( static_cast< code_t >( sqlite3_backup_step(backup_info, static_cast< int >( step_size ) ) ) );
 		
 		if ( !ret || ( ret.value() == SQLITE_BUSY ) || ( ret.value() == SQLITE_LOCKED ) )
 		{
@@ -603,7 +603,7 @@ database::manager_impl::backup_database( const nodeoze::path& backup_path, const
 		mlog( marker::database, log::level_t::error, "backup did not complete: % (%)", ret, ret.message() );
 	}
 
-	ret = std::make_error_code( static_cast< code_t >( sqlite3_backup_finish( backup_info ) ) );
+	ret = make_error_code( static_cast< code_t >( sqlite3_backup_finish( backup_info ) ) );
 	
 	if ( !ret )
 	{
@@ -612,7 +612,7 @@ database::manager_impl::backup_database( const nodeoze::path& backup_path, const
 	
 close_backup:
 
-	ret = std::make_error_code( static_cast< code_t >( sqlite3_close( backup_db ) ) );
+	ret = make_error_code( static_cast< code_t >( sqlite3_close( backup_db ) ) );
 	
 	if ( !ret )
 	{
@@ -717,7 +717,7 @@ database::manager_impl::last_error()
 void
 database::manager_impl::clear_error()
 {
-	m_error = std::make_error_code( database::code_t::ok );
+	m_error = make_error_code( database::code_t::ok );
 }
 
 

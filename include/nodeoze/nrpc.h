@@ -275,7 +275,7 @@ public:
 					}
 					else
 					{
-						promise.reject( std::make_error_code( error_code ), reject_context );
+						promise.reject( make_error_code( error_code ), reject_context );
 					}
 				}
 				else

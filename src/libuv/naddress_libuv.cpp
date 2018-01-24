@@ -100,7 +100,7 @@ ip::address::resolve( std::string host )
 
 				case EAI_ADDRFAMILY:
 				{
-					ret.reject( std::make_error_code( std::errc::address_family_not_supported ) );
+					ret.reject( make_error_code( std::errc::address_family_not_supported ) );
 				}
 				break;
 
@@ -108,37 +108,37 @@ ip::address::resolve( std::string host )
 
 				case EAI_AGAIN:
 				{
-					ret.reject( std::make_error_code( std::errc::resource_unavailable_try_again ) );
+					ret.reject( make_error_code( std::errc::resource_unavailable_try_again ) );
 				}
 				break;
 
 				case EAI_BADFLAGS:
 				{
-					ret.reject( std::make_error_code( std::errc::invalid_argument ) );
+					ret.reject( make_error_code( std::errc::invalid_argument ) );
 				}
 				break;
 
 				case EAI_FAIL:
 				{
-					ret.reject( std::make_error_code( std::errc::bad_address ) );
+					ret.reject( make_error_code( std::errc::bad_address ) );
 				}
 				break;
 
 				case EAI_FAMILY:
 				{
-					ret.reject( std::make_error_code( std::errc::address_family_not_supported ) );
+					ret.reject( make_error_code( std::errc::address_family_not_supported ) );
 				}
 				break;
 
 				case EAI_MEMORY:
 				{
-					ret.reject( std::make_error_code( std::errc::not_enough_memory ) );
+					ret.reject( make_error_code( std::errc::not_enough_memory ) );
 				}
 				break;
 
 				case EAI_NODATA:
 				{
-					ret.reject( std::make_error_code( std::errc::no_message ) );
+					ret.reject( make_error_code( std::errc::no_message ) );
 				}
 				break;
 
@@ -146,7 +146,7 @@ ip::address::resolve( std::string host )
 
 				case EAI_NONAME:
 				{
-					ret.reject( std::make_error_code( std::errc::no_message ) );
+					ret.reject( make_error_code( std::errc::no_message ) );
 				}
 				break;
 
@@ -154,13 +154,13 @@ ip::address::resolve( std::string host )
 
 				case EAI_SERVICE:
 				{
-					ret.reject( std::make_error_code( std::errc::wrong_protocol_type ) );
+					ret.reject( make_error_code( std::errc::wrong_protocol_type ) );
 				}
 				break;
 
 				case EAI_SOCKTYPE:
 				{
-					ret.reject( std::make_error_code( std::errc::wrong_protocol_type ) );
+					ret.reject( make_error_code( std::errc::wrong_protocol_type ) );
 				}
 				break;
 
@@ -176,7 +176,7 @@ ip::address::resolve( std::string host )
 				
 				default:
 				{
-					ret.reject( std::make_error_code( std::errc::host_unreachable ) );
+					ret.reject( make_error_code( std::errc::host_unreachable ) );
 				}
 			}
 		} );

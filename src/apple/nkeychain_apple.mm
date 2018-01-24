@@ -67,7 +67,7 @@ keychain_mac::save( const uri &key, const std::string &value )
 		status = SecItemAdd( ( CFDictionaryRef ) query.get(), nullptr );
 	}
 	
-	return ( status == noErr ) ? std::error_code() : std::make_error_code( err_t::internal_error );
+	return ( status == noErr ) ? std::error_code() : make_error_code( err_t::internal_error );
 }
 
 
@@ -89,6 +89,6 @@ keychain_mac::find( const uri &key, std::string &value )
 		[ result release ];
 	}
 	
-	return ( status == noErr ) ? std::error_code() : std::make_error_code( err_t::not_exist );
+	return ( status == noErr ) ? std::error_code() : make_error_code( err_t::not_exist );
 }
 

@@ -1017,6 +1017,12 @@ operator<<( std::ostream &os, const nodeoze::http::message &obj );
 
 const std::error_category&
 error_category();
+	
+inline std::error_code
+make_error_code( code_t val )
+{
+	return std::error_code( static_cast<int>( val ), error_category() );
+}
 
 }
 
@@ -1026,12 +1032,6 @@ namespace std
 {
 	template<>
 	struct is_error_code_enum< nodeoze::http::code_t > : public std::true_type {};
-	
-	inline std::error_code
-	make_error_code( nodeoze::http::code_t val )
-	{
-		return std::error_code( static_cast<int>( val ), nodeoze::http::error_category() );
-	}
 }
 
 #endif

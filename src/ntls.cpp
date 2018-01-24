@@ -190,11 +190,11 @@ tls::use_server_cert( const std::vector< nodeoze::buffer > &chain, const nodeoze
 	RSA						*rsa;
 	std::error_code			err;
 	
-	ncheck_error_action( chain.size() >= 1, err = std::make_error_code( std::errc::invalid_argument ), exit, "no certs in chain" );
+	ncheck_error_action( chain.size() >= 1, err = make_error_code( std::errc::invalid_argument ), exit, "no certs in chain" );
 	
 	data = chain[ 0 ].data();
 	cert = d2i_X509( nullptr, &data, chain[ 0 ].size() );
-	ncheck_error_action( cert, err = std::make_error_code( std::errc::invalid_argument ), exit, "d2i_x509() failed" );
+	ncheck_error_action( cert, err = make_error_code( std::errc::invalid_argument ), exit, "d2i_x509() failed" );
 	
 	certs.push_back( cert );
 	
@@ -202,17 +202,17 @@ tls::use_server_cert( const std::vector< nodeoze::buffer > &chain, const nodeoze
 	{
 		data = chain[ i ].data();
 		cert = d2i_X509( nullptr, &data, chain[ i ].size() );
-		ncheck_error_action( cert, err = std::make_error_code( std::errc::invalid_argument ), exit, "d2i_x509() failed" );
+		ncheck_error_action( cert, err = make_error_code( std::errc::invalid_argument ), exit, "d2i_x509() failed" );
 		certs.push_back( cert );
 	}
 	
 	data = key.data();
 	
 	rsa = d2i_RSAPrivateKey( nullptr, &data, key.size() );
-	ncheck_error_action( rsa, err = std::make_error_code( std::errc::invalid_argument ), exit, "d2i_RSAPrivateKey() failed" );
+	ncheck_error_action( rsa, err = make_error_code( std::errc::invalid_argument ), exit, "d2i_RSAPrivateKey() failed" );
 	
 	pkey = EVP_PKEY_new();
-	ncheck_error_action( pkey, err = std::make_error_code( std::errc::invalid_argument ), exit, "EVP_PKEY_new() failed" );
+	ncheck_error_action( pkey, err = make_error_code( std::errc::invalid_argument ), exit, "EVP_PKEY_new() failed" );
 	
 	EVP_PKEY_assign_RSA( pkey, rsa );
 	

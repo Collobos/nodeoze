@@ -219,7 +219,7 @@ deflate( const any &root, ::msgpack::packer< nodeoze::buffer > &packer )
 			
 		default:
 		{
-			err = std::make_error_code( err_t::not_implemented );
+			err = make_error_code( err_t::not_implemented );
 			ncheck_error( !err, exit, "unimplemented any type: %", root.type() );
 		}
 		break;
@@ -301,7 +301,7 @@ inflate( any &root, ::msgpack::object &obj )
 			for ( auto i = 0u; i < obj.via.map.size; ++i )
 			{
 				any val;
-				ncheck_error_action( obj.via.map.ptr[i].key.type == ::msgpack::type::object_type::STR, err = std::make_error_code( err_t::internal_error ), exit, "type mismatch for key: %", obj.via.map.ptr[ i ].key.type );
+				ncheck_error_action( obj.via.map.ptr[i].key.type == ::msgpack::type::object_type::STR, err = make_error_code( err_t::internal_error ), exit, "type mismatch for key: %", obj.via.map.ptr[ i ].key.type );
 				err = inflate( val, obj.via.map.ptr[i].val );
 				ncheck_error( !err, exit, "unable to inflate element" );
 				root.emplace( std::string( obj.via.map.ptr[i].key.via.str.ptr, obj.via.map.ptr[i].key.via.str.size ), std::move( val ) );

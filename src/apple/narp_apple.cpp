@@ -164,7 +164,7 @@ exit:
 
 	if ( !found )
 	{
-		ret.reject( std::make_error_code( err_t::not_exist ) );
+		ret.reject( make_error_code( err_t::not_exist ) );
 	}
 
 	return ret;

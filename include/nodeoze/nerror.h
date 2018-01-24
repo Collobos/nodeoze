@@ -299,18 +299,18 @@ error_category();
 err_t
 canonicalize( std::error_code error );
 
+inline std::error_code
+make_error_code( err_t val )
+{
+	return std::error_code( static_cast<int>( val ), error_category() );
+}
+
 }
 
 namespace std
 {
 	template<>
 	struct is_error_code_enum< nodeoze::err_t > : public std::true_type {};
-	
-	inline std::error_code
-	make_error_code( nodeoze::err_t val )
-	{
-		return std::error_code( static_cast<int>( val ), nodeoze::error_category() );
-	}
 }
 
 #endif

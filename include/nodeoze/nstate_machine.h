@@ -214,22 +214,25 @@ public:
 	inline promise< void >
 	post( event_type e, std::vector< state_type > good, std::vector< state_type > bad )
 	{
+		auto ret = notify_on_transition( std::move( good ), std::move( bad ) );
 		really_post( e, nodeoze::any::null(), std::error_code() );
-		return notify_on_transition( std::move( good ), std::move( bad ) );
+		return ret;
 	}
 
 	inline promise< void >
 	post( event_type e, nodeoze::any data, std::vector< state_type > good, std::vector< state_type > bad )
 	{
+		auto ret = notify_on_transition( std::move( good ), std::move( bad ) );
 		really_post( e, std::move( data ), std::error_code() );
-		return notify_on_transition( std::move( good ), std::move( bad ) );
+		return ret;
 	}
 
 	inline promise< void >
 	post( event_type e, std::error_code err, std::vector< state_type > good, std::vector< state_type > bad )
 	{
+		auto ret = notify_on_transition( std::move( good ), std::move( bad ) );
 		really_post( e, nodeoze::any::null(), err );
-		return notify_on_transition( std::move( good ), std::move( bad ) );
+		return ret;
 	}
 
 	inline void
@@ -402,7 +405,7 @@ private:
 			}
 			else if ( std::find( bad.begin(), bad.end(), next.value() ) != bad.end() )
 			{
-				ret.reject( std::make_error_code( std::errc::state_not_recoverable ) );
+				ret.reject( make_error_code( std::errc::state_not_recoverable ) );
 			}
 
 			return !ret.is_finished();

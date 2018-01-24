@@ -38,7 +38,7 @@ message( "nodeoze library is already defined" )
 else()
 
 add_custom_command(	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/botan_all.h ${CMAKE_CURRENT_BINARY_DIR}/botan_all_internal.h ${CMAKE_CURRENT_BINARY_DIR}/botan_all.cpp
-					COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/ext/botan/configure.py --minimized-build --enable-modules=md5,sha1,sha2_64,tls --single-amalgamation-file --amalgamation
+					COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/ext/botan/configure.py --minimized-build --enable-modules=md5,sha1,sha2_64,tls --single-amalgamation-file --amalgamation --disable-shared
 					WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
 
 include_directories( include src/win32 ext/libuv/include ext/libuv/src ext/rapidjson/include ext/botan ../openssl/include-darwin ext/sqlite ext/http-parser ext/yajl/src/api ext/uriparser/include ext/msgpack-c/include ${CMAKE_CURRENT_BINARY_DIR}/build/include/external)
@@ -72,6 +72,7 @@ endif()
 if ( WIN32 )
 
 	set(NODEOZE_SRCS ${NODEOZE_SRCS} ext/libuv/src/win/async.c ext/libuv/src/win/core.c ext/libuv/src/win/detect-wakeup.c ext/libuv/src/win/dl.c ext/libuv/src/win/error.c ext/libuv/src/win/fs.c ext/libuv/src/win/fs-event.c ext/libuv/src/win/getaddrinfo.c ext/libuv/src/win/handle.c ext/libuv/src/win/loop-watcher.c ext/libuv/src/win/pipe.c ext/libuv/src/win/poll.c ext/libuv/src/win/process.c ext/libuv/src/win/process-stdio.c ext/libuv/src/win/req.c ext/libuv/src/win/signal.c ext/libuv/src/win/stream.c ext/libuv/src/win/util.c ext/libuv/src/win/winapi.c ext/libuv/src/win/winsock.c ext/libuv/src/win/tcp.c ext/libuv/src/win/thread.c ext/libuv/src/win/timer.c ext/libuv/src/win/tty.c ext/libuv/src/win/udp.c src/win32/narp_win32.cpp src/win32/nfs_win32.cpp src/win32/nkeychain_win32.cpp src/win32/nlog_win32.cpp src/win32/nmachine_win32.cpp src/win32/npath_win32.cpp src/win32/nprocess_win32.cpp src/win32/nuser.cpp src/win32/crc32.cpp)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOTAN_DLL=")
 
 else()
 

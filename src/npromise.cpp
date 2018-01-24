@@ -513,8 +513,8 @@ TEST_CASE( "nodeoze: promise" )
 		auto p3 = promise< void >();
 
 		p1.resolve();
-		p2.reject( std::make_error_code( std::errc::not_connected ) );
-		p3.reject( std::make_error_code( std::errc::not_connected ) );
+		p2.reject( make_error_code( std::errc::not_connected ) );
+		p3.reject( make_error_code( std::errc::not_connected ) );
 
 		auto good = false;
 
@@ -539,8 +539,8 @@ TEST_CASE( "nodeoze: promise" )
 		auto p3 = promise< int >();
 
 		p1.resolve( 7 );
-		p2.reject( std::make_error_code( std::errc::not_connected ) );
-		p3.reject( std::make_error_code( std::errc::not_connected ) );
+		p2.reject( make_error_code( std::errc::not_connected ) );
+		p3.reject( make_error_code( std::errc::not_connected ) );
 
 		auto good = false;
 
@@ -565,9 +565,9 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< void >();
 		auto p3 = promise< void >();
 
-		p1.reject( std::make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ) );
 		p2.resolve();
-		p3.reject( std::make_error_code( std::errc::not_connected ) );
+		p3.reject( make_error_code( std::errc::not_connected ) );
 
 		auto good = false;
 
@@ -591,9 +591,9 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< int >();
 		auto p3 = promise< int >();
 
-		p1.reject( std::make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ) );
 		p2.resolve( 8 );
-		p3.reject( std::make_error_code( std::errc::not_connected ) );
+		p3.reject( make_error_code( std::errc::not_connected ) );
 
 		auto good = false;
 
@@ -618,8 +618,8 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< void >();
 		auto p3 = promise< void >();
 
-		p1.reject( std::make_error_code( std::errc::not_connected ) );
-		p2.reject( std::make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ) );
+		p2.reject( make_error_code( std::errc::not_connected ) );
 		p3.resolve();
 
 		auto good = false;
@@ -644,8 +644,8 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< int >();
 		auto p3 = promise< int >();
 
-		p1.reject( std::make_error_code( std::errc::not_connected ) );
-		p2.reject( std::make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ) );
+		p2.reject( make_error_code( std::errc::not_connected ) );
 		p3.resolve( 9 );
 
 		auto good = false;
@@ -671,9 +671,9 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< void >();
 		auto p3 = promise< void >();
 
-		p1.reject( std::make_error_code( std::errc::not_connected ) );
-		p2.reject( std::make_error_code( std::errc::not_connected ) );
-		p3.reject( std::make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ) );
+		p2.reject( make_error_code( std::errc::not_connected ) );
+		p3.reject( make_error_code( std::errc::not_connected ) );
 
 		auto good = false;
 
@@ -697,9 +697,9 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< int >();
 		auto p3 = promise< int >();
 
-		p1.reject( std::make_error_code( std::errc::not_connected ) );
-		p2.reject( std::make_error_code( std::errc::not_connected ) );
-		p3.reject( std::make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ) );
+		p2.reject( make_error_code( std::errc::not_connected ) );
+		p3.reject( make_error_code( std::errc::not_connected ) );
 
 		auto good = false;
 

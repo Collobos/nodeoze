@@ -45,7 +45,7 @@ keychain_win32::save( const uri &resource, const std::string &value )
 	// Get a handle to the Policy object on the local system
 
 	res = LsaOpenPolicy( NULL, &attrs, POLICY_ALL_ACCESS, &handle );
-	ncheck_error_action_quiet( res == ERROR_SUCCESS, err = std::make_error_code( err_t::internal_error ), exit );
+	ncheck_error_action_quiet( res == ERROR_SUCCESS, err = make_error_code( err_t::internal_error ), exit );
 
 	// Intializing PLSA_UNICODE_STRING structures
 
@@ -58,7 +58,7 @@ keychain_win32::save( const uri &resource, const std::string &value )
 	// Store the private data.
 
 	res = LsaStorePrivateData( handle, &lucResourceName, &lucSecretName );
-	ncheck_error_action_quiet( res == ERROR_SUCCESS, err = std::make_error_code( err_t::internal_error ), exit );
+	ncheck_error_action_quiet( res == ERROR_SUCCESS, err = make_error_code( err_t::internal_error ), exit );
 
 exit:
 
@@ -89,19 +89,19 @@ keychain_win32::find( const uri &resource, std::string &value )
 	// Get a handle to the Policy object on the local system
 
 	res = LsaOpenPolicy( NULL, &attrs, POLICY_GET_PRIVATE_INFORMATION, &handle );
-	ncheck_error_action_quiet( res == ERROR_SUCCESS, err = std::make_error_code( err_t::internal_error ), exit );
+	ncheck_error_action_quiet( res == ERROR_SUCCESS, err = make_error_code( err_t::internal_error ), exit );
 
 	// Get the encrypted data
 
 	resourceLSA = ( PLSA_UNICODE_STRING ) malloc( sizeof( LSA_UNICODE_STRING ) );
-	ncheck_error_action_quiet( resourceLSA != NULL, err = std::make_error_code( err_t::no_memory ), exit );
+	ncheck_error_action_quiet( resourceLSA != NULL, err = make_error_code( err_t::no_memory ), exit );
 	err = MakeLsaStringFromUTF8String( resourceLSA, resource.to_string().c_str() );
 	ncheck_error_quiet( !err, exit );
 
 	// Retrieve the key
 
 	res = LsaRetrievePrivateData( handle, resourceLSA, &secretLSA );
-	ncheck_error_action_quiet( res == ERROR_SUCCESS, err = std::make_error_code( err_t::not_exist ), exit );
+	ncheck_error_action_quiet( res == ERROR_SUCCESS, err = make_error_code( err_t::not_exist ), exit );
 
 	err = MakeUTF8StringFromLsaString( secretLSA, value );
 	ncheck_error_quiet( !err, exit );
@@ -141,12 +141,12 @@ MakeLsaStringFromUTF8String( PLSA_UNICODE_STRING output, const std::string &inpu
 	
 	output->Buffer = nullptr;
 	size = MultiByteToWideChar( CP_UTF8, 0, input.c_str(), -1, NULL, 0 );
-	ncheck_error_action_quiet( size > 0, err = std::make_error_code( err_t::internal_error ), exit );
+	ncheck_error_action_quiet( size > 0, err = make_error_code( err_t::internal_error ), exit );
 	output->Length = (USHORT)( size * sizeof( wchar_t ) );
 	output->Buffer = (PWCHAR) malloc( output->Length );
-	ncheck_error_action_quiet( output->Buffer, err = std::make_error_code( err_t::no_memory ), exit );
+	ncheck_error_action_quiet( output->Buffer, err = make_error_code( err_t::no_memory ), exit );
 	size = MultiByteToWideChar( CP_UTF8, 0, input.c_str(), -1, output->Buffer, size );
-	ncheck_error_action_quiet( size > 0, err = std::make_error_code( err_t::internal_error ), exit );
+	ncheck_error_action_quiet( size > 0, err = make_error_code( err_t::internal_error ), exit );
 
 	// We're going to subtrace one wchar_t from the size, because we didn't
 	// include it when we encoded the string

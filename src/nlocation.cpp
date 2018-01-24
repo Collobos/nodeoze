@@ -32,11 +32,11 @@ location::from_ip_address()
 		auto loc	= location( 37.419723, -122.115228, 0.0, 0.0, 0.0, 0.0 );
 
 		root = json::inflate( response->body().to_string() );
-		ncheck_error_action( root.is_object(), ret.reject( std::make_error_code( std::errc::invalid_argument ), reject_context ), exit, "response is not JSON object" );
+		ncheck_error_action( root.is_object(), ret.reject( make_error_code( std::errc::invalid_argument ), reject_context ), exit, "response is not JSON object" );
 		string = json::deflate_to_string( root[ "loc" ] );
-		ncheck_error_action( !string.empty(), ret.reject( std::make_error_code( std::errc::invalid_argument ), reject_context ), exit, "bad JSON string" );
+		ncheck_error_action( !string.empty(), ret.reject( make_error_code( std::errc::invalid_argument ), reject_context ), exit, "bad JSON string" );
 		pos = string.find( ',' );
-		ncheck_error_action( pos != std::string::npos, ret.reject( std::make_error_code( std::errc::invalid_argument ), reject_context ), exit, "bad JSON string" );
+		ncheck_error_action( pos != std::string::npos, ret.reject( make_error_code( std::errc::invalid_argument ), reject_context ), exit, "bad JSON string" );
 		lat = string.substr( 0, pos );
 		lon = string.substr( pos + 1, string.size() - pos - 1 );
 		loc.set_latitude_degrees( std::atof( lat.c_str() ) );

@@ -256,7 +256,7 @@ rpc::manager::terminate_requests( oid_t oid )
 			
 			it = m_reply_handlers.erase( it );
 			
-			handler.reject( std::make_error_code( std::errc::interrupted ), reject_context );
+			handler.reject( make_error_code( std::errc::interrupted ), reject_context );
 		}
 		else
 		{

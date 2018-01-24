@@ -139,7 +139,7 @@ ip::tcp::ssocket::connect()
 				if ( ret == 0 )
 				{
 					close();
-					err = std::make_error_code( std::errc::timed_out );
+					err = make_error_code( std::errc::timed_out );
 				}
 				else if ( ret < 0 )
 				{
@@ -221,6 +221,10 @@ ip::tcp::ssocket::recv( buffer &buf, std::chrono::milliseconds timeout )
 		{
 			buf.size( num );
 		}
+		else if ( num == 0 )
+		{
+			err = make_error_code( std::errc::connection_reset );
+		}
 		else
 		{
 			err = std::error_code( errno, std::generic_category() );
@@ -228,7 +232,7 @@ ip::tcp::ssocket::recv( buffer &buf, std::chrono::milliseconds timeout )
 	}
 	else
 	{
-		err = std::make_error_code( std::errc::timed_out );
+		err = make_error_code( std::errc::timed_out );
 	}
 	
 	return err;
@@ -497,7 +501,7 @@ ip::tcp::socket::really_send( buffer &buf, promise< void > ret )
 	}
 	else
 	{
-		ret.reject( std::make_error_code( std::errc::not_connected ) );
+		ret.reject( make_error_code( std::errc::not_connected ) );
 	}
 }
 
@@ -588,7 +592,7 @@ ip::tcp::socket::recv( buffer &in_buf )
 			buffer dummy;
 	
 			mlog( marker::socket_tcp_recv, log::level_t::info, "invoking handler with eof" );
-			m_recv_reply( std::make_error_code( std::errc::no_message_available ), dummy );
+			m_recv_reply( make_error_code( std::errc::no_message_available ), dummy );
 		}
 	}
 	else
@@ -789,7 +793,7 @@ ip::tcp::acceptor::bind( const ip::endpoint &name )
 	auto err = std::error_code();
 	
 	mlog( marker::socket_tcp_accept, log::level_t::info, "bind to %", name.to_string() );
-	ncheck_error_action_quiet( m_handle, err = std::make_error_code( std::errc::not_connected ), exit );
+	ncheck_error_action_quiet( m_handle, err = make_error_code( std::errc::not_connected ), exit );
 	err = m_handle->bind( name );
 	
 exit:
@@ -801,7 +805,7 @@ exit:
 void
 ip::tcp::acceptor::accept( std::size_t qsize, accept_reply_f reply )
 {
-	ncheck_error_action_quiet( m_handle, reply( std::make_error_code( std::errc::owner_dead ), socket() ), exit );
+	ncheck_error_action_quiet( m_handle, reply( make_error_code( std::errc::owner_dead ), socket() ), exit );
 	m_handle->accept( qsize, reply );
 	
 exit:
@@ -913,8 +917,8 @@ ip::udp::socket::bind( const ip::endpoint &name )
 	auto err = std::error_code();
 
 	mlog( marker::socket_udp_bind, log::level_t::info, "handle: %, bind to %", m_handle, name.to_string() );
-	ncheck_error_action_quiet( m_handle, err = std::make_error_code( std::errc::not_connected ), exit );
-	ncheck_error_action_quiet( m_handle->owner() == this, err = std::make_error_code( std::errc::not_connected  ), exit );
+	ncheck_error_action_quiet( m_handle, err = make_error_code( std::errc::not_connected ), exit );
+	ncheck_error_action_quiet( m_handle->owner() == this, err = make_error_code( std::errc::not_connected  ), exit );
 	
 	err = m_handle->bind( name );
 	
@@ -944,7 +948,7 @@ ip::udp::socket::set_membership( const ip::endpoint &endpoint, const ip::address
 {
 	auto err = std::error_code();
 
-	ncheck_error_action_quiet( m_handle, err = std::make_error_code( std::errc::not_connected ), exit );
+	ncheck_error_action_quiet( m_handle, err = make_error_code( std::errc::not_connected ), exit );
 	
 	err = m_handle->set_membership( endpoint, iface, membership );
 	
@@ -959,7 +963,7 @@ ip::udp::socket::set_broadcast( bool val )
 {
 	auto err = std::error_code();
 
-	ncheck_error_action_quiet( m_handle, err = std::make_error_code( std::errc::not_connected ), exit );
+	ncheck_error_action_quiet( m_handle, err = make_error_code( std::errc::not_connected ), exit );
 	
 	err = m_handle->set_broadcast( val );
 	
@@ -976,7 +980,7 @@ ip::udp::socket::send( buffer buf, const ip::endpoint &to )
 
 	mlog( marker::socket_udp_send, log::level_t::info, "handle: %, bytes: %, to: %", m_handle, buf.size(), to.to_string() );
 	
-	ncheck_error_action( m_handle, ret.reject( std::make_error_code( std::errc::not_connected ) ), exit, "m_handle is a null pointer" );
+	ncheck_error_action( m_handle, ret.reject( make_error_code( std::errc::not_connected ) ), exit, "m_handle is a null pointer" );
 	
 	m_handle->send( std::move( buf ), to, ret );
 	

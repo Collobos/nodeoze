@@ -238,7 +238,7 @@ fs_linux::rmdir( const path &p )
 
 	auto ret = shell::execute( "/bin/rm -fr \"%\"", p );
 
-	return ( ret == 0 ) ? std::error_code() : std::make_error_code( err_t::internal_error );
+	return ( ret == 0 ) ? std::error_code() : make_error_code( err_t::internal_error );
 }
 
 

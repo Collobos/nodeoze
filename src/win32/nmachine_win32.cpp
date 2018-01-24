@@ -580,7 +580,7 @@ machine_win32::get_index_and_mask( sockaddr *addr, std::uint32_t &index, ip::add
 	// For now, this is only for IPv4 addresses.  That is why we can safely cast
 	// addr's to sockaddr_in.
 
-	ncheck_error_action_quiet( addr->sa_family == AF_INET, err = std::make_error_code( std::errc::invalid_argument ), exit );
+	ncheck_error_action_quiet( addr->sa_family == AF_INET, err = make_error_code( std::errc::invalid_argument ), exit );
 
 	// Make an initial call to GetIpAddrTable to get the
 	// necessary size into the dwSize variable
@@ -588,7 +588,7 @@ machine_win32::get_index_and_mask( sockaddr *addr, std::uint32_t &index, ip::add
 	for ( i = 0; i < 100; i++ )
 	{
 		auto res = GetIpAddrTable( pIPAddrTable, &dwSize, 0 );
-		ncheck_error_action_quiet( ( res == ERROR_SUCCESS ) || ( res == ERROR_INSUFFICIENT_BUFFER ), err = std::make_error_code( err_t::internal_error ), exit );
+		ncheck_error_action_quiet( ( res == ERROR_SUCCESS ) || ( res == ERROR_INSUFFICIENT_BUFFER ), err = make_error_code( err_t::internal_error ), exit );
 
 		if ( res != ERROR_INSUFFICIENT_BUFFER )
 		{
@@ -596,10 +596,10 @@ machine_win32::get_index_and_mask( sockaddr *addr, std::uint32_t &index, ip::add
 		}
 
 		pIPAddrTable = (MIB_IPADDRTABLE *) realloc( pIPAddrTable, dwSize );
-		ncheck_error_action_quiet( pIPAddrTable, err = std::make_error_code( err_t::no_memory ), exit );
+		ncheck_error_action_quiet( pIPAddrTable, err = make_error_code( err_t::no_memory ), exit );
 	}
 
-	err = std::make_error_code( err_t::internal_error );
+	err = make_error_code( err_t::internal_error );
 
 	for ( i = 0; i < pIPAddrTable->dwNumEntries; i++ )
 	{

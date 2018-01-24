@@ -899,7 +899,7 @@ nodeoze::promise< T >::race( promises_t promises )
 	}
 	else
 	{
-		ret.reject( std::make_error_code( std::errc::invalid_argument ) );
+		ret.reject( make_error_code( std::errc::invalid_argument ) );
 	}
 
 	return ret;
@@ -933,7 +933,7 @@ nodeoze::promise< void >::race( promises_t promises )
 	}
 	else
 	{
-		ret.reject( std::make_error_code( std::errc::invalid_argument ) );
+		ret.reject( make_error_code( std::errc::invalid_argument ) );
 	}
 
 	return ret;
@@ -977,7 +977,7 @@ nodeoze::promise< T >::any( promises_t promises )
 	}
 	else
 	{
-		ret.reject( std::make_error_code( std::errc::invalid_argument ) );
+		ret.reject( make_error_code( std::errc::invalid_argument ) );
 	}
 
 	return ret;
@@ -1021,7 +1021,7 @@ nodeoze::promise< void >::any( promises_t promises )
 	}
 	else
 	{
-		ret.reject( std::make_error_code( std::errc::invalid_argument ) );
+		ret.reject( make_error_code( std::errc::invalid_argument ) );
 	}
 
 	return ret;

@@ -590,7 +590,17 @@ operator<<(std::ostream &os, const nodeoze::database::action_t action )
 const std::error_category&
 error_category();
 
+inline std::error_code
+make_error_code( nodeoze::database::code_t val )
+{
+	return std::error_code( static_cast<int>( val ), nodeoze::database::error_category() );
+}
 
+inline std::error_condition
+make_error_condition( nodeoze::database::code_t val )
+{
+	return std::error_condition( static_cast<int>( val ), nodeoze::database::error_category() );
+}
 
 }
 
@@ -600,18 +610,6 @@ namespace std
 {
 	template<>
 	struct is_error_code_enum< nodeoze::database::code_t > : public std::true_type {};
-	
-	inline std::error_code
-	make_error_code( nodeoze::database::code_t val )
-	{
-		return std::error_code( static_cast<int>( val ), nodeoze::database::error_category() );
-	}
-
-	inline std::error_condition
-	make_error_condition( nodeoze::database::code_t val )
-	{
-		return std::error_condition( static_cast<int>( val ), nodeoze::database::error_category() );
-	}
 }
 
 #define ndb nodeoze::database::manager::shared()

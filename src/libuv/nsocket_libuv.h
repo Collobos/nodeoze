@@ -271,9 +271,9 @@ private:
 		
 		ncheck_error_quiet( request, exit );
 		stream = reinterpret_cast< socket::handle* >( request->handle );
-		ncheck_error_action_quiet( stream, request->m_ret.reject( std::make_error_code( std::errc::not_connected ), reject_context ), exit );
+		ncheck_error_action_quiet( stream, request->m_ret.reject( make_error_code( std::errc::not_connected ), reject_context ), exit );
 		owner = reinterpret_cast< ip::tcp::socket* >( stream->data );
-		ncheck_error_action_quiet( owner, request->m_ret.reject( std::make_error_code( std::errc::not_connected ), reject_context ), exit );
+		ncheck_error_action_quiet( owner, request->m_ret.reject( make_error_code( std::errc::not_connected ), reject_context ), exit );
 		
 		if ( err != 0 )
 		{
@@ -299,9 +299,9 @@ private:
 		
 		ncheck_error_quiet( request, exit );
 		stream = request->handle;
-		ncheck_error_action_quiet( stream, request->m_ret.reject( std::make_error_code( std::errc::not_connected ), reject_context ), exit );
+		ncheck_error_action_quiet( stream, request->m_ret.reject( make_error_code( std::errc::not_connected ), reject_context ), exit );
 		owner = reinterpret_cast< ip::tcp::socket* >( stream->data );
-		ncheck_error_action_quiet( owner, request->m_ret.reject( std::make_error_code( std::errc::not_connected ), reject_context ), exit );
+		ncheck_error_action_quiet( owner, request->m_ret.reject( make_error_code( std::errc::not_connected ), reject_context ), exit );
 		
 		if ( err != 0 )
 		{

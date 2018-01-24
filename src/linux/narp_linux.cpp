@@ -138,7 +138,7 @@ arp_linux::resolve( const ip::address &ip_address )
 				
 			if ( !found )
 			{
-				ret.reject( std::make_error_code( err_t::not_exist ) );
+				ret.reject( make_error_code( err_t::not_exist ) );
 			}
 		},
 		[=]( auto err ) mutable
