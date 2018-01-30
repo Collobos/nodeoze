@@ -64,19 +64,22 @@ nodeoze::crypto::decrypt( const std::string &input, const std::string &key )
 }
 
 
-TEST_CASE( "nodeoze: xor encryption" )
+TEST_CASE( "nodeoze/smoke/encrypt" )
 {
-	auto orig		= "this is a test of encryption";
-	auto encrypted	= crypto::encrypt( orig, "this is a test key" );
-	
-	CHECK( orig != encrypted );
-	
-	auto good		= crypto::decrypt( encrypted, "this is a test key" );
-	
-	CHECK( orig == good );
-	
-	auto bad		= crypto::decrypt( encrypted, "this is not a key" );
-	
-	CHECK( orig != bad );
+	SUBCASE( "xor encryption" )
+	{
+		auto orig		= "this is a test of encryption";
+		auto encrypted	= crypto::encrypt( orig, "this is a test key" );
+		
+		CHECK( orig != encrypted );
+		
+		auto good		= crypto::decrypt( encrypted, "this is a test key" );
+		
+		CHECK( orig == good );
+		
+		auto bad		= crypto::decrypt( encrypted, "this is not a key" );
+		
+		CHECK( orig != bad );
+	}
 }
 

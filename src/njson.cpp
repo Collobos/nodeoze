@@ -108,10 +108,6 @@ struct parser_context
 			{
 			}
 		}
-		else
-		{
-			rlog( "attempting to add value (%) to null stack", val.type() );
-		}
 		
 		return true;
 	}
@@ -711,7 +707,7 @@ exit:
 }
 
 
-TEST_CASE( "nodeoze: json" )
+TEST_CASE( "nodeoze/smoke/json" )
 {
 	SUBCASE( "inflate" )
 	{
@@ -734,8 +730,6 @@ TEST_CASE( "nodeoze: json" )
 			{ "b", { { "c", true } } },
 			{ "c", "\b\f\n\r\t\"\\embedded" }
 		} );
-		
-		fprintf( stderr, "deflated: %s\n", json::deflate_to_string( obj ).c_str() );
 		
 		REQUIRE( obj.type() == any::type_t::object );
 		REQUIRE( obj.is_member( "a" ) );

@@ -25,8 +25,9 @@
  */
 
 #include <nodeoze/nprocess.h>
-#include <nodeoze/nthread.h>
 #include <nodeoze/nrunloop.h>
+#include <nodeoze/nbuffer.h>
+#include <nodeoze/nthread.h>
 #include <nodeoze/ntest.h>
 #include "nerror_libuv.h"
 #include <uv.h>
@@ -298,7 +299,7 @@ process::create( const path &exe, const std::vector< std::string > &args, const 
 	context->options.exit_cb	= exit_cb;
 
 	auto err = uv_spawn( uv_default_loop(), context.get(), &context->options );
-	ncheck_error_action_quiet( err == 0, ret.reject( std::error_code( err, libuv::error_category() ) ), exit );
+	ncheck_error_action_quiet( err == 0, ret.reject( std::error_code( err, libuv::error_category() ), reject_context ), exit );
 	
 	if ( stdin_handler )
 	{

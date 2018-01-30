@@ -9,12 +9,15 @@ const char nodeoze::ostream::m_digits[] =
     "8081828384858687888990919293949596979899";
 
 
-TEST_CASE( "stream: int" )
+TEST_CASE( "nodeoze/smoke/stream" )
 {
-	nodeoze::ostringstream os;
-	
-	os << 550;
-	
-	CHECK( os.str() == "550" );
+	SUBCASE( "int" )
+	{
+		nodeoze::ostringstream os;
+		
+		os << 550;
+		
+		CHECK( os.str() == "550" );
+	}
 }
 

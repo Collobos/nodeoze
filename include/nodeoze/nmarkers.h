@@ -42,6 +42,7 @@ extern const nodeoze::log::marker &rpc_performance;
 extern const nodeoze::log::marker &json;
 extern const nodeoze::log::marker &msgpack;
 extern const nodeoze::log::marker &process;
+extern const nodeoze::log::marker &promise;
 extern const nodeoze::log::marker &shell;
 extern const nodeoze::log::marker &socket;
 extern const nodeoze::log::marker &socket_filter;

@@ -27,12 +27,16 @@
 #ifndef _nodeoze_log_h
 #define _nodeoze_log_h
 
+#include <nodeoze/nsingleton.h>
+#include <nodeoze/nevent.h>
 #include <nodeoze/nprintf.h>
+#include <nodeoze/nmacros.h>
 #include <nodeoze/nstring.h>
-#include <nodeoze/nlimiter.h>
 #include <nodeoze/ntime.h>
 #include <nodeoze/nuri.h>
 #include <sstream>
+#include <iomanip>
+#include <memory>
 #include <vector>
 #include <mutex>
 #include <unordered_map>
@@ -46,29 +50,15 @@
 #	include <winsock2.h>
 #	include <windows.h>
 #	include <stdio.h>
-#	define nlog( LEVEL, MESSAGE, ... ) if ( LEVEL <= nodeoze::log::level() ) { try { nodeoze::log::put( LEVEL, __FILE__, __FUNCTION__, __LINE__, MESSAGE, __VA_ARGS__ ); } catch ( ... ) { fprintf( stderr, "logging exception at %s:%d\n", __FUNCTION__, __LINE__ ); } }
-#	if defined( DEBUG )
-#		define ndlog( MESSAGE, ... ) if ( nodeoze::log::level_t::debug <= nodeoze::log::level() ) { try { nodeoze::log::put( nodeoze::log::level_t::debug, __FILE__, __FUNCTION__, __LINE__, MESSAGE, __VA_ARGS__ ); } catch ( ... ) { fprintf( stderr, "logging exception at %s:%d\n", __FUNCTION__, __LINE__ ); } }
-#	else
-#		define ndlog( MESSAGE, ... )
-#	endif
+#	define nlog( LEVEL, MESSAGE, ... ) if ( LEVEL <= nodeoze::log::shared().level() ) { try { nodeoze::log::shared().put( LEVEL, __FILE__, __FUNCTION__, __LINE__, MESSAGE, __VA_ARGS__ ); } catch ( ... ) { fprintf( stderr, "logging exception at %s:%d\n", __FUNCTION__, __LINE__ ); } }
 
 #	define mlog( MARKER, LEVEL, MESSAGE, ...) {	static_assert(std::is_convertible<decltype(MARKER), nodeoze::log::marker>::value, "argument must be type log::marker"); if (MARKER || LEVEL <= nodeoze::log::level_t::warning ) { nlog ( LEVEL, MESSAGE, __VA_ARGS__ ); } }
 
-#	define rlog( MESSAGE, ...) { try { nodeoze::log::put( __FILE__, __FUNCTION__, __LINE__, MESSAGE, __VA_ARGS__ ); } catch ( ... ) { fprintf( stderr, "logging exception at %s%d\n", __FUNCTION__, __LINE__ ); } }
-
 #elif defined( __clang__ )
 
-#	define nlog( LEVEL, MESSAGE, ... ) if ( LEVEL <= nodeoze::log::level() ) { try { nodeoze::log::put( LEVEL, __FILE__, __PRETTY_FUNCTION__, __LINE__, MESSAGE, ##__VA_ARGS__ ); } catch ( ... ) { fprintf( stderr, "logging exception at %s:%d\n", __PRETTY_FUNCTION__, __LINE__ ); } };
-#	if defined( DEBUG )
-#		define ndlog( MESSAGE, ... ) if ( nodeoze::log::level_t::debug <= nodeoze::log::level() ) { try { nodeoze::log::put( nodeoze::log::level_t::debug, __FILE__, __PRETTY_FUNCTION__, __LINE__, MESSAGE, ##__VA_ARGS__ ); } catch ( ... ) { fprintf( stderr, "logging exception at %s:%d\n", __PRETTY_FUNCTION__, __LINE__ ); } };
-#	else
-#		define ndlog( MESSAGE, ... )
-#	endif
+#	define nlog( LEVEL, MESSAGE, ... ) if ( LEVEL <= nodeoze::log::shared().level() ) { try { nodeoze::log::shared().put( LEVEL, __FILE__, __PRETTY_FUNCTION__, __LINE__, MESSAGE, ##__VA_ARGS__ ); } catch ( ... ) { fprintf( stderr, "logging exception at %s:%d\n", __PRETTY_FUNCTION__, __LINE__ ); } };
 
 #	define mlog( MARKER, LEVEL, MESSAGE, ...) {	static_assert(std::is_convertible<decltype(MARKER), nodeoze::log::marker>::value, "argument must be type log::marker"); if (MARKER || LEVEL <= nodeoze::log::level_t::warning ) { nlog ( LEVEL, MESSAGE, ##__VA_ARGS__ ); } }
-
-#	define rlog( MESSAGE, ...) { try { nodeoze::log::put( __FILE__, __PRETTY_FUNCTION__, __LINE__, MESSAGE, ##__VA_ARGS__ ); } catch ( ... ) { fprintf( stderr, "logging exception at %s%d\n", __PRETTY_FUNCTION__, __LINE__ ); } }
 
 #endif
 
@@ -78,8 +68,10 @@ class any;
 
 class log_marker;
 
-class log
+class log : public event::emitter<>
 {
+	NODEOZE_DECLARE_SINGLETON( log )
+
 public:
 
 	enum class level_t
@@ -91,28 +83,55 @@ public:
 		voluminous		= 20,
 		debug			= 30
 	};
-	
-	typedef std::function< void ( level_t level, const std::string& message ) > sink_f;
-	typedef std::function< void ( level_t l ) >									set_f;
-	
-	static const std::string change_event;
 
+	class sink
+	{
+	public:
+
+		static std::shared_ptr< sink >
+		console();
+
+		static std::shared_ptr< sink >
+		system();
+
+		sink();
+
+		virtual ~sink();
+
+		virtual void
+		put( level_t level, std::chrono::system_clock::time_point when, std::uint32_t pid, std::uint32_t tid, const std::string &file, const std::string &func, std::uint32_t line, const std::string &message ) = 0;
+
+	protected:
+
+		std::string
+		prune_filename( const std::string &filename );
+
+		std::string
+		prune_function( const std::string &function );
+	};
+
+
+	typedef std::function< void ( level_t l ) > set_f;
+	
 	class marker
 	{
-	friend class log;
 	private:
+
 		struct poison_constructor {};
 
 	public:
+
+		friend class log;
 
 		class marker_impl;
 
 		class marker_impl
 		{
-		friend class marker;
-		friend class log;
+			friend class marker;
+			friend class log;
 		
 		private:
+
 			struct poison_constructor {};
 			
 		protected:
@@ -216,7 +235,8 @@ public:
 				set_state(false);
 			}
 			
-			const std::string& get_path()
+			const std::string&
+			get_path()
 			{
 				if (!m_path_created)
 				{
@@ -253,6 +273,7 @@ public:
 		};
 
 	protected:
+
 		marker() = delete;
 		
 		typedef std::shared_ptr<marker_impl> marker_impl_ptr;
@@ -268,8 +289,10 @@ public:
 	public:
 	
 		marker(const poison_constructor&, marker_impl_ptr _impl)
-		: marker(_impl)
-		{ }
+		:
+			marker(_impl)
+		{
+		}
 	
 		inline explicit operator bool() const
 		{
@@ -301,131 +324,127 @@ public:
 			return *this;
 		}
 		
+	private:
+
 	};
 
-	static log::marker&
-	root_marker();
+	log();
+
+	~log();
+
+	inline const std::string&
+	name() const
+	{
+		return m_name;
+	}
+
+	inline void
+	set_name( const std::string &name )
+	{
+		m_name = name;
+	}
 	
-	static void
+	inline level_t
+	level()
+	{
+		return m_level;
+	}
+
+	void
+	set_level( level_t l );
+
+	log::marker&
+	root_marker();
+
+	void
 	enable(log::marker& marker)
 	{
 		marker.enable();
 	}
 	
-	static void
+	void
 	disable(log::marker& marker)
 	{
 		marker.disable();
 	}
 
-	static log::marker&
+	log::marker&
 	get_marker( const log::marker& parent, const std::string& name)
 	{
 		auto segments = nodeoze::string::split(name, '.');
 		return const_cast< log::marker& >( log::marker::marker_impl::get_marker_internal(parent, segments) );
 	}
 	
-	static log::marker&
+	log::marker&
 	get_marker( const log::marker& parent, const std::string& name, bool enabled)
 	{
 		log::marker& marker = get_marker(parent, name);
 		return marker.set_state(enabled);
 	}
 
-	static log::marker&
+	log::marker&
 	get_marker(const std::string& name)
 	{
 		return get_marker(root_marker(), name);
 	}
 
-	static log::marker&
+	log::marker&
 	get_marker(const std::string& name, bool enabled)
 	{
 		log::marker& marker = get_marker(root_marker(), name);
 		return marker.set_state(enabled);
 	}
 
-	static log::marker&
+	log::marker&
 	get_marker(const log::marker& parent, const std::vector<std::string> &marker_path)
 	{
 		return const_cast< log::marker& >( log::marker::marker_impl::get_marker_internal(parent, marker_path ) );
 	}
 
-	static log::marker&
+	log::marker&
 	get_marker(const log::marker& parent, const std::vector<std::string> &marker_path, bool enabled)
 	{
 		return get_marker(parent, marker_path).set_state(enabled);
 	}
 
-	static log::marker&
+	log::marker&
 	get_marker(const std::vector<std::string> &marker_path)
 	{
 		return const_cast< log::marker& >( log::marker::marker_impl::get_marker_internal(root_marker(), marker_path ) );
 	}
 
-	static log::marker&
+	log::marker&
 	get_marker(const std::vector<std::string> &marker_path, bool enabled)
 	{
 		return get_marker(root_marker(), marker_path).set_state(enabled);
 	}
 
-	static bool
+	bool
 	update_marker_states(const any& root);
 
-	static void
+	void
 	save_marker_states(any& root);
 	
-	static void
-	init( const std::string &name );
-	
-	static void
-	cleanup( const std::string &name );
-	
-	inline static void
-	set_rlog( const nodeoze::uri &resource )
-	{
-		m_rlog = resource;
-	}
-
-	inline static level_t
-	level()
-	{
-		return m_level;
-	}
-
-	static void
-	set_level( level_t l );
-	
-	inline static double
-	throttle()
-	{
-		return m_limiter.rate();
-	}
-	
-	inline static void
-	set_throttle( double val )
-	{
-		m_limiter.set_rate( val );
-	}
 	
 	template< typename ...Params >
-	static void
+	void
 	put( level_t l, const char *filename, const char *function, int line, const char *format, const Params &... params )
 	{
 		std::ostringstream os;
 		
-		os << getpid() << " " << std::to_string( std::chrono::system_clock::now() ) << " " << prune_filename( filename ) << ":" << line << " " << prune_function( function ) << " ";
+//		os << getpid() << " " << std::to_string( std::chrono::system_clock::now() ) << " " << prune_filename( filename ) << ":" << line << " " << prune_function( function ) << " ";
 			
 		nodeoze::printf( os, format, params... );
 		
-		put( l, os );
+		put( l, filename, function, line, os );
 	}
 	
-	static void
-	put( level_t l, std::ostringstream &os );
+	void
+	put( level_t l, const std::string &filename, const std::string &function, std::uint32_t line, std::ostringstream &os );
 	
+#if 0
 	template< typename ...Params >
-	static void
+	void
 	put( const char *filename, const char *function, int line, const char *format, const Params &... params )
 	{
 		std::ostringstream os;
@@ -436,65 +455,23 @@ public:
 		
 		put( os );
 	}
+#endif
 	
-	static void
-	put( std::ostringstream &os );
-	
-	static inline void
-	add_sink( const std::string &name, sink_f sink )
+	inline void
+	add_sink( std::shared_ptr< sink > s )
 	{
-		sinks()[ name ] = std::make_pair( true, sink );
-	}
-	
-	static inline void
-	remove_sink( const std::string &name )
-	{
-		auto it = sinks().find( name );
-		
-		if ( it != sinks().end() )
-		{
-			sinks().erase( it );
-		}
+		sinks().emplace_back( s );
 	}
 	
 protected:
 
-	static std::map< std::string, std::pair< bool, sink_f > >&
-	sinks()
-	{
-		static auto global = new std::map< std::string, std::pair< bool, sink_f > >();
-		return *global;
-	}
-	
-	static int
-	getpid();
+	typedef std::vector< std::shared_ptr< sink > > sinks_type;
 
-	static void
-	init_limiter();
-	
-	static void
-	put_system_log( level_t l, const std::string &message );
-	
-	static void
-	put_console_log( const std::string &message );
-	
-	static std::string
-	make_pretty( level_t l, const std::string &message );
+	ndefine_global_static( sinks, sinks_type );
 
-	static std::string
-	prune_filename( const char *filename );
-
-	static std::string
-	prune_function( const char *filename );
-	
-	static void
-	invoke_sinks( level_t level, const std::string &message );
-	
-	static limiter												m_limiter;
-	static level_t												m_level;
-	static std::recursive_mutex									*m_mutex;
-	static std::string											m_name;
-	static nodeoze::uri											m_rlog;
+	level_t					m_level;
+	std::recursive_mutex	m_mutex;
+	std::string				m_name;
 };
 
 }
@@ -522,7 +499,6 @@ operator<<( ostream &os, const vector< string > &strings )
 	
 	return os << " }";
 }
-
 
 inline ostream&
 operator<<( ostream &os, const unordered_set< string > &strings )
@@ -569,6 +545,52 @@ operator<<( ostream &os, const set< string > &strings )
 	return os << " }";
 }
 
+
+}
+
+inline std::ostream&
+operator<<( std::ostream &os, nodeoze::log::level_t l )
+{
+	switch ( l )
+	{
+		case nodeoze::log::level_t::info:
+		{
+			os << std::setw( 10 ) << "INFO";
+		}
+		break;
+				
+		case nodeoze::log::level_t::warning:
+		{
+			os << std::setw( 10 ) << "WARNING";
+		}
+		break;
+				
+		case nodeoze::log::level_t::error:
+		{
+			os << std::setw( 10 ) << "ERROR";
+		}
+		break;
+				
+		case nodeoze::log::level_t::verbose:
+		{
+			os << std::setw( 10 ) << "VERBOSE";
+		}
+		break;
+				
+		case nodeoze::log::level_t::voluminous:
+		{
+			os << std::setw( 10 ) << "VOLUMINOUS";
+		}
+		break;
+				
+		case nodeoze::log::level_t::debug:
+		{
+			os << std::setw( 10 ) << "DEBUG";
+		}
+		break;
+	}
+	
+	return os;
 }
 
 #endif

@@ -445,17 +445,21 @@ public:
 		}
 	}
 	
-	inline void
+	inline std::error_code
 	rotate( sizetype to, sizetype from, sizetype end )
 	{
+		auto err = std::error_code();
+
 		if ( ( to < m_size ) && ( from < m_size ) && ( end <= m_size ) )
 		{
 			std::memmove( m_data + to, m_data + from, end - from );
 		}
 		else
 		{
-			nlog( log::level_t::error, "unable to rotate buffer" );
+			err = make_error_code( std::errc::invalid_argument );
 		}
+
+		return err;
 	}
 
 	inline sizetype

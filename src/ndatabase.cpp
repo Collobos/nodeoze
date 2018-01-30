@@ -1,24 +1,1570 @@
 #include <nodeoze/ndatabase.h>
 #include <nodeoze/nrunloop.h>
+#include <nodeoze/nbitmap.h>
 #include <nodeoze/ntest.h>
+#include <sqlite3.h>
+
+#if defined( __APPLE__ )
+#	include <sys/types.h>
+#	include <sys/stat.h>
+#endif
 
 using namespace nodeoze;
 
-namespace nodeoze {
+class init
+{
+public:
 
-namespace database {
+	init()
+	{
+		sqlite3_config( SQLITE_CONFIG_LOG, []( void *p_arg, int code, const char *msg )
+		{
+			nunused( p_arg );
+	
+			if ( code != SQLITE_SCHEMA )
+			{
+				mlog( marker::database, log::level_t::error, "sqlite error %, msg: %", code, msg );
+			}
+		} , nullptr );
+	}
+} g_init;
 
-statement::~statement()
+#if defined( __APPLE__ )
+#	pragma mark nodeoze::database implementation
+#endif
+
+database::database()
+:
+	m_db( nullptr ),
+	m_last_oid( 0 )
 {
 }
 
 
-manager::~manager()
+database::database( const std::string &name )
+:
+	m_db( nullptr ),
+	m_last_oid( 0 )
 {
+	open( name );
 }
 
 
-class category : public std::error_category
+database::~database()
+{
+	mlog( marker::database, log::level_t::info, "closing db" );
+
+	close();
+}
+
+
+std::error_code
+database::open( const std::string &name )
+{
+	if ( !name.empty() )
+	{
+		mlog( marker::database, log::level_t::info, "opening %", name.c_str() );
+		
+		m_prepared_statement_map.clear();
+		
+		for ( auto &stmt : m_prepared_statements )
+		{
+			stmt.finalize();
+		}
+		
+#if defined( UNICODE )
+		m_err = make_error_code( static_cast< errc >( sqlite3_open16( widen( name ).c_str(), &m_db ) ) );
+#else
+		m_err = make_error_code( static_cast< errc >( sqlite3_open( name.c_str(), &m_db ) ) );
+#endif
+
+		if ( !m_err )
+		{
+			if ( name != ":memory:" )
+			{
+#if defined( __APPLE__ )
+				chmod( name.c_str(), 0666 );
+#endif
+			}
+
+			sqlite3_preupdate_hook( m_db, on_preupdate, this );
+			exec( "PRAGMA foreign_keys = ON;" );
+		}
+	}
+	
+	return m_err;
+}
+
+
+bool
+database::is_open() const
+{
+	return ( m_db != nullptr ) ? true : false;
+}
+
+
+std::error_code
+database::close()
+{
+	m_err = std::error_code();
+
+	mlog( marker::database, log::level_t::info, "closing db" );
+	
+	for ( auto stmt : m_prepared_statements )
+	{
+		stmt.finalize();
+	}
+	
+	m_prepared_statements.clear();
+
+	remove_all_listeners( "insert" );
+	remove_all_listeners( "update" );
+	remove_all_listeners( "delete" );
+	
+	if ( m_db )
+	{
+		auto err = sqlite3_close( m_db );
+
+		if ( err == SQLITE_OK )
+		{
+			m_db = nullptr;
+		}
+		else
+		{
+			m_err = make_error_code( static_cast< database::errc >( err ) );
+		}
+	}
+	
+	return m_err;
+}
+
+
+std::error_code
+database::exec( const std::string &str )
+{
+	char		*error	= nullptr;
+	
+	mlog( marker::database, log::level_t::info, "m_db = %, %", m_db, str );
+
+	int err = sqlite3_exec( m_db, str.c_str(), nullptr, nullptr, &error );
+	
+	mlog( marker::database, log::level_t::info, "exec result code = %(%)", err, sqlite3_errstr( err ) );
+	
+	if ( err )
+	{
+		nlog( log::level_t::error, "sqlite3_exec() failed: %, %", err, error );
+		nlog( log::level_t::error, "exec string: %", str );
+		m_err = make_error_code( static_cast< database::errc >( err ) );
+	}
+	else
+	{
+		m_err = make_error_code( database::errc::ok );
+	}
+	
+	if ( error )
+	{
+		sqlite3_free( error );
+	}
+
+	return m_err;
+}
+
+
+database::statement
+database::select( const std::string &str )
+{
+	mlog( marker::database, log::level_t::info, "%", str );
+
+	sqlite3_stmt *stmt;
+
+	auto err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
+
+	return ( !err ) ? statement( stmt ) : statement( err );
+}
+
+
+scoped_operation
+database::continuous_select( const std::string &columns, const std::string &table, const std::string &where, continuous_select_handler_f handler )
+{
+	struct context_s
+	{
+		listener_id_type	insert;
+		listener_id_type	update;
+		listener_id_type	remove;
+		bitmap				bitmap;
+	};
+
+	auto os			= std::ostringstream();
+	auto operation	= scoped_operation();
+	auto context 	= std::make_shared< context_s >();
+	auto check_stmt	= static_cast< sqlite3_stmt* >( nullptr );
+	auto checker	= []( sqlite3_stmt *check_stmt, auto oid ) mutable
+	{
+		sqlite3_reset( check_stmt );
+
+		auto err = make_error_code( static_cast< errc >( sqlite3_bind_int64( check_stmt, 1, oid ) ) );
+
+		if ( err == errc::ok )
+		{
+			err = make_error_code( static_cast< errc >( sqlite3_step( check_stmt ) ) );
+		}
+
+		return err;
+	};
+
+	os << "SELECT " << columns << " FROM " << table << " " << where << ";";
+
+	auto stmt = select( os.str() );
+	
+	while ( stmt.step() )
+	{
+		auto oid = stmt.int64_at_column( 0 );
+
+		handler( action_type::insert, oid, stmt );
+		context->bitmap.set_bit( oid );
+	}
+	
+	os.clear();
+	os.str( "" );
+	
+	if ( where.empty() )
+	{
+		os << "SELECT " << columns << " FROM " << table << " WHERE oid = ?";
+	}
+	else
+	{
+		os << "SELECT " << columns << " FROM " << table << " " << where << " AND oid = ?";
+	}
+	
+	auto err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, os.str().c_str(), -1, &check_stmt, nullptr ) ) );
+	ncheck_error( !err, exit, "sqlite3_prepare_v2() failed (%)", err );
+	
+	context->insert = on( "insert", [=]( std::string target, std::int64_t oid, statement /* stmt */ ) mutable
+	{
+		if ( table == target )
+		{
+			runloop::shared().dispatch( [=]() mutable
+			{
+				auto action = action_type::insert;
+				auto stmt	= statement( check_stmt, false );
+				auto err	= checker( check_stmt, oid );
+
+				if ( err == errc::row )
+				{
+					assert( !context->bitmap.is_bit_set( oid ) );
+					context->bitmap.set_bit( oid );
+								
+					handler( action, oid, stmt );
+				}
+				else if ( ( err == errc::done ) && context->bitmap.is_bit_set( oid ) )
+				{
+					context->bitmap.clear_bit( oid );
+					handler( action_type::remove, oid, stmt );
+				}
+			} );
+		}
+	} );
+
+	context->update = on( "update", [=]( std::string target, std::int64_t oid, statement before, statement after ) mutable
+	{
+		nunused( before );
+		nunused( after );
+
+		if ( table == target )
+		{
+			runloop::shared().dispatch( [=]() mutable
+			{
+				auto action = action_type::update;
+				auto stmt	= statement( check_stmt, false );
+				auto err	= checker( check_stmt, oid );
+
+				if ( err == errc::row )
+				{
+					if ( !context->bitmap.is_bit_set( oid ) )
+					{
+						context->bitmap.set_bit( oid );
+						action = action_type::insert;
+					}
+									
+					handler( action, oid, stmt );
+				}
+				else if ( err == errc::done )
+				{
+					if ( context->bitmap.is_bit_set( oid ) )
+					{
+						context->bitmap.clear_bit( oid );
+						handler( action_type::remove, oid, stmt );
+					}
+				}
+			} );
+		}
+	} );
+
+	context->remove = on( "delete", [=]( std::string target, std::int64_t oid, statement /* stmt */ ) mutable
+	{
+		if ( table == target )
+		{
+			runloop::shared().dispatch( [=]() mutable
+			{
+				if ( context->bitmap.is_bit_set( oid ) )
+				{
+					auto stmt = statement( check_stmt, false );
+
+					context->bitmap.clear_bit( oid );
+					handler( action_type::remove, oid, stmt );
+				}
+			} );
+		}
+	} );
+
+#if 0
+		nunused( before );
+		nunused( after );
+	
+		runloop::shared().dispatch( [=]() mutable
+		{
+			auto stmt = statement( check_stmt, false );
+
+			switch ( action )
+			{
+				case action_type::insert:
+				case action_type::update:
+				{
+					sqlite3_reset( check_stmt );
+					err = sqlite3_bind_int64( check_stmt, 1, oid );
+					ncheck_error( err == SQLITE_OK, exit, "sqlite3_bind_int64() failed (%)", err );
+					err = sqlite3_step( check_stmt );
+					ncheck_error( ( err == SQLITE_ROW ) || ( err == SQLITE_DONE ), exit, "sqlite3_step() failed (%)", err );
+					
+					if ( err == SQLITE_ROW )
+					{
+						if ( action == action_type::insert )
+						{
+							assert( !context->bitmap.is_bit_set( oid ) );
+							context->bitmap.set_bit( oid );
+						}
+						else if ( !context->bitmap.is_bit_set( oid ) )
+						{
+							context->bitmap.set_bit( oid );
+							action = action_type::insert;
+						}
+						
+						handler( action, oid, stmt );
+					}
+					else if ( context->bitmap.is_bit_set( oid ) )
+					{
+						context->bitmap.clear_bit( oid );
+						handler( action_type::remove, oid, stmt );
+					}
+				}
+				break;
+				
+				case action_type::remove:
+				{
+					if ( context->bitmap.is_bit_set( oid ) )
+					{
+						context->bitmap.clear_bit( oid );
+						handler( action, oid, stmt );
+					}
+				}
+				break;
+			}
+
+		exit:
+
+			return;
+ 		} );
+	} );
+#endif
+
+exit:
+	
+	return scoped_operation::create( [=]( void *v ) mutable
+	{
+		nunused( v );
+
+		remove_listener( "insert", context->insert );
+		remove_listener( "update", context->update );
+		remove_listener( "delete", context->remove );
+	
+		if ( check_stmt != nullptr )
+		{
+			sqlite3_finalize( check_stmt );
+			check_stmt = nullptr;
+		}
+
+	} );
+}
+
+
+database::statement
+database::prepare( const std::string &str )
+{
+	mlog( marker::database, log::level_t::info, "%", str );
+
+	sqlite3_stmt	*stmt;
+	statement		ret;
+	
+	m_err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
+
+	if ( !m_err )
+	{
+		ret = statement( stmt );
+		m_prepared_statements.push_back( ret );
+	}
+	else
+	{
+		ret = statement( m_err );
+	}
+	
+	return ret;
+}
+
+
+std::error_code
+database::prepare( const std::string &str, std::function< std::error_code ( statement &stmt ) > func )
+{
+	mlog( marker::database, log::level_t::info, "%", str );
+	
+	auto err	= std::error_code();
+	auto it		= m_prepared_statement_map.find( str );
+	
+	if ( it == m_prepared_statement_map.end() )
+	{
+		sqlite3_stmt *stmt;
+
+		err = make_error_code( static_cast< database::errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
+		ncheck_error_quiet( !err, exit );
+
+		m_prepared_statement_map.emplace( std::piecewise_construct, std::forward_as_tuple( str ), std::forward_as_tuple( stmt ) );
+		it = m_prepared_statement_map.find( str );
+	}
+	
+	err = func( it->second );
+	
+	it->second.reset_prepared();
+	
+exit:
+	
+	return err;
+}
+
+
+std::error_code
+database::start_transaction()
+{
+	return exec( "BEGIN TRANSACTION;" );
+}
+	
+
+std::error_code
+database::end_transaction()
+{
+	return exec( "COMMIT;" );
+}
+
+	
+std::error_code
+database::cancel_transaction()
+{
+	return exec( "ROLLBACK;" );
+}
+
+
+std::uint32_t
+database::version() const
+{
+	static sqlite3_stmt	*stmt;
+	std::uint32_t		version = 0;
+
+	if ( sqlite3_prepare_v2( m_db, "PRAGMA user_version;", -1, &stmt, nullptr ) == SQLITE_OK )
+	{
+		while ( sqlite3_step( stmt ) == SQLITE_ROW )
+		{
+			version = sqlite3_column_int( stmt, 0 );
+        }
+
+		sqlite3_finalize( stmt );
+	}
+
+	return version;
+}
+
+
+void
+database::set_version( std::uint32_t version )
+{
+	char				*error = nullptr;
+	std::ostringstream	os;
+
+	os << "PRAGMA user_version = " << version << ";";
+
+	int ret = sqlite3_exec( m_db, os.str().c_str(), 0, 0, &error );
+	
+	if ( ret )
+	{
+		nlog( log::level_t::error, "sqlite3_exec() failed: %, %", ret, error );
+	}
+}
+
+
+std::error_code
+database::backup( const std::string &dest, backup_hook_f hook )
+{
+	sqlite3_backup	*backup		= nullptr;
+	sqlite3			*dest_db	= nullptr;
+	auto			ret			= std::error_code();
+
+	ret = make_error_code( static_cast< errc >( sqlite3_open( dest.c_str(), &dest_db ) ) );
+
+	if ( ret )
+	{
+		goto exit;
+	}
+
+	if ( hook )
+	{
+		std::string s = hook();
+
+		char *error = nullptr;
+	
+		ret = make_error_code( static_cast< errc >( sqlite3_exec( dest_db, s.c_str(), 0, 0, &error ) ) );
+	
+		if ( ret )
+		{
+			goto exit;
+		}
+	}
+
+	backup = sqlite3_backup_init( dest_db, "main", m_db, "main" );
+
+	if ( !backup )
+	{
+		ret = make_error_code( static_cast< errc >( sqlite3_errcode( dest_db ) ) );
+		goto exit;
+    }
+
+	sqlite3_backup_step( backup, -1 );
+
+exit:
+
+	if ( backup )
+	{
+		sqlite3_backup_finish( backup );
+	}
+
+	if ( dest_db )
+	{
+		sqlite3_close( dest_db );
+	}
+
+	return ret;
+}
+
+
+std::error_code
+database::restore( const std::string &from, restore_hook_f hook )
+{
+	nunused( from );
+	
+	std::string filename;
+	auto		raw	= sqlite3_db_filename( m_db, "main" );
+	auto		ret	= std::error_code();
+
+	if ( !raw )
+	{
+		ret = make_error_code( std::errc::invalid_argument );
+		goto exit;
+	}
+
+	filename = raw;
+
+	ret = make_error_code( static_cast< errc >( sqlite3_close( m_db ) ) );
+
+	if ( ret )
+	{
+		goto exit;
+	}
+
+	ret = make_error_code( static_cast< errc >( sqlite3_open( filename.c_str(), &m_db ) ) );
+
+	if ( ret )
+	{
+		goto exit;
+	}
+
+	if ( hook )
+	{
+		std::string s = hook();
+
+		char *error = nullptr;
+	
+		ret = make_error_code( static_cast< errc >( sqlite3_exec( m_db, s.c_str(), 0, 0, &error ) ) );
+	
+		if ( ret )
+		{
+			goto exit;
+		}
+	}
+
+exit:
+
+	return ret;
+}
+
+
+std::error_code
+database::backup_database( const nodeoze::path& backup_path, const std::vector<std::string>& statements, std::size_t step_size, int sleep_ms, std::atomic<bool>& exiting )
+{
+	auto ret = std::error_code();
+	
+	sqlite3* backup_db;
+	sqlite3_backup* backup_info;
+	
+	ret = make_error_code( static_cast< errc >( sqlite3_open( backup_path.to_string().c_str(), &backup_db ) ) );
+	
+	ncheck_error_quiet( !ret, exit );
+
+	for ( auto statement : statements )
+	{
+		char *error	= nullptr;
+		
+		ret = make_error_code( static_cast< errc >( sqlite3_exec( backup_db, statement.c_str(), nullptr, nullptr, &error ) ) );
+
+		if ( ret )
+		{
+			if ( error )
+			{
+				nlog( log::level_t::error, "error %(%) in backup file exec [ % ] ", ret, error, statement );
+				sqlite3_free( error );
+			}
+			else
+			{
+				nlog( log::level_t::error, "error % in backup file exec [ % ] ", ret, statement );
+			}
+			
+			goto close_backup;
+		}
+	}
+
+	backup_info = sqlite3_backup_init( backup_db, "main", m_db, "main" );
+
+	ncheck_error_action( backup_info, ret = make_error_code( std::errc::invalid_argument ), close_backup, "error initializing backup" );
+	
+	do
+	{
+		ret = make_error_code( static_cast< errc >( sqlite3_backup_step(backup_info, static_cast< int >( step_size ) ) ) );
+		
+		if ( !ret || ( ret.value() == SQLITE_BUSY ) || ( ret.value() == SQLITE_LOCKED ) )
+		{
+			if ( ! exiting )
+			{
+				sqlite3_sleep( sleep_ms );
+			}
+		}
+	}
+	while( !ret || ( ret.value() == SQLITE_BUSY ) || ( ret.value() == SQLITE_LOCKED ) );
+	
+	if ( ret.value() == SQLITE_DONE )
+	{
+		ret = std::error_code();
+	}
+	else
+	{
+		mlog( marker::database, log::level_t::error, "backup did not complete: % (%)", ret, ret.message() );
+	}
+
+	ret = make_error_code( static_cast< errc >( sqlite3_backup_finish( backup_info ) ) );
+	
+	if ( !ret )
+	{
+		mlog( marker::database, log::level_t::error, "backup finish result code % (%)", ret, ret.message() );
+	}
+	
+close_backup:
+
+	ret = make_error_code( static_cast< errc >( sqlite3_close( backup_db ) ) );
+	
+	if ( !ret )
+	{
+		mlog( marker::database, log::level_t::error, "backup finish result code % (%)", ret, ret.message() );
+	}
+	
+exit:
+
+	return ret;
+}
+
+
+oid_t
+database::last_oid() const
+{
+	return m_last_oid;
+}
+
+
+void
+database::on_preupdate( void *v, sqlite3 *db, int op, char const *z_db, char const *z_name, std::int64_t key1, std::int64_t key2 )
+{
+	nunused( z_name );
+
+	database *self = reinterpret_cast< database* >( v );
+
+	if ( std::strcmp( z_db, "main" ) == 0 )
+	{
+		statement	before( db, sqlite3_preupdate_old );
+		statement	after( db, sqlite3_preupdate_new );
+		std::string db( z_name );
+
+		switch ( op )
+		{
+			case SQLITE_INSERT:
+			{
+				self->emit( "insert", db, key2, after );
+			}
+			break;
+			
+			case SQLITE_UPDATE:
+			{
+				self->emit( "update", db, key2, before, after );
+			}
+			break;
+			
+			case SQLITE_DELETE:
+			{
+				self->emit( "delete", db, key1, before );
+			}
+			break;
+		}
+		
+		self->m_last_oid = key2;
+	}
+}
+
+std::string
+database::sanitize( const std::string &str )
+{
+	std::string output;
+
+	for ( std::string::const_iterator it = str.begin(); it != str.end(); it++ )
+    {
+		if ( *it == '\'' )
+		{
+			output += "''";
+		}
+		else
+		{
+			output += *it;
+		}
+    }
+
+    return output;
+}
+
+
+std::error_code
+database::last_error()
+{
+	return m_err;
+}
+
+void
+database::clear_error()
+{
+	m_err = make_error_code( database::errc::ok );
+}
+
+
+#if defined( __APPLE__ )
+#	pragma mark database::statement implementation
+#endif
+
+database::statement::statement( sqlite3_stmt *stmt, bool finalize )
+:
+	m_shared( new shared )
+{
+	m_shared->stmt		= stmt;
+	m_shared->finalize	= finalize;
+	m_shared->db		= nullptr;
+	m_shared->getter	= nullptr;
+	m_shared->refs		= 1;
+}
+	
+
+database::statement::statement( sqlite3 * db, preupdate_getter_type getter )
+:
+	m_shared( new shared )
+{
+	m_shared->stmt		= nullptr;
+	m_shared->finalize	= false;
+	m_shared->db		= db;
+	m_shared->getter	= getter;
+	m_shared->refs		= 1;
+}
+
+
+database::statement::statement( std::error_code err )
+:
+	m_shared( new shared )
+{
+	m_shared->stmt		= nullptr;
+	m_shared->finalize	= false;
+	m_shared->db		= nullptr;
+	m_shared->getter	= nullptr;
+	m_shared->err		= err;
+	m_shared->refs		= 1;
+}
+
+#if 0
+database::statement::~statement()
+{
+	unshared();
+
+	//if ( m_stmt && m_finalize )
+	{
+	//	finalize();
+	}
+}
+#endif
+
+	
+void
+database::statement::finalize()
+{
+	if ( m_shared->stmt )
+	{
+		sqlite3_finalize( m_shared->stmt );
+		m_shared->stmt = nullptr;
+	}
+}
+
+
+std::error_code
+database::statement::last_error() const
+{
+	auto err = m_shared->err;;
+		
+	if ( err )
+	{
+		const_cast< statement* >( this )->reset_prepared();
+	}
+		
+	return err;
+}
+	
+
+bool
+database::statement::step()
+{
+	bool ok = true;
+
+	if ( !m_shared->stmt )
+	{
+		m_shared->err = make_error_code( database::errc::internal_error );
+		ok = false;
+	}
+	else
+	{
+		auto err = make_error_code( static_cast< errc >( sqlite3_step( m_shared->stmt ) ) );
+			
+		if ( err == errc::row )
+		{
+			m_shared->err = make_error_code( errc::ok );
+			ok = true;
+		}
+		else if ( err == errc::ok || err == errc::done )
+		{
+			m_shared->err = make_error_code( errc::ok );
+			ok = false;
+		}
+		else
+		{
+			m_shared->err = err;
+			ok = false;
+		}
+	}
+
+	return ok;
+}
+
+	
+std::error_code
+database::statement::reset_prepared()
+{
+	if ( m_shared->stmt )
+	{
+		sqlite3_reset( m_shared->stmt );
+		sqlite3_clear_bindings( m_shared->stmt );
+		m_shared->err = make_error_code( database::errc::ok );
+	}
+	else
+	{
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+		
+	return m_shared->err;
+}
+	
+
+/*
+ * exec_prepared should be used on prepared statments that return no data--more specifically, 
+ * on update or insert statements. The expected result is, in general, SQLITE_DONE, although
+ * SQLITE_OK and SQLITE_ROW are not considered errors. After stepping, the statement is unconditionally
+ * reset and bindings are cleared.
+ *
+ */
+std::error_code
+database::statement::exec_prepared()
+{
+	if ( m_shared->stmt )
+	{
+		auto result = SQLITE_OK;
+		auto count	= 0;
+
+		do
+		{
+			result = sqlite3_step( m_shared->stmt );
+		}
+		while ( ( result == SQLITE_SCHEMA ) && ( ++count < 10 ) );
+
+		sqlite3_reset( m_shared->stmt );
+		sqlite3_clear_bindings( m_shared->stmt );
+
+		if ( result == SQLITE_DONE || result == SQLITE_OK || result == SQLITE_ROW )
+		{
+			m_shared->err = make_error_code( database::errc::ok );
+		}
+		else
+		{
+			m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+		}
+	}
+	else
+	{
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+
+	return m_shared->err;
+}
+
+
+bool
+database::statement::bool_at_column( int col ) const
+{
+	auto ret = false;
+
+	if ( m_shared->stmt )
+	{
+		ret = sqlite3_column_int( m_shared->stmt, col ) ? true : false;
+	}
+	else if ( m_shared->getter )
+	{
+		sqlite3_value *v;
+		m_shared->getter( m_shared->db, col, &v );
+		ret = sqlite3_value_int( v ) ? true : false;
+	}
+
+	return ret;
+}
+
+
+int
+database::statement::int_at_column( int col ) const
+{
+	int ret = 0;
+
+	if ( m_shared->stmt )
+	{
+		ret = static_cast< int >( sqlite3_column_int( m_shared->stmt, col ) );
+	}
+	else if ( m_shared->getter )
+	{
+		sqlite3_value *v;
+		m_shared->getter( m_shared->db, col, &v );
+		ret = static_cast< int >( sqlite3_value_int( v ) );
+	}
+
+	return ret;
+}
+
+
+std::int64_t
+database::statement::int64_at_column( int col ) const
+{
+	std::int64_t ret = 0;
+
+	if ( m_shared->stmt )
+	{
+		ret = static_cast< std::int64_t >( sqlite3_column_int64( m_shared->stmt, col ) );
+	}
+	else if ( m_shared->getter )
+	{
+		sqlite3_value *v;
+		m_shared->getter( m_shared->db, col, &v );
+		ret = static_cast< std::int64_t >( sqlite3_value_int64( v ) );
+	}
+
+	return ret;
+}
+
+
+std::uint64_t
+database::statement::uint64_at_column( int col ) const
+{
+	std::uint64_t ret = 0;
+
+	if ( m_shared->stmt )
+	{
+		ret = static_cast< std::uint64_t >( sqlite3_column_int64( m_shared->stmt, col ) );
+	}
+	else if ( m_shared->getter )
+	{
+		sqlite3_value *v;
+		m_shared->getter( m_shared->db, col, &v );
+		ret = static_cast< std::uint64_t >( sqlite3_value_int64( v ) );
+	}
+
+	return ret;
+}
+
+
+std::chrono::system_clock::time_point
+database::statement::time_at_column( int col ) const
+{
+	std::chrono::system_clock::time_point ret;
+
+	if ( m_shared->stmt )
+	{
+		ret = std::chrono::system_clock::from_time_t( static_cast< std::time_t >( sqlite3_column_int64( m_shared->stmt, col ) ) );
+	}
+	else if ( m_shared->getter )
+	{
+		sqlite3_value *v;
+		m_shared->getter( m_shared->db, col, &v );
+		ret = std::chrono::system_clock::from_time_t( static_cast< std::time_t >( sqlite3_value_int64( v ) ) );
+	}
+
+	return ret;
+}
+
+
+std::string
+database::statement::text_at_column( int col ) const
+{
+	std::string ret;
+
+	if ( m_shared->stmt )
+	{
+		auto text = reinterpret_cast< const char* >( sqlite3_column_text( m_shared->stmt, col ) );
+		ret = ( text ) ? text : std::string();
+	}
+	else if ( m_shared->getter )
+	{
+		sqlite3_value *v;
+		m_shared->getter( m_shared->db, col, &v );
+		auto text = reinterpret_cast< const char* >( sqlite3_value_text( v ) );
+		ret = ( text ) ? text : std::string();
+	}
+
+	return ret;
+}
+
+
+buffer
+database::statement::blob_at_column( int col ) const
+{
+	buffer ret;
+
+	if ( m_shared->stmt )
+	{
+		auto blob = sqlite3_column_blob( m_shared->stmt, col );
+
+		if ( blob )
+		{
+			std::size_t bytes = sqlite3_column_bytes( m_shared->stmt, col );
+			ret = buffer( blob, bytes );
+		}
+	}
+	else if ( m_shared->getter )
+	{
+		sqlite3_value *v;
+
+		m_shared->getter( m_shared->db, col, &v );
+	
+		auto blob = sqlite3_value_blob( v );
+
+		if ( blob )
+		{
+			auto nbytes = sqlite3_value_bytes( v );
+			return buffer( blob, nbytes );
+		}
+		else
+		{
+			return buffer();
+		}
+	}
+
+	return ret;
+}
+
+
+bool
+database::statement::set_bool( bool value, const std::string& var_name )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+	
+	if ( m_shared->stmt )
+	{
+		auto index = sqlite3_bind_parameter_index( m_shared->stmt, var_name.c_str() );
+		if ( index < 1 )
+		{
+			ok = false;
+			m_shared->err = make_error_code( std::errc::invalid_argument );
+		}
+		else
+		{
+			auto result = sqlite3_bind_int( m_shared->stmt, index, value ? 1 : 0 );
+			if ( result != SQLITE_OK )
+			{
+				ok = false;
+				m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+			}
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_bool( bool value, int var_index )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto result = sqlite3_bind_int( m_shared->stmt, var_index, value ? 1 : 0 );
+		if ( result != SQLITE_OK )
+		{
+			ok = false;
+			m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_int( int value, const std::string& var_name )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto index = sqlite3_bind_parameter_index( m_shared->stmt, var_name.c_str() );
+		if ( index < 1 )
+		{
+			ok = false;
+			m_shared->err = make_error_code( std::errc::invalid_argument );
+		}
+		else
+		{
+			auto result = sqlite3_bind_int( m_shared->stmt, index, value );
+			if ( result != SQLITE_OK )
+			{
+				ok = false;
+				m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+			}
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_int( int value, int var_index )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto result = sqlite3_bind_int( m_shared->stmt, var_index, value );
+		if ( result != SQLITE_OK )
+		{
+			ok = false;
+			m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_int64( std::int64_t value, const std::string& var_name )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto index = sqlite3_bind_parameter_index( m_shared->stmt, var_name.c_str() );
+		if ( index < 1 )
+		{
+			ok = false;
+			m_shared->err = make_error_code( std::errc::invalid_argument );
+		}
+		else
+		{
+			auto result = sqlite3_bind_int64( m_shared->stmt, index, value );
+			if ( result != SQLITE_OK )
+			{
+				ok = false;
+				m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+			}
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_int64( std::int64_t value, int var_index )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto result = sqlite3_bind_int64( m_shared->stmt, var_index, value );
+		if ( result != SQLITE_OK )
+		{
+			ok = false;
+			m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_uint64( std::uint64_t value, const std::string& var_name )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto index = sqlite3_bind_parameter_index( m_shared->stmt, var_name.c_str() );
+		if ( index < 1 )
+		{
+			ok = false;
+			m_shared->err = make_error_code( std::errc::invalid_argument );
+		}
+		else
+		{
+			auto result = sqlite3_bind_int64( m_shared->stmt, index, value );
+			if (  result != SQLITE_OK )
+			{
+				ok = false;
+				m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+			}
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_uint64( std::uint64_t value, int var_index )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+	
+	if ( m_shared->stmt )
+	{
+		auto result = sqlite3_bind_int64( m_shared->stmt, var_index, value );
+		
+		if ( result != SQLITE_OK )
+		{
+			ok = false;
+			m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_time( std::chrono::system_clock::time_point value, const std::string& var_name )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto index = sqlite3_bind_parameter_index( m_shared->stmt, var_name.c_str() );
+		
+		std::int64_t timeval = std::chrono::system_clock::to_time_t( value );
+		
+		if ( index < 1 )
+		{
+			ok = false;
+			m_shared->err = make_error_code( std::errc::invalid_argument );
+		}
+		else
+		{
+			auto result = sqlite3_bind_int64( m_shared->stmt, index, timeval );
+			if ( result != SQLITE_OK )
+			{
+				ok = false;
+				m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+			}
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_time( std::chrono::system_clock::time_point value, int var_index )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		std::int64_t timeval = std::chrono::system_clock::to_time_t( value );
+		auto result = sqlite3_bind_int64( m_shared->stmt, var_index, timeval );
+		if ( result != SQLITE_OK )
+		{
+			ok = false;
+			m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_text( const std::string& value, const std::string& var_name )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto index = sqlite3_bind_parameter_index( m_shared->stmt, var_name.c_str() );
+		if ( index < 1 )
+		{
+			ok = false;
+			m_shared->err = make_error_code( std::errc::invalid_argument );
+		}
+		else
+		{
+			auto result = sqlite3_bind_text( m_shared->stmt, index, value.c_str(), -1, SQLITE_TRANSIENT );
+			if ( result != SQLITE_OK )
+			{
+				ok = false;
+				m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+			}
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_text( const std::string& value, int var_index )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto result = sqlite3_bind_text( m_shared->stmt, var_index, value.c_str(), -1, SQLITE_TRANSIENT );
+		if ( result != SQLITE_OK )
+		{
+			ok = false;
+			m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_blob( nodeoze::buffer& value, const std::string& var_name )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		auto index = sqlite3_bind_parameter_index( m_shared->stmt, var_name.c_str() );
+		if ( index < 1 )
+		{
+			ok = false;
+			m_shared->err = make_error_code( std::errc::invalid_argument );
+		}
+		else
+		{
+			if ( value.size() < 1 )
+			{
+				auto result = sqlite3_bind_blob( m_shared->stmt, index, nullptr, 0, nullptr );
+				if ( result != SQLITE_OK )
+				{
+					ok = false;
+					m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+				}
+			}
+			else
+			{
+				auto bufsize = value.size();
+				auto bufptr = value.detach();
+				
+				auto result = sqlite3_bind_blob( m_shared->stmt, index, bufptr, static_cast<int>(bufsize), [] ( void * ptr )
+				{
+					delete static_cast< std::uint8_t * > ( ptr );
+				} );
+				
+				if ( result != SQLITE_OK )
+				{
+					ok = false;
+					m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+				}
+			}
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+bool
+database::statement::set_blob( nodeoze::buffer& value, int var_index )
+{
+	auto ok = true;
+	
+	m_shared->err = make_error_code( database::errc::ok );
+
+	if ( m_shared->stmt )
+	{
+		if ( value.size() < 1 )
+		{
+			auto result = sqlite3_bind_blob( m_shared->stmt, var_index, nullptr, 0, nullptr );
+			if ( result != SQLITE_OK )
+			{
+				ok = false;
+				m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+			}
+		}
+		else
+		{
+			auto bufsize = value.size();
+			auto bufptr = value.detach();
+				
+			auto result = sqlite3_bind_blob( m_shared->stmt, var_index, bufptr, static_cast<int>(bufsize), [] ( void * ptr )
+			{
+				delete static_cast< std::uint8_t * > ( ptr );
+			} );
+			
+			if ( result != SQLITE_OK )
+			{
+				ok = false;
+				m_shared->err = make_error_code( static_cast< database::errc >( result ) );
+			}
+		}
+	}
+	else
+	{
+		ok = false;
+		m_shared->err = make_error_code( database::errc::internal_error );
+	}
+	return ok;
+}
+
+
+class database_category : public std::error_category
 {
 public:
 
@@ -33,188 +1579,188 @@ public:
     {
 		std::ostringstream os;
 		
-		switch ( static_cast< code_t >( value ) )
+		switch ( static_cast< database::errc >( value ) )
         {
-			case code_t::ok:
+			case database::errc::ok:
 			{
 				os << "ok";
 			}
 			break;
 			
-			case code_t::error:
+			case database::errc::error:
 			{
 				os << "sql error or missing database";
 			}
 			break;
 			
-			case code_t::internal_error:
+			case database::errc::internal_error:
 			{
 				os << "internal logic error";
 			}
 			break;
 			
-			case code_t::permission_denied:
+			case database::errc::permission_denied:
 			{
 				os << "access permission denied";
 			}
 			break;
 			
-			case code_t::abort:
+			case database::errc::abort:
 			{
 				os << "callback routine requested an abort";
 			}
 			break;
 			
-			case code_t::busy:
+			case database::errc::busy:
 			{
 				os << "database file is locked";
 			}
 			break;
 			
-			case code_t::locked:
+			case database::errc::locked:
 			{
 				os << "a table in the database is locked";
 			}
 			break;
 			
-			case code_t::out_of_memory:
+			case database::errc::out_of_memory:
 			{
 				os << "malloc failed";
 			}
 			break;
 			
-			case code_t::read_only:
+			case database::errc::read_only:
 			{
 				os << "attempt to write a readonly database";
 			}
 			break;
 			
-			case code_t::interrupt:
+			case database::errc::interrupt:
 			{
 				os << "operation terminated by interrupt";
 			}
 			break;
 			
-			case code_t::io_error:
+			case database::errc::io_error:
 			{
 				os << "some kind of disk i/o error occurred";
 			}
 			break;
 			
-			case code_t::corrupt:
+			case database::errc::corrupt:
 			{
 				os << "the disk image is malformed";
 			}
 			break;
 			
-			case code_t::not_found:
+			case database::errc::not_found:
 			{
 				os << "unknown opcode";
 			}
 			break;
 			
-			case code_t::full:
+			case database::errc::full:
 			{
 				os << "insertion failed because database is full";
 			}
 			break;
 			
-			case code_t::cannot_open:
+			case database::errc::cannot_open:
 			{
 				os << "unable to open database file";
 			}
 			break;
 			
-			case code_t::protocol_error:
+			case database::errc::protocol_error:
 			{
 				os << "database lock protocol error";
 			}
 			break;
 			
-			case code_t::empty:
+			case database::errc::empty:
 			{
 				os << "database is empty";
 			}
 			break;
 			
-			case code_t::schema_changed:
+			case database::errc::schema_changed:
 			{
 				os << "database schema changed";
 			}
 			break;
 			
-			case code_t::too_big:
+			case database::errc::too_big:
 			{
 				os << "string or blob exceeds size limit";
 			}
 			break;
 			
-			case code_t::constraint_violation:
+			case database::errc::constraint_violation:
 			{
 				os << "abort due to constraint violation";
 			}
 			break;
 			
-			case code_t::mismatch:
+			case database::errc::mismatch:
 			{
 				os << "data type mismatch";
 			}
 			break;
 			
-			case code_t::misuse:
+			case database::errc::misuse:
 			{
 				os << "library used incorrectly";
 			}
 			
-			case code_t::no_lfs:
+			case database::errc::no_lfs:
 			{
 				os << "uses os features not supported on host";
 			}
 			break;
 			
-			case code_t::auth_denied:
+			case database::errc::auth_denied:
 			{
 				os << "authorization denied";
 			}
 			break;
 			
-			case code_t::format:
+			case database::errc::format:
 			{
 				os << "auxiliary database format error";
 			}
 			break;
 			
-			case code_t::range:
+			case database::errc::range:
 			{
 				os << "2nd parameter to bind out of range";
 			}
 			break;
 			
-			case code_t::not_a_db_file:
+			case database::errc::not_a_db_file:
 			{
 				os << "not a database file";
 			}
 			break;
 			
-			case code_t::notice:
+			case database::errc::notice:
 			{
 				os << "notifications from log";
 			}
 			break;
 			
-			case code_t::warning:
+			case database::errc::warning:
 			{
 				os << "warnings from log";
 			}
 			break;
 			
-			case code_t::row:
+			case database::errc::row:
 			{
 				os << "another row is ready";
 			}
 			break;
 			
-			case code_t::done:
+			case database::errc::done:
 			{
 				os << "finished executing";
 			}
@@ -226,47 +1772,27 @@ public:
 };
 
 const std::error_category&
-error_category()
+database::error_category()
 {
-	static class category instance;
+	static class database_category instance;
     return instance;
 }
 
-}
 
-}
-
-static void
-setup_database()
+TEST_CASE( "nodeoze/smoke/database" )
 {
-	static bool first = true;
-
-	if ( first )
-	{
-		database::manager::shared().open( ":memory:" );
-	
-		database::manager::shared().exec( "CREATE TABLE test(oid INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, count INTEGER);" );
-	}
-	else
-	{
-		database::manager::shared().exec( "DELETE FROM test;" );
-	}
-
-	database::manager::shared().exec( "INSERT into test VALUES( NULL, \"hello world\", 1 );" );
-}
-
-
-TEST_CASE( "nodeoze: database" )
-{
-	setup_database();
+	database db( ":memory:" );
+	db.exec( "CREATE TABLE test(oid INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, count INTEGER);" );
+	db.exec( "INSERT into test VALUES( NULL, \"hello world\", 1 );" );
 
 	SUBCASE( "select" )
 	{
-		auto stmt = database::manager::shared().select( "SELECT * FROM test WHERE count = 1;" );
-		CHECK( stmt->step() );
-		CHECK( stmt->int64_at_column( 0 ) == 1 );
-		CHECK( stmt->text_at_column( 1 ) == "hello world" );
-		CHECK( stmt->int_at_column( 2 ) == 1 );
+		auto stmt = db.select( "SELECT * FROM test WHERE count = 1;" );
+		CHECK( stmt );
+		CHECK( stmt.step() );
+		CHECK( stmt.int64_at_column( 0 ) == 1 );
+		CHECK( stmt.text_at_column( 1 ) == "hello world" );
+		CHECK( stmt.int_at_column( 2 ) == 1 );
 	}
 
 	SUBCASE( "simple continuous select" )
@@ -274,7 +1800,7 @@ TEST_CASE( "nodeoze: database" )
 		bool	got_callback = false;
 		int		check = 0;
 		
-		auto select = database::manager::shared().continuous_select( "*", "test", "WHERE count = 1", [&]( database::action_t action, oid_t oid, database::statement &stmt ) mutable
+		auto select = db.continuous_select( "*", "test", "WHERE count = 1", [&]( database::action_type action, oid_t oid, database::statement &stmt ) mutable
 		{
 			nunused( oid );
 			
@@ -284,7 +1810,7 @@ TEST_CASE( "nodeoze: database" )
 			{
 				case 0:
 				{
-					CHECK( action == database::action_t::insert );
+					CHECK( action == database::action_type::insert );
 					CHECK( stmt.int64_at_column( 0 ) == 1 );
 					CHECK( stmt.text_at_column( 1 ) == "hello world" );
 					CHECK( stmt.int_at_column( 2 ) == 1 );
@@ -293,7 +1819,7 @@ TEST_CASE( "nodeoze: database" )
 				
 				case 1:
 				{
-					CHECK( action == database::action_t::insert );
+					CHECK( action == database::action_type::insert );
 					CHECK( stmt.int64_at_column( 0 ) == 3 );
 					CHECK( stmt.text_at_column( 1 ) == "hello world 3" );
 					CHECK( stmt.int_at_column( 2 ) == 1 );
@@ -306,12 +1832,12 @@ TEST_CASE( "nodeoze: database" )
 		
 		check++;
 		got_callback = false;
-		
-		database::manager::shared().exec( "INSERT into test VALUES( NULL, \"hello world 2\", 2 );" );
+
+		db.exec( "INSERT into test VALUES( NULL, \"hello world 2\", 2 );" );
 		
 		CHECK( !got_callback );
 		
-		database::manager::shared().exec( "INSERT into test VALUES( NULL, \"hello world 3\", 1 );" );
+		db.exec( "INSERT into test VALUES( NULL, \"hello world 3\", 1 );" );
 		
 		runloop::shared().run( runloop::mode_t::nowait );
 		runloop::shared().run( runloop::mode_t::nowait );
@@ -320,6 +1846,13 @@ TEST_CASE( "nodeoze: database" )
 
 		select.reset();
 	}
+}
+
+TEST_CASE( "nodeoze/scalability/database" )
+{
+	database db( ":memory:" );
+	db.exec( "CREATE TABLE test(oid INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, count INTEGER);" );
+	db.exec( "INSERT into test VALUES( NULL, \"hello world\", 1 );" );
 
 	SUBCASE( "heavy continuous select" )
 	{
@@ -330,7 +1863,7 @@ TEST_CASE( "nodeoze: database" )
 
 		for ( auto i = 0; i < tries; i++ )
 		{
-			selects.emplace_back( database::manager::shared().continuous_select( "*", "test", "WHERE count = 1", [&]( database::action_t action, oid_t oid, database::statement &stmt ) mutable
+			selects.emplace_back( db.continuous_select( "*", "test", "WHERE count = 1", [&]( database::action_type action, oid_t oid, database::statement &stmt ) mutable
 			{
 				nunused( oid );
 				
@@ -340,7 +1873,7 @@ TEST_CASE( "nodeoze: database" )
 				{
 					case 0:
 					{
-						CHECK( action == database::action_t::insert );
+						CHECK( action == database::action_type::insert );
 						CHECK( stmt.int64_at_column( 0 ) == 1 );
 						CHECK( stmt.text_at_column( 1 ) == "hello world" );
 						CHECK( stmt.int_at_column( 2 ) == 1 );
@@ -349,7 +1882,7 @@ TEST_CASE( "nodeoze: database" )
 					
 					case 1:
 					{
-						CHECK( action == database::action_t::insert );
+						CHECK( action == database::action_type::insert );
 						CHECK( stmt.int64_at_column( 0 ) == 3 );
 						CHECK( stmt.text_at_column( 1 ) == "hello world 3" );
 						CHECK( stmt.int_at_column( 2 ) == 1 );
@@ -364,11 +1897,11 @@ TEST_CASE( "nodeoze: database" )
 		check++;
 		got_callback = 0;
 		
-		database::manager::shared().exec( "INSERT into test VALUES( NULL, \"hello world 2\", 2 );" );
+		db.exec( "INSERT into test VALUES( NULL, \"hello world 2\", 2 );" );
 		
 		CHECK( got_callback == 0 );
 		
-		database::manager::shared().exec( "INSERT into test VALUES( NULL, \"hello world 3\", 1 );" );
+		db.exec( "INSERT into test VALUES( NULL, \"hello world 3\", 1 );" );
 		
 		runloop::shared().run( runloop::mode_t::nowait );
 		runloop::shared().run( runloop::mode_t::nowait );

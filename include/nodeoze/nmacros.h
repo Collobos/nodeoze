@@ -27,8 +27,6 @@
 #ifndef	_nodeoze_macros_h
 #define	_nodeoze_macros_h
 
-#include <nodeoze/nlog.h>
-
 #define	ncheck_warning( X, MESSAGE, ... )								\
 do																		\
 {																		\

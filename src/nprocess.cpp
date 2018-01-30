@@ -1,4 +1,5 @@
 #include <nodeoze/nprocess.h>
+#include <nodeoze/nany.h>
 #include <nodeoze/nrunloop.h>
 #include <nodeoze/nbuffer.h>
 #include <nodeoze/nthread.h>
@@ -88,77 +89,77 @@ always_running_process::create( const nodeoze::path &exe, const std::vector< std
 }
 
 
-TEST_CASE( "nodeoze: process::create" )
+TEST_CASE( "nodeoze/smoke/process" )
 {
-	auto tid = thread::id();
-	CHECK( tid != 0 );
-	
-	auto file = path::tmp() + "test.js";
-	
-	auto os = std::ofstream( file.to_string() );
-	
-	os << "let envString = process.env.NODEOZE_TEST_STRING;" << std::endl;
-	os << "if ( envString === 'secret' )" << std::endl;
-	os << "{" << std::endl;
-	os << "process.stdin.on( 'data', ( message ) =>" << std::endl;
-	os << "{" << std::endl;
-	os << "process.stdout.write( message.toString() );" << std::endl;
-	os << "process.exit( 0 );" << std::endl;
-	os << "} );" << std::endl;
-	os << "}" << std::endl;
-	os << "else" << std::endl;
-	os << "{" << std::endl;
-	os << "process.exit( 1 );" << std::endl;
-	os << "}" << std::endl;
-	
-	os.flush();
-	os.close();
+	SUBCASE( "create" )
+	{
+		auto tid = thread::id();
+		CHECK( tid != 0 );
+		
+		auto file = path::tmp() + "test.js";
+		
+		auto os = std::ofstream( file.to_string() );
+		
+		os << "let envString = process.env.NODEOZE_TEST_STRING;" << std::endl;
+		os << "if ( envString === 'secret' )" << std::endl;
+		os << "{" << std::endl;
+		os << "process.stdin.on( 'data', ( message ) =>" << std::endl;
+		os << "{" << std::endl;
+		os << "process.stdout.write( message.toString() );" << std::endl;
+		os << "process.exit( 0 );" << std::endl;
+		os << "} );" << std::endl;
+		os << "}" << std::endl;
+		os << "else" << std::endl;
+		os << "{" << std::endl;
+		os << "process.exit( 1 );" << std::endl;
+		os << "}" << std::endl;
+		
+		os.flush();
+		os.close();
 
 #if defined( WIN32 )
 
-	auto command	= nodeoze::path( "C:\\Program Files\\nodejs\\node.exe" );
+		auto command	= nodeoze::path( "C:\\Program Files\\nodejs\\node.exe" );
 
 #elif defined( __APPLE__ )
 
-	auto command	= nodeoze::path( "/usr/local/bin/node" );
+		auto command	= nodeoze::path( "/usr/local/bin/node" );
 
 #elif defined( __linux__ )
 
-	auto command	= nodeoze::path( "/usr/bin/nodejs" );
+		auto command	= nodeoze::path( "/usr/bin/nodejs" );
 
 #endif
 
-	auto str		= std::string( "hello, how are you" );
-	auto pid		= process::pid_t( 0 );
-	auto done		= false;
+		auto str		= std::string( "hello, how are you" );
+		auto pid		= process::pid_t( 0 );
+		auto done		= false;
 
-	process::create( command, { file.to_string() }, { "NODEOZE_TEST_STRING=secret" }, path::home(), pid, [&]()
-	{
-		return str;
-	},
-	[&]( const nodeoze::buffer &buf ) mutable
-	{
-		CHECK( buf.to_string() == str );
-	} )
-	.then( [&]( auto pair ) mutable
-	{
-		CHECK( tid == thread::id() );
-		CHECK( pair.first == 0 );
-		CHECK( pair.second == 0 );
-		done = true;
-	},
-	[&]( auto err ) mutable
-	{
-		fprintf( stderr, "err: %d (%s)\n", err.value(), err.message().c_str() );
-		CHECK( !err );
-		done = true;
-	} );
+		process::create( command, { file.to_string() }, { "NODEOZE_TEST_STRING=secret" }, path::home(), pid, [&]()
+		{
+			return str;
+		},
+		[&]( const nodeoze::buffer &buf ) mutable
+		{
+			CHECK( buf.to_string() == str );
+		} )
+		.then( [&]( auto pair ) mutable
+		{
+			CHECK( tid == thread::id() );
+			CHECK( pair.first == 0 );
+			CHECK( pair.second == 0 );
+			done = true;
+		},
+		[&]( auto err ) mutable
+		{
+			fprintf( stderr, "err: %d (%s)\n", err.value(), err.message().c_str() );
+			CHECK( !err );
+			done = true;
+		} );
 
-	while ( !done )
-	{
-		runloop::shared().run( runloop::mode_t::once );
+		while ( !done )
+		{
+			runloop::shared().run( runloop::mode_t::once );
+		}
 	}
 }
-
-
-

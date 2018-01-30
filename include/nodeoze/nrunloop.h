@@ -29,13 +29,18 @@
 
 #include <nodeoze/nconcurrent.h>
 #include <nodeoze/nsingleton.h>
-#include <nodeoze/nsocket.h>
 #include <nodeoze/npath.h>
 #include <functional>
 #include <chrono>
 
 
 namespace nodeoze {
+
+#if defined( WIN32 )
+	typedef SOCKET	native_socket_type;
+#else
+	typedef int		native_socket_type;
+#endif
 
 class runloop
 {

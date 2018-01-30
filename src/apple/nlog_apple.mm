@@ -25,61 +25,43 @@
  */
  
 #include <nodeoze/nlog.h>
-#include <nodeoze/nmacros.h>
-#include <dispatch/dispatch.h>
-#include <stdio.h>
-#include <time.h>
-#include <string.h>
-#include <pthread.h>
-#include <vector>
-#include <mutex>
-#include <syslog.h>
-#include <asl.h>
+#include <sstream>
+#include <os/log.h>
 
 using namespace nodeoze;
 
-static aslmsg		msg;
-static aslclient	c;
-
-
-void
-log::init( const std::string &name )
+class syslog : public log::sink
 {
-	if ( !m_mutex )
+public:
+
+	syslog()
+	:
+		m_log( os_log_create( "com.collobos.nodeoze", log::shared().name().c_str() ) )
 	{
-		m_mutex = new std::recursive_mutex;
-		init_limiter();
 	}
-	
-	c = asl_open( name.c_str(), "com.apple.console", 0);
 
-	msg = asl_new(ASL_TYPE_MSG);
-	asl_set(msg, ASL_KEY_FACILITY, "com.apple.console");
-	asl_set(msg, ASL_KEY_LEVEL, ASL_STRING_NOTICE);
-	asl_set(msg, ASL_KEY_READ_UID, "-1");
-}
+	virtual ~syslog()
+	{
+	}
+
+	virtual void
+	put( log::level_t level, std::chrono::system_clock::time_point when, std::uint32_t pid, std::uint32_t tid, const std::string &file, const std::string &func, std::uint32_t line, const std::string &message )
+	{
+		std::ostringstream os;
+
+		os << level << " " << pid << ":" << tid << " " << std::to_string( when ) << " " << prune_filename( file ) << ":" << line << " " << prune_function( func ) << " " << message << std::endl;
+		os_log( m_log, "%s", os.str().c_str() );
+	}
+
+private:
+
+	os_log_t m_log;
+};
 
 
-void
-log::cleanup( const std::string &name )
+std::shared_ptr< log::sink >
+log::sink::system()
 {
-	nunused( name );
+	return std::make_shared< syslog >();
 }
-
-
-void
-log::put_system_log( level_t l, const std::string &message )
-{
-	nunused( l );
-	
-	asl_log( c, msg, ASL_LEVEL_NOTICE, "%s", message.c_str() );
-}
-
-
-void
-log::put_console_log( const std::string &message )
-{
-	fprintf( stderr, "%s\n", message.c_str() );
-}
-
 

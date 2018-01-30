@@ -105,12 +105,12 @@ arp_apple::resolve( const ip::address &ip_address )
 		},
 		[=]( std::error_code err ) mutable
 		{
-			ret.reject( err );
+			ret.reject( err, reject_context );
 		} );
 	}
 	else
 	{
-		ret.reject( err );
+		ret.reject( err, reject_context );
 	}
 	
 	return ret;
@@ -164,7 +164,7 @@ exit:
 
 	if ( !found )
 	{
-		ret.reject( make_error_code( err_t::not_exist ) );
+		ret.reject( make_error_code( err_t::not_exist ), reject_context );
 	}
 
 	return ret;

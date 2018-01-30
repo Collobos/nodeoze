@@ -28,6 +28,8 @@
 #define _nodeoze_promise_h
 
 #include <nodeoze/nlog.h>
+#include <nodeoze/nrunloop.h>
+#include <nodeoze/nmarkers.h>
 #include <nodeoze/nmacros.h>
 #include <nodeoze/ndeque.h>
 #include <functional>
@@ -120,6 +122,7 @@ struct __promise_shared
 	bool				rejected;
 	resolve_f			resolve;
 	reject_f			reject;
+	runloop::event		timer;
 	std::uint32_t		refs;
 	T					val;
 	std::error_code		err;
@@ -136,6 +139,7 @@ struct __promise_shared< void >
 	bool				rejected;
 	resolve_f			resolve;
 	reject_f			reject;
+	runloop::event		timer;
 	std::uint32_t		refs;
 	std::error_code		err;
 };
@@ -184,6 +188,7 @@ public:
 		m_shared->rejected	= false;
 		m_shared->resolve	= nullptr;
 		m_shared->reject	= nullptr;
+		m_shared->timer		= nullptr;
 		m_shared->refs		= 1;
 	}
 
@@ -303,12 +308,11 @@ public:
 	void
 	reject( std::error_code error, const char *file, const char *func, std::uint32_t line )
 	{
-		std::ostringstream os;
-		
-		os << "rejected by " << error << " (" << error.message() << ")";
-		
-		nodeoze::log::put( log::level_t::error, file, func, line, os.str().c_str() );
-		
+		if ( ( log::shared().level() <= log::level_t::info ) && marker::promise )
+		{
+			nodeoze::log::shared().put( log::level_t::info, file, func, line, "rejected by % (%)", error.value(), error.message() );
+		}
+
 		reject( error );
 	}
 	
@@ -316,44 +320,18 @@ public:
 	void
 	reject( std::error_code error, const char *file, const char *func, std::uint32_t line, const char *format, const Params &... params )
 	{
-		std::ostringstream os;
-		
-		os << "rejected by " << error << " (" << error.message() << "): ";
-		
-		nodeoze::printf( os, format, params... );
-		
-		nodeoze::log::put( log::level_t::error, file, func, line, os.str().c_str() );
-		
+		if ( ( log::shared().level() <= log::level_t::info ) && marker::promise )
+		{
+			std::ostringstream os;
+
+			nodeoze::printf( os, format, params... );
+
+			nodeoze::log::shared().put( log::level_t::info, file, func, line, "rejected by % (%): ", error.value(), error.message(), os.str() );
+		}
+
 		reject( error );
 	}
 	
-	void
-	reject( std::error_code err )
-	{
-		assert( m_shared );
-		assert( !m_shared->resolved );
-		assert( !m_shared->rejected );
-
-		ncheck_error( m_shared && !m_shared->resolved && !m_shared->rejected, exit, "invalid promise" );
-
-		m_shared->rejected = true;
-
-		if ( m_shared->reject )
-		{
-			m_shared->reject( err );
-			m_shared->resolve	= nullptr;
-			m_shared->reject	= nullptr;
-		}
-		else
-		{
-			m_shared->err = err;
-		}
-
-	exit:
-
-		return;
-	}
-
 	inline bool
 	is_resolved() const
 	{
@@ -370,6 +348,14 @@ public:
 	is_finished() const
 	{
 		return ( is_resolved() || is_rejected() );
+	}
+
+	promise< T >
+	timeout( std::chrono::milliseconds timeout )
+	{
+		arm_timer( timeout );
+
+		return *this;
 	}
 
 	template< typename Func >
@@ -456,6 +442,33 @@ public:
 
 private:
 
+	inline void
+	reject( std::error_code err )
+	{
+		assert( m_shared );
+		assert( !m_shared->resolved );
+		assert( !m_shared->rejected );
+
+		ncheck_error( m_shared && !m_shared->resolved && !m_shared->rejected, exit, "invalid promise" );
+
+		m_shared->rejected = true;
+
+		if ( m_shared->reject )
+		{
+			m_shared->reject( err );
+			m_shared->resolve	= nullptr;
+			m_shared->reject	= nullptr;
+		}
+		else
+		{
+			m_shared->err = err;
+		}
+
+	exit:
+
+		return;
+	}
+
 	template<
 		typename Resolve,
 		typename Reject,
@@ -509,7 +522,7 @@ private:
 
 		m_shared->reject = [=]( std::error_code err ) mutable
 		{
-			ret.reject( err );
+			ret.reject( err, reject_context );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -538,7 +551,7 @@ private:
 
 		m_shared->reject = [=]( std::error_code err ) mutable
 		{
-			ret.reject( err );
+			ret.reject( err, reject_context );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -568,13 +581,13 @@ private:
 			},
 			[=]( std::error_code err ) mutable
 			{
-				ret.reject( err );
+				ret.reject( err, reject_context );
 			} );
 		};
 
 		m_shared->reject	= [=]( std::error_code err ) mutable
 		{
-			ret.reject( err );
+			ret.reject( err, reject_context );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -604,13 +617,13 @@ private:
 			},
 			[=]( std::error_code err ) mutable
 			{
-				ret.reject( err );
+				ret.reject( err, reject_context );
 			} );
 		};
 
 		m_shared->reject	= [=]( std::error_code err ) mutable
 		{
-			ret.reject( err );
+			ret.reject( err, reject_context );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -640,13 +653,13 @@ private:
 			},
 			[=]( std::error_code err ) mutable
 			{
-				ret.reject( err );
+				ret.reject( err, reject_context );
 			} );
 		};
 
 		m_shared->reject	= [=]( std::error_code err ) mutable
 		{
-			ret.reject( err );
+			ret.reject( err, reject_context );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -676,13 +689,13 @@ private:
 			},
 			[=]( std::error_code err ) mutable
 			{
-				ret.reject( err );
+				ret.reject( err, reject_context );
 			} );
 		};
 
 		m_shared->reject	= [=]( std::error_code err ) mutable
 		{
-			ret.reject( err );
+			ret.reject( err, reject_context );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -747,25 +760,61 @@ private:
 	{
 		if ( m_shared && ( --m_shared->refs == 0 ) )
 		{
+			cancel_timer();
 			delete m_shared;
 			m_shared = nullptr;
 		}
 	}
 
-	void
+	inline void
 	copy( const promise &rhs )
 	{
 		unshare();
 		share( rhs );
 	}
 
-	void
+	inline void
 	move( promise &&rhs )
 	{
 		unshare();
 
 		m_shared		= rhs.m_shared;
 		rhs.m_shared	= nullptr;
+	}
+
+	inline void
+	arm_timer( std::chrono::milliseconds timeout )
+	{
+		cancel_timer();
+
+		if ( m_shared )
+		{
+			m_shared->timer = runloop::shared().create( timeout );
+
+			auto copy = *this;
+
+			runloop::shared().schedule( m_shared->timer, [copy]( auto event ) mutable
+			{
+				nunused( event );
+
+				copy.cancel_timer();
+
+				if ( !copy.is_finished() )
+				{
+					copy.reject( make_error_code( std::errc::timed_out ), reject_context );
+				}
+			} );
+		}
+	}
+
+	inline void
+	cancel_timer()
+	{
+		if ( m_shared && m_shared->timer )
+		{
+			runloop::shared().cancel( m_shared->timer );
+			m_shared->timer = nullptr;
+		}
 	}
 	
 	__promise_shared< T > *m_shared = nullptr;
@@ -812,7 +861,7 @@ nodeoze::promise< T >::all( promises_t promises )
 				
 				if ( !ret.is_finished() )
 				{
-					ret.reject( err );
+					ret.reject( err, reject_context );
 				}
 			} );
 
@@ -858,7 +907,7 @@ nodeoze::promise< void >::all( promises_t promises )
 
 				if ( !ret.is_finished() )
 				{
-					ret.reject( err );
+					ret.reject( err, reject_context );
 				}
 			} );
 		}
@@ -892,7 +941,7 @@ nodeoze::promise< T >::race( promises_t promises )
 			{
 				if ( !ret.is_finished() )
 				{
-					ret.reject( err );
+					ret.reject( err, reject_context );
 				}
 			} );
 		}
@@ -926,7 +975,7 @@ nodeoze::promise< void >::race( promises_t promises )
 			{
 				if ( !ret.is_finished() )
 				{
-					ret.reject( err );
+					ret.reject( err, reject_context );
 				}
 			} );
 		}
@@ -970,7 +1019,7 @@ nodeoze::promise< T >::any( promises_t promises )
 				
 				if ( !ret.is_finished() && is_finished() )
 				{
-					ret.reject( err ) ;
+					ret.reject( err, reject_context ) ;
 				}
 			} );
 		}
@@ -1014,7 +1063,7 @@ nodeoze::promise< void >::any( promises_t promises )
 				
 				if ( !ret.is_finished() && is_finished() )
 				{
-					ret.reject( err );
+					ret.reject( err, reject_context );
 				}
 			} );
 		}

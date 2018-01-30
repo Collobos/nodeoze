@@ -26,6 +26,7 @@
 
 #include <nodeoze/nrunloop.h>
 #include <nodeoze/nmacros.h>
+#include <nodeoze/nlog.h>
 #include <uv.h>
 #include <assert.h>
 #include <thread>

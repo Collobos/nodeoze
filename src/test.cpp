@@ -10,8 +10,7 @@ public:
 
 	static_init()
 	{
-		log::init( "nodeoze test" );
-		log::set_level( log::level_t::info );
+		log::shared().set_name( "nodeoze test" );
 	}
 };
 

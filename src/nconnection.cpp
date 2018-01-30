@@ -205,7 +205,7 @@ connection::connect()
 					handle_resolve( dest, dummy, ret );
 				} );
 				
-				ncheck_error_action_quiet( found, ret.reject( make_error_code( std::errc::owner_dead ) ), exit );
+				ncheck_error_action_quiet( found, ret.reject( make_error_code( std::errc::owner_dead ), reject_context ), exit );
 				
 			exit:
 			
@@ -213,12 +213,12 @@ connection::connect()
 			},
 			[=]( auto err ) mutable
 			{
-				ret.reject( err );
+				ret.reject( err, reject_context );
 			} );
 		}
 		else
 		{
-			ret.reject( make_error_code( std::errc::invalid_argument ) );
+			ret.reject( make_error_code( std::errc::invalid_argument ), reject_context );
 		}
 	}
 	
@@ -280,7 +280,7 @@ connection::handle_resolve( const uri &resource, std::deque< ip::address > addrs
 				mlog( marker::connection, log::level_t::info, "failed to connect to %", endpoint );
 			}
 	
-			promise.reject( err );
+			promise.reject( err, reject_context );
 		} );
 		
 		promises.emplace_back( promise );
@@ -312,7 +312,7 @@ connection::handle_resolve( const uri &resource, std::deque< ip::address > addrs
 			recv();
 		} ) )
 		{
-			ret.reject( make_error_code( std::errc::owner_dead ) );
+			ret.reject( make_error_code( std::errc::owner_dead ), reject_context );
 		}
 	},
 	[=]( auto err ) mutable
@@ -324,10 +324,10 @@ connection::handle_resolve( const uri &resource, std::deque< ip::address > addrs
 			m_connecting	= false;
 			m_connected		= false;
 			
-			ret.reject( err );
+			ret.reject( err, reject_context );
 		} ) )
 		{
-			ret.reject( make_error_code( std::errc::owner_dead ) );
+			ret.reject( make_error_code( std::errc::owner_dead ), reject_context );
 		}
 	} );
 }
@@ -370,7 +370,7 @@ connection::send( buffer buf )
 					},
 					[=]( auto err ) mutable
 					{
-						promise.reject( err );
+						promise.reject( err, reject_context );
 					} );
 					
 					m_send_queue.pop();
@@ -380,7 +380,7 @@ connection::send( buffer buf )
 			{
 				while ( !m_send_queue.empty() )
 				{
-					m_send_queue.front().second.reject( err );
+					m_send_queue.front().second.reject( err, reject_context );
 					m_send_queue.pop();
 				}
 			} );

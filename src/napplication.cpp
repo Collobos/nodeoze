@@ -123,7 +123,7 @@ application::parse_command_line( int argc, std::tchar_t **argv )
 		
 		for ( auto &string : strings )
 		{
-			log::enable( log::get_marker( string::split( string, '.' ) ) );
+			log::shared().enable( log::shared().get_marker( string::split( string, '.' ) ) );
 		}
 	}
 	
@@ -133,7 +133,7 @@ application::parse_command_line( int argc, std::tchar_t **argv )
 		
 		for ( auto &string : strings )
 		{
-			log::disable( log::get_marker( string::split( string, '.' ) ) );
+			log::shared().disable( log::shared().get_marker( string::split( string, '.' ) ) );
 		}
 	}
 	
@@ -146,7 +146,7 @@ application::application( const std::string &name )
 	m_okay( true ),
 	m_name( name )
 {
-	log::init( name );
+	log::shared().set_name( name );
 	
 	assert( m_shared == nullptr );
 	m_shared = this;
@@ -157,7 +157,7 @@ application::application( const std::string &name )
 		
 		for ( auto &string : strings )
 		{
-			log::enable( log::get_marker( string::split( string, '.' ) ) );
+			log::shared().enable( log::shared().get_marker( string::split( string, '.' ) ) );
 		}
 	}
 	
@@ -167,22 +167,17 @@ application::application( const std::string &name )
 		
 		for ( auto &string : strings )
 		{
-			log::disable( log::get_marker( string::split( string, '.' ) ) );
+			log::shared().disable( log::shared().get_marker( string::split( string, '.' ) ) );
 		}
 	}
 	
 	if ( log_level_option().is_set() )
 	{
-		log::set_level( static_cast< log::level_t >( log_level_option().int_at_index( 0 ) ) );
+		log::shared().set_level( static_cast< log::level_t >( log_level_option().int_at_index( 0 ) ) );
 	}
 	else
 	{
-		log::set_level( log::level_t::info );
-	}
-	
-	if ( log_throttle_option().is_set() )
-	{
-		log::set_throttle( log_throttle_option().int_at_index( 0 ) );
+		log::shared().set_level( log::level_t::info );
 	}
 }
 
@@ -225,96 +220,95 @@ application::is_doctest_option( const std::string &option )
 }
 
 
-TEST_CASE( "nodeoze: good command line options" )
+TEST_CASE( "nodeoze/smoke/application" )
 {
-	const std::tchar_t	*argv[] =
+	SUBCASE( "good command line options" )
 	{
-		ntext( "--log-markers" ),
-		ntext( "nodeoze" ),
-		ntext( "--unset-log-markers" ),
-		ntext( "nodeoze" ),
-		ntext( "--log-level" ),
-		ntext( "10" ),
-		ntext( "--log-throttle" ),
-		ntext( "0" ),
-		ntext( "--test" ),
-		ntext( "--dt-version" )
-	};
-	int		argc = sizeof( argv ) / sizeof( std::tchar_t* );
-	
-	CHECK( application::parse_command_line( argc, ( std::tchar_t** )( argv ) ) );
-	CHECK( application::log_markers_option().is_set() );
-	CHECK( application::log_markers_option().string_at_index( 0 ) == "nodeoze" );
-	CHECK( application::unset_log_markers_option().is_set() );
-	CHECK( application::unset_log_markers_option().string_at_index( 0 ) == "nodeoze" );
-	CHECK( application::log_level_option().is_set() );
-	CHECK( application::log_level_option().int_at_index( 0 ) == 10 );
-	CHECK( application::log_throttle_option().is_set() );
-	CHECK( application::log_throttle_option().int_at_index( 0 ) == 0 );
-	CHECK( application::test_option().is_set() );
-}
+		const std::tchar_t	*argv[] =
+		{
+			ntext( "--log-markers" ),
+			ntext( "nodeoze" ),
+			ntext( "--unset-log-markers" ),
+			ntext( "nodeoze" ),
+			ntext( "--log-level" ),
+			ntext( "10" ),
+			ntext( "--log-throttle" ),
+			ntext( "0" ),
+			ntext( "--test" ),
+			ntext( "--dt-version" )
+		};
+		int		argc = sizeof( argv ) / sizeof( std::tchar_t* );
+		
+		CHECK( application::parse_command_line( argc, ( std::tchar_t** )( argv ) ) );
+		CHECK( application::log_markers_option().is_set() );
+		CHECK( application::log_markers_option().string_at_index( 0 ) == "nodeoze" );
+		CHECK( application::unset_log_markers_option().is_set() );
+		CHECK( application::unset_log_markers_option().string_at_index( 0 ) == "nodeoze" );
+		CHECK( application::log_level_option().is_set() );
+		CHECK( application::log_level_option().int_at_index( 0 ) == 10 );
+		CHECK( application::log_throttle_option().is_set() );
+		CHECK( application::log_throttle_option().int_at_index( 0 ) == 0 );
+		CHECK( application::test_option().is_set() );
+	}
 
-
-TEST_CASE( "nodeoze: bad command line options" )
-{
-	const std::tchar_t	*argv1[] =
+	SUBCASE( "bad command line options" )
 	{
-		ntext( "--log-markers" ),
-	};
-	
-	int argc = sizeof( argv1 ) / sizeof( std::tchar_t* );
-	
-	CHECK( !application::parse_command_line( argc, ( std::tchar_t** )( argv1 ) ) );
-	
-	const std::tchar_t *argv2[] =
+		const std::tchar_t	*argv1[] =
+		{
+			ntext( "--log-markers" ),
+		};
+		
+		int argc = sizeof( argv1 ) / sizeof( std::tchar_t* );
+		
+		CHECK( !application::parse_command_line( argc, ( std::tchar_t** )( argv1 ) ) );
+		
+		const std::tchar_t *argv2[] =
+		{
+			ntext( "--log-markers" ),
+			ntext( "blob1" ),
+			ntext( "blob2" ),
+		};
+		
+		argc = sizeof( argv2 ) / sizeof( std::tchar_t* );
+		
+		CHECK( !application::parse_command_line( argc, ( std::tchar_t** )( argv2 ) ) );
+	}
+
+	SUBCASE( "check is_switch" )
 	{
-		ntext( "--log-markers" ),
-		ntext( "blob1" ),
-		ntext( "blob2" ),
-	};
-	
-	argc = sizeof( argv2 ) / sizeof( std::tchar_t* );
-	
-	CHECK( !application::parse_command_line( argc, ( std::tchar_t** )( argv2 ) ) );
-}
+		CHECK( !application::is_switch( "" ) );
+		CHECK( !application::is_switch( "-" ) );
+		CHECK( !application::is_switch( "--" ) );
+		CHECK( application::is_switch( "--a" ) );
+	}
 
-
-TEST_CASE( "nodeoze: check is_switch" )
-{
-	CHECK( !application::is_switch( "" ) );
-	CHECK( !application::is_switch( "-" ) );
-	CHECK( !application::is_switch( "--" ) );
-	CHECK( application::is_switch( "--a" ) );
-}
-
-
-TEST_CASE( "nodeoze: variable options" )
-{
-	application::option o( "--install", application::option::variable_size() );
-	
-	const std::tchar_t	*argv1[] =
+	SUBCASE( "variable options" )
 	{
-		ntext( "--log-markers" ),
-		ntext( "blob1" ),
-		ntext( "blob2" ),
-		ntext( "--install" ),
-		ntext( "--log-level" ),
-		ntext( "2" ),
-		ntext( "3" )
-	};
-	
-	
-	int argc = sizeof( argv1 ) / sizeof( std::tchar_t* );
-	
-	CHECK( !application::parse_command_line( argc, ( std::tchar_t** )( argv1 ) ) );
-	CHECK( application::log_markers_option().is_set() );
-	CHECK( application::log_markers_option().expected_size() == 1 );
-	CHECK( application::log_markers_option() );
-	CHECK( o.is_set() );
-	CHECK( o.expected_size() == application::option::variable_size() );
-	CHECK( o.is_variable_size() );
-	CHECK( o.size() == 3 );
-	CHECK( !application::log_level_option().is_set() );
+		application::option o( "--install", application::option::variable_size() );
+		
+		const std::tchar_t	*argv1[] =
+		{
+			ntext( "--log-markers" ),
+			ntext( "blob1" ),
+			ntext( "blob2" ),
+			ntext( "--install" ),
+			ntext( "--log-level" ),
+			ntext( "2" ),
+			ntext( "3" )
+		};
+		
+		
+		int argc = sizeof( argv1 ) / sizeof( std::tchar_t* );
+		
+		CHECK( !application::parse_command_line( argc, ( std::tchar_t** )( argv1 ) ) );
+		CHECK( application::log_markers_option().is_set() );
+		CHECK( application::log_markers_option().expected_size() == 1 );
+		CHECK( application::log_markers_option() );
+		CHECK( o.is_set() );
+		CHECK( o.expected_size() == application::option::variable_size() );
+		CHECK( o.is_variable_size() );
+		CHECK( o.size() == 3 );
+		CHECK( !application::log_level_option().is_set() );
+	}
 }
-
 

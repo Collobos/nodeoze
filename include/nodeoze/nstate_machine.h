@@ -29,6 +29,7 @@
 #include <nodeoze/nany.h>
 #include <nodeoze/nscoped_operation.h>
 #include <nodeoze/nrunloop.h>
+#include <nodeoze/npromise.h>
 #include <nodeoze/nmarkers.h>
 #include <nodeoze/ndeque.h>
 #include <nodeoze/nlog.h>
@@ -405,7 +406,7 @@ private:
 			}
 			else if ( std::find( bad.begin(), bad.end(), next.value() ) != bad.end() )
 			{
-				ret.reject( make_error_code( std::errc::state_not_recoverable ) );
+				ret.reject( make_error_code( std::errc::state_not_recoverable ), reject_context );
 			}
 
 			return !ret.is_finished();

@@ -592,7 +592,7 @@ exit:
 }
 
 
-TEST_CASE( "nodeoze: address" )
+TEST_CASE( "nodeoze/smoke/address" )
 {
 	SUBCASE( "less than" )
 	{
@@ -624,22 +624,22 @@ TEST_CASE( "nodeoze: address" )
 
 	SUBCASE( "resolve correctly" )
 	{
-/*
 		if ( machine::self().has_internet_connection() )
 		{
 			runloop::shared().run( runloop::mode_t::nowait );
 
 			auto done = std::make_shared< bool >( false );
 
-			ip::address::resolve( "collobos.com" )
+			ip::address::resolve( "xtheband.com" )
 			.then( [=]( std::vector< ip::address > addresses )
 			{
-				CHECK( addresses.size() == 1 );
-				CHECK( addresses[ 0 ] == ip::address( "208.64.57.122" ) );
+				CHECK( addresses.size() > 0 );
 				*done = true;
 			},
 			[=]( std::error_code err ) 
 			{
+				nunused( err );
+
 				CHECK( 0 );
 			} );
 
@@ -648,14 +648,13 @@ TEST_CASE( "nodeoze: address" )
 				runloop::shared().run( runloop::mode_t::once );
 			}
 		}
-*/
 	}
 
 	SUBCASE( "resolve incorrectly" )
 	{
 		auto done = std::make_shared< bool >( false );
 
-		ip::address::resolve( "thishostdoesnotexist.com" )
+		ip::address::resolve( "thishostdoesnotexist.xyz" )
 		.then( [=]( std::vector< ip::address > addresses )
 		{
 			nunused( addresses );

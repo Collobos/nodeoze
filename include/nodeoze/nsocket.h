@@ -37,8 +37,6 @@
 
 namespace nodeoze {
 
-
-
 #if defined( WIN32 )
 	typedef SOCKET	native_socket_type;
 #else

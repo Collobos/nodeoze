@@ -50,13 +50,13 @@ make_e( int err, std::chrono::milliseconds delay )
 	runloop::shared().schedule_oneshot_timer( delay, [=]( runloop::event event ) mutable
 	{
 		nunused( event );
-		p.reject( std::error_code( err, std::generic_category() ) );
+		p.reject( std::error_code( err, std::generic_category() ), reject_context );
 	} );
 
 	return p;
 }
 
-TEST_CASE( "nodeoze: promise" )
+TEST_CASE( "nodeoze/smoke/promise" )
 {
 	SUBCASE( "synchronous chaining" )
 	{
@@ -118,7 +118,7 @@ TEST_CASE( "nodeoze: promise" )
 
 			promise< std::string > p1;
 
-			p1.reject( std::error_code( 42, std::generic_category() ) );
+			p1.reject( std::error_code( 42, std::generic_category() ), reject_context );
 
 			return p1;
 		} )
@@ -229,7 +229,7 @@ TEST_CASE( "nodeoze: promise" )
 
 			runloop::shared().dispatch( [=]() mutable
 			{
-				p1.reject( std::error_code( 42, std::generic_category() ) );
+				p1.reject( std::error_code( 42, std::generic_category() ), reject_context );
 			} );
 
 			return p1;
@@ -513,8 +513,8 @@ TEST_CASE( "nodeoze: promise" )
 		auto p3 = promise< void >();
 
 		p1.resolve();
-		p2.reject( make_error_code( std::errc::not_connected ) );
-		p3.reject( make_error_code( std::errc::not_connected ) );
+		p2.reject( make_error_code( std::errc::not_connected ), reject_context );
+		p3.reject( make_error_code( std::errc::not_connected ), reject_context );
 
 		auto good = false;
 
@@ -539,8 +539,8 @@ TEST_CASE( "nodeoze: promise" )
 		auto p3 = promise< int >();
 
 		p1.resolve( 7 );
-		p2.reject( make_error_code( std::errc::not_connected ) );
-		p3.reject( make_error_code( std::errc::not_connected ) );
+		p2.reject( make_error_code( std::errc::not_connected ), reject_context );
+		p3.reject( make_error_code( std::errc::not_connected ), reject_context );
 
 		auto good = false;
 
@@ -565,9 +565,9 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< void >();
 		auto p3 = promise< void >();
 
-		p1.reject( make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ), reject_context );
 		p2.resolve();
-		p3.reject( make_error_code( std::errc::not_connected ) );
+		p3.reject( make_error_code( std::errc::not_connected ), reject_context );
 
 		auto good = false;
 
@@ -591,9 +591,9 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< int >();
 		auto p3 = promise< int >();
 
-		p1.reject( make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ), reject_context );
 		p2.resolve( 8 );
-		p3.reject( make_error_code( std::errc::not_connected ) );
+		p3.reject( make_error_code( std::errc::not_connected ), reject_context );
 
 		auto good = false;
 
@@ -618,8 +618,8 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< void >();
 		auto p3 = promise< void >();
 
-		p1.reject( make_error_code( std::errc::not_connected ) );
-		p2.reject( make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ), reject_context );
+		p2.reject( make_error_code( std::errc::not_connected ), reject_context );
 		p3.resolve();
 
 		auto good = false;
@@ -644,8 +644,8 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< int >();
 		auto p3 = promise< int >();
 
-		p1.reject( make_error_code( std::errc::not_connected ) );
-		p2.reject( make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ), reject_context );
+		p2.reject( make_error_code( std::errc::not_connected ), reject_context );
 		p3.resolve( 9 );
 
 		auto good = false;
@@ -671,9 +671,9 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< void >();
 		auto p3 = promise< void >();
 
-		p1.reject( make_error_code( std::errc::not_connected ) );
-		p2.reject( make_error_code( std::errc::not_connected ) );
-		p3.reject( make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ), reject_context );
+		p2.reject( make_error_code( std::errc::not_connected ), reject_context );
+		p3.reject( make_error_code( std::errc::not_connected ), reject_context );
 
 		auto good = false;
 
@@ -697,9 +697,9 @@ TEST_CASE( "nodeoze: promise" )
 		auto p2 = promise< int >();
 		auto p3 = promise< int >();
 
-		p1.reject( make_error_code( std::errc::not_connected ) );
-		p2.reject( make_error_code( std::errc::not_connected ) );
-		p3.reject( make_error_code( std::errc::not_connected ) );
+		p1.reject( make_error_code( std::errc::not_connected ), reject_context );
+		p2.reject( make_error_code( std::errc::not_connected ), reject_context );
+		p3.reject( make_error_code( std::errc::not_connected ), reject_context );
 
 		auto good = false;
 
@@ -943,5 +943,47 @@ TEST_CASE( "nodeoze: promise" )
 		}
 		
 		REQUIRE( *clean == true );
+	}
+
+	SUBCASE( "timeout" )
+	{
+		auto err	= std::error_code();
+		auto func	= []()
+		{
+			auto ret = promise< void >();
+
+			runloop::shared().schedule_oneshot_timer( std::chrono::milliseconds( 20 ), [=]( auto event ) mutable
+			{
+				nunused( event );
+
+				if ( !ret.is_finished() )
+				{
+					ret.resolve();
+				}
+			} );
+
+			return ret;
+		};
+
+		auto done = false;
+
+		func()
+		.timeout( std::chrono::milliseconds( 10 ) )
+		.then( [&]() mutable
+		{
+			done = true;
+		},
+		[&]( auto _err ) mutable
+		{
+			done = true;
+			err = _err;
+		} );
+
+		while ( !done )
+		{
+			runloop::shared().run( runloop::mode_t::once );
+		}
+
+		CHECK( err == std::errc::timed_out );
 	}
 }

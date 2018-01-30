@@ -1195,16 +1195,18 @@ public:
 		return m_data.m_object.emplace( key, std::move( val ) );
 	}
 
-	void
+	std::error_code
 	erase( std::size_t index )
 	{
-		ncheck_error( m_type == type_t::array, exit, "any (%) is not an array", m_type );
-		ncheck_error( index < size(), exit, "index (%) is out of range for array of size %", index, size() );
+		auto ret = std::error_code();
+
+		ncheck_error_action_quiet( m_type == type_t::array, ret = make_error_code( std::errc::invalid_argument ), exit );
+		ncheck_error_action_quiet( index < size(), ret = make_error_code( std::errc::invalid_argument ), exit );
 		m_data.m_array.erase( m_data.m_array.begin() + index );
 
 	exit:
 
-		return;
+		return ret;
 	}
 
 	void

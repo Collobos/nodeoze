@@ -31,7 +31,7 @@
 
 using namespace nodeoze;
 
-TEST_CASE( "nodeoze: smoke: emitter" )
+TEST_CASE( "nodeoze/smoke/emitter" )
 {
 	SUBCASE( "void base" )
 	{

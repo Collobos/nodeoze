@@ -73,8 +73,6 @@ public:
 		{
 			auto data = reinterpret_cast< void* >( buf ? buf->data() : nullptr );
 			auto size = buf ? buf->size() : 0u;
-			
-			rlog( "caught bad buffer in % (% - % - %)", name, buf, data, size );
 		}
 		
 		return valid;
@@ -752,7 +750,7 @@ tls_filter_impl::teardown()
 #	pragma clang diagnostic pop
 #endif
 
-TEST_CASE( "nodeoze: tls" )
+TEST_CASE( "nodeoze/smoke/tls" )
 {
 	SUBCASE( "was_consumed" )
 	{

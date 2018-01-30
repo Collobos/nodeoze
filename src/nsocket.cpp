@@ -501,7 +501,7 @@ ip::tcp::socket::really_send( buffer &buf, promise< void > ret )
 	}
 	else
 	{
-		ret.reject( make_error_code( std::errc::not_connected ) );
+		ret.reject( make_error_code( std::errc::not_connected ), reject_context );
 	}
 }
 
@@ -669,7 +669,7 @@ ip::tcp::socket::on_connect( std::error_code error, promise< void > ret )
 	}
 	else
 	{
-		ret.reject( error );
+		ret.reject( error, reject_context );
 	}
 }
 
@@ -685,7 +685,7 @@ ip::tcp::socket::on_send( std::error_code error, promise< void > ret )
 	}
 	else
 	{
-		ret.reject( error );
+		ret.reject( error, reject_context );
 	}
 }
 
@@ -839,7 +839,7 @@ ip::tcp::acceptor::on_bind( std::error_code error, promise< void > ret )
 	}
 	else
 	{
-		ret.reject( error );
+		ret.reject( error, reject_context );
 	}
 }
 
@@ -980,7 +980,7 @@ ip::udp::socket::send( buffer buf, const ip::endpoint &to )
 
 	mlog( marker::socket_udp_send, log::level_t::info, "handle: %, bytes: %, to: %", m_handle, buf.size(), to.to_string() );
 	
-	ncheck_error_action( m_handle, ret.reject( make_error_code( std::errc::not_connected ) ), exit, "m_handle is a null pointer" );
+	ncheck_error_action_quiet( m_handle, ret.reject( make_error_code( std::errc::not_connected ), reject_context ), exit );
 	
 	m_handle->send( std::move( buf ), to, ret );
 	
@@ -1008,7 +1008,7 @@ ip::udp::socket::on_bind( std::error_code error, promise< void > ret )
 	}
 	else
 	{
-		ret.reject( error );
+		ret.reject( error, reject_context );
 	}
 }
 
@@ -1024,7 +1024,7 @@ ip::udp::socket::on_send( std::error_code error, promise< void > ret )
 	}
 	else
 	{
-		ret.reject( error );
+		ret.reject( error, reject_context );
 	}
 }
 

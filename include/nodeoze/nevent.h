@@ -46,6 +46,7 @@ namespace detail {
 struct listener_base
 {
 	typedef std::uint64_t id_type;
+
 	listener_base()
 	{
 	}
@@ -250,8 +251,32 @@ public:
 		return on( std::move( id ), make_function( std::move( listener ) ) );
     }
 
-	void
-	remove_listener( listener_id_type listener_id );
+	inline void
+	remove_listener( key_type id, listener_id_type listener_id )
+	{
+		auto it = m_listeners.find( id );
+
+		if ( it != m_listeners.end() )
+		{
+			auto new_end = std::remove_if( it->second.begin(), it->second.end(), [listener_id]( auto &listener ) mutable
+			{
+				return listener->m_id == listener_id;
+			} );
+
+			it->second.erase( new_end, it->second.end() );
+		}
+	}
+
+	inline void
+	remove_all_listeners( key_type id )
+	{
+		auto it = m_listeners.find( id );
+
+		if ( it != m_listeners.end() )
+		{
+			it->second.clear();
+		}
+	}
 
     template< typename... Args >
 	inline void

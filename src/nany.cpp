@@ -349,7 +349,7 @@ any::patch( const any &patches )
 {
 	auto ret = std::error_code();
 	
-	ncheck_error_action( patches.is_array(), ret = make_error_code( std::errc::invalid_argument ), exit, "patches must be array" );
+	ncheck_error_action_quiet( patches.is_array(), ret = make_error_code( std::errc::invalid_argument ), exit );
 	
 	for ( auto i = 0u; i < patches.size(); i++ )
 	{
@@ -875,452 +875,441 @@ any::operator>=(const any &rhs) const
 #endif
 
 
-TEST_CASE("nodeoze: any")
+TEST_CASE( "nodeoze/smoke/any")
 {
-	any root;
-	CHECK( root.is_null() );
-}
-
-
-TEST_CASE( "nodeoze: any/copy" )
-{
-	any root = any::build(
+	SUBCASE( "null check" )
 	{
-		{ "a", 1 },
-		{ "b", 2 }
-	} );
-	
-	any copy( root );
-	
-	CHECK( copy.is_member( "a" ) );
-	CHECK( copy.is_member( "b" ) );
-}
+		any root;
+		CHECK( root.is_null() );
+	}
 
-
-TEST_CASE( "nodeoze: any/blob" )
-{
-	buffer b( { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 } );
-
-	CHECK( b.size() == 6 );
-	CHECK( b[ 0 ] == 0x1 );
-	CHECK( b[ 1 ] == 0x2 );
-	CHECK( b[ 2 ] == 0x3 );
-	CHECK( b[ 3 ] == 0x4 );
-	CHECK( b[ 4 ] == 0x5 );
-	CHECK( b[ 5 ] == 0x6 );
-
-	any a = b;
-	CHECK( a.type() == any::type_t::blob );
-	CHECK( a.size() == 6 );
-
-	std::string s = a.to_string();
-
-	any c = s;
-	CHECK( c.type() == any::type_t::string );
-	auto b3 = codec::base64::decode( s );
-	buffer b2( c.to_blob() );
-	CHECK( c.type() == any::type_t::blob );
-	CHECK( b.size() == b2.size() );
-
-	CHECK( b2[ 0 ] == 0x1 );
-	CHECK( b2[ 1 ] == 0x2 );
-	CHECK( b2[ 2 ] == 0x3 );
-	CHECK( b2[ 3 ] == 0x4 );
-	CHECK( b2[ 4 ] == 0x5 );
-	CHECK( b2[ 5 ] == 0x6 );
-
-}
-
-TEST_CASE( "nodeoze: construct array in-place" )
-{
-	auto root = any::build(
+	SUBCASE( "copy" )
 	{
-		"a",
-		"b",
-		"c"
-	} );
-	
-	CHECK( root.is_array() );
-	CHECK( root.size() == 3 );
-	CHECK( root[ 0 ] == "a" );
-	CHECK( root[ 1 ] == "b" );
-	CHECK( root[ 2 ] == "c" );
-}
+		any root = any::build(
+		{
+			{ "a", 1 },
+			{ "b", 2 }
+		} );
+		
+		any copy( root );
+		
+		CHECK( copy.is_member( "a" ) );
+		CHECK( copy.is_member( "b" ) );
+	}
 
-
-TEST_CASE( "nodeoze:: construct object in-place" )
-{
-	auto root = any::build(
+	SUBCASE( "blob" )
 	{
-		{ "a", 7 },
-		{ "b", 8 },
-		{ "c", 9 }
-	} );
-	
-	CHECK( root.is_object() );
-	CHECK( root.size() == 3 );
-	CHECK( root[ "a" ] == 7 );
-	CHECK( root[ "b" ] == 8 );
-	CHECK( root[ "c" ] == 9 );
-}
+		buffer b( { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 } );
 
+		CHECK( b.size() == 6 );
+		CHECK( b[ 0 ] == 0x1 );
+		CHECK( b[ 1 ] == 0x2 );
+		CHECK( b[ 2 ] == 0x3 );
+		CHECK( b[ 3 ] == 0x4 );
+		CHECK( b[ 4 ] == 0x5 );
+		CHECK( b[ 5 ] == 0x6 );
 
-TEST_CASE( "nodeoze: construct complex json in-place" )
-{
-	auto root = any::build(
+		any a = b;
+		CHECK( a.type() == any::type_t::blob );
+		CHECK( a.size() == 6 );
+
+		std::string s = a.to_string();
+
+		any c = s;
+		CHECK( c.type() == any::type_t::string );
+		auto b3 = codec::base64::decode( s );
+		buffer b2( c.to_blob() );
+		CHECK( c.type() == any::type_t::blob );
+		CHECK( b.size() == b2.size() );
+
+		CHECK( b2[ 0 ] == 0x1 );
+		CHECK( b2[ 1 ] == 0x2 );
+		CHECK( b2[ 2 ] == 0x3 );
+		CHECK( b2[ 3 ] == 0x4 );
+		CHECK( b2[ 4 ] == 0x5 );
+		CHECK( b2[ 5 ] == 0x6 );
+	}
+
+	SUBCASE( "in-place array" )
 	{
+		auto root = any::build(
+		{
+			"a",
+			"b",
+			"c"
+		} );
+		
+		CHECK( root.is_array() );
+		CHECK( root.size() == 3 );
+		CHECK( root[ 0 ] == "a" );
+		CHECK( root[ 1 ] == "b" );
+		CHECK( root[ 2 ] == "c" );
+	}
+
+	SUBCASE( "in-place object" )
+	{
+		auto root = any::build(
 		{
 			{ "a", 7 },
 			{ "b", 8 },
 			{ "c", 9 }
-		},
-		{
-			{ "a", 10 },
-			{ "b", 11 },
-			{ "c", 12 }
-		}
-	} );
-	
-	CHECK( root.is_array() );
-	CHECK( root.size() == 2 );
-	CHECK( root[ 0 ][ "a" ] == 7 );
-	CHECK( root[ 0 ][ "b" ] == 8 );
-	CHECK( root[ 0 ][ "c" ] == 9 );
-	CHECK( root[ 1 ][ "a" ] == 10 );
-	CHECK( root[ 1 ][ "b" ] == 11 );
-	CHECK( root[ 1 ][ "c" ] == 12 );
-}
+		} );
+		
+		CHECK( root.is_object() );
+		CHECK( root.size() == 3 );
+		CHECK( root[ "a" ] == 7 );
+		CHECK( root[ "b" ] == 8 );
+		CHECK( root[ "c" ] == 9 );
+	}
 
-
-TEST_CASE( "nodeoze: pointer" )
-{
-	auto root = any::build(
+	SUBCASE( "in-place complex json" )
 	{
+		auto root = any::build(
 		{
-			{ "a", 7 }
-		},
-		{
-			{ "b",
-				{
-					{ "c", "test" },
-					{ "d", false }
-				},
+			{
+				{ "a", 7 },
+				{ "b", 8 },
+				{ "c", 9 }
+			},
+			{
+				{ "a", 10 },
+				{ "b", 11 },
+				{ "c", 12 }
 			}
-		},
+		} );
+		
+		CHECK( root.is_array() );
+		CHECK( root.size() == 2 );
+		CHECK( root[ 0 ][ "a" ] == 7 );
+		CHECK( root[ 0 ][ "b" ] == 8 );
+		CHECK( root[ 0 ][ "c" ] == 9 );
+		CHECK( root[ 1 ][ "a" ] == 10 );
+		CHECK( root[ 1 ][ "b" ] == 11 );
+		CHECK( root[ 1 ][ "c" ] == 12 );
+	}
+
+	SUBCASE( "pointer" )
+	{
+		auto root = any::build(
 		{
-			{ "e", true }
-		},
-		{
-			{ "f",
-				{
-					"7",
-					true,
-					"hello"
-				},
+			{
+				{ "a", 7 }
+			},
+			{
+				{ "b",
+					{
+						{ "c", "test" },
+						{ "d", false }
+					},
+				}
+			},
+			{
+				{ "e", true }
+			},
+			{
+				{ "f",
+					{
+						"7",
+						true,
+						"hello"
+					},
+				}
+			},
+			{
+				{ "g", "there" }
 			}
-		},
+		} );
+		
+		REQUIRE( root.is_array() );
+		REQUIRE( root.size() == 5 );
+		
+		auto ret = root.find( std::string() );
+		REQUIRE( ret );
+		REQUIRE( !ret.parent );
+		
+		ret = root.find( "/" );
+		REQUIRE( !ret );
+		
+		ret = root.find( "/0/a" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_object() );
+		REQUIRE( ret.o_child->first == "a" );
+		REQUIRE( ret.o_child->second.is_integer() );
+		REQUIRE( ret.o_child->second.to_uint32() == 7 );
+		
+		ret = root.find( "/0/b" );
+		REQUIRE( !ret );
+		
+		ret = root.find( "/1/b" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_object() );
+		REQUIRE( ret.parent->size() == 1 );
+		REQUIRE( ret.o_child->first == "b" );
+		REQUIRE( ret.o_child->second.is_object() );
+		REQUIRE( ret.o_child->second.size() == 2 );
+		
+		ret = root.find( "/1/b/c" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_object() );
+		REQUIRE( ret.parent->size() == 2 );
+		REQUIRE( ret.o_child->first == "c" );
+		REQUIRE( ret.o_child->second.is_string() );
+		REQUIRE( ret.o_child->second.to_string() == "test" );
+		
+		ret = root.find( "/1/b/d" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_object() );
+		REQUIRE( ret.parent->size() == 2 );
+		REQUIRE( ret.o_child->first == "d" );
+		REQUIRE( ret.o_child->second.is_bool() );
+		REQUIRE( ret.o_child->second.to_bool() == false );
+		
+		ret = root.find( "/2/e" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_object() );
+		REQUIRE( ret.parent->size() == 1 );
+		REQUIRE( ret.o_child->first == "e" );
+		REQUIRE( ret.o_child->second.is_bool() );
+		REQUIRE( ret.o_child->second.to_bool() == true );
+		
+		ret = root.find( "/3/f" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_object() );
+		REQUIRE( ret.parent->size() == 1 );
+		REQUIRE( ret.o_child->first == "f" );
+		REQUIRE( ret.o_child->second.is_array() );
+		REQUIRE( ret.o_child->second.size() == 3 );
+		
+		ret = root.find( "/3/f/0" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_array() );
+		REQUIRE( ret.parent->size() == 3 );
+		REQUIRE( ret.a_child->is_string() );
+		REQUIRE( ret.a_child->to_string() == "7" );
+		
+		ret = root.find( "/3/f/1" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_array() );
+		REQUIRE( ret.parent->size() == 3 );
+		REQUIRE( ret.a_child->is_bool() );
+		REQUIRE( ret.a_child->to_bool() == true );
+		
+		ret = root.find( "/3/f/2" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_array() );
+		REQUIRE( ret.parent->size() == 3 );
+		REQUIRE( ret.a_child->is_string() );
+		REQUIRE( ret.a_child->to_string() == "hello" );
+		
+		ret = root.find( "/3/f/-" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_array() );
+		REQUIRE( ret.parent->size() == 3 );
+		REQUIRE( ret.a_child == ret.parent->end() );
+		
+		ret = root.find( "/3/f/3" );
+		REQUIRE( !ret );
+		
+		ret = root.find( "/4/g" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_object() );
+		REQUIRE( ret.parent->size() == 1 );
+		REQUIRE( ret.o_child->first == "g" );
+		REQUIRE( ret.o_child->second.is_string() );
+		REQUIRE( ret.o_child->second.to_string() == "there" );
+		
+		ret = root.find( "/4/h" );
+		REQUIRE( !ret );
+		
+		ret = root.find( "/-" );
+		REQUIRE( ret );
+		REQUIRE( ret.parent->is_array() );
+		REQUIRE( ret.parent->size() == 5 );
+		REQUIRE( ret.a_child == ret.parent->end() );
+	}
+
+	SUBCASE( "diff" )
+	{
+		auto m1 = machine::self();
+		auto m2 = machine::self();
+		
+		auto patches = any::diff( m1.to_any(), m2.to_any(), {}, false );
+		
+		REQUIRE( patches.size() == 0 );
+	}
+
+	SUBCASE( "diff with exclusions" )
+	{
+		auto m1 = machine::self();
+		auto m2 = machine::self();
+		
+		m2.set_cores( 32 );
+		
+		auto patches = any::diff( m1.to_any(), m2.to_any(), {}, false );
+		
+		REQUIRE( patches.size() != 0 );
+		
+		patches = any::diff( m1.to_any(), m2.to_any(), { "/cores" }, false );
+		
+		REQUIRE( patches.size() == 0 );
+	}
+
+
+	SUBCASE( "diff by removing all members of array" )
+	{
+		any a = any::array();
+		a.emplace_back( "a" );
+		a.emplace_back( "b" );
+		a.emplace_back( "c" );
+
+		REQUIRE( a.is_array() );
+		REQUIRE( a.size() == 3 );
+
+		any b = any::array();
+
+		REQUIRE( b.is_array() );
+		REQUIRE( b.size() == 0 );
+
+		auto patches = any::diff( a, b, {}, false );
+
+		REQUIRE( patches.size() == 3 );
+
+		any patched = any::patch( a, patches );
+
+		REQUIRE( patched.is_array() );
+		REQUIRE( patched.size() == 0 );
+	}
+
+	SUBCASE( "diff by removing some members of array" )
+	{
+		any a = any::array();
+		a.emplace_back( "a" );
+		a.emplace_back( "b" );
+		a.emplace_back( "c" );
+		a.emplace_back( "d" );
+
+		REQUIRE( a.is_array() );
+		REQUIRE( a.size() == 4 );
+
+		any b = any::array();
+		b.emplace_back( "a" );
+		b.emplace_back( "b" );
+
+		REQUIRE( b.is_array() );
+		REQUIRE( b.size() == 2 );
+
+		auto patches = any::diff( a, b, {}, false );
+
+		REQUIRE( patches.size() == 2 );
+
+		any patched = any::patch( a, patches );
+
+		REQUIRE( patched.is_array() );
+		REQUIRE( patched.size() == 2 );
+		REQUIRE( patched[ 0 ].to_string() == "a" );
+		REQUIRE( patched[ 1 ].to_string() == "b" );
+	}
+
+
+	SUBCASE( "diff by replacing and removing some members of array" )
+	{
+		any a = any::array();
+		a.emplace_back( "a" );
+		a.emplace_back( "b" );
+		a.emplace_back( "c" );
+		a.emplace_back( "d" );
+
+		REQUIRE( a.is_array() );
+		REQUIRE( a.size() == 4 );
+
+		any b = any::array();
+		b.emplace_back( "a" );
+		b.emplace_back( "c" );
+
+		REQUIRE( b.is_array() );
+		REQUIRE( b.size() == 2 );
+
+		auto patches = any::diff( a, b, {}, false );
+
+		REQUIRE( patches.size() == 3 );
+
+		any patched = any::patch( a, patches );
+
+		REQUIRE( patched.is_array() );
+		REQUIRE( patched.size() == 2 );
+		REQUIRE( patched[ 0 ].to_string() == "a" );
+		REQUIRE( patched[ 1 ].to_string() == "c" );
+	}
+
+	SUBCASE( "diff by replacing and adding some members of array" )
+	{
+		any a = any::array();
+		a.emplace_back( "a" );
+		a.emplace_back( "b" );
+
+		REQUIRE( a.is_array() );
+		REQUIRE( a.size() == 2 );
+
+		any b = any::array();
+		b.emplace_back( "a" );
+		b.emplace_back( "c" );
+		b.emplace_back( "d" );
+		b.emplace_back( "e" );
+
+		REQUIRE( b.is_array() );
+		REQUIRE( b.size() == 4 );
+
+		auto patches = any::diff( a, b, {}, false );
+
+		REQUIRE( patches.size() == 3 );
+
+		any patched = any::patch( a, patches );
+
+		REQUIRE( patched.is_array() );
+		REQUIRE( patched.size() == 4 );
+		REQUIRE( patched[ 0 ].to_string() == "a" );
+		REQUIRE( patched[ 1 ].to_string() == "c" );
+		REQUIRE( patched[ 2 ].to_string() == "d" );
+		REQUIRE( patched[ 3 ].to_string() == "e" );
+	}
+
+	SUBCASE( "diff by replacing and removing some members of object" )
+	{
+		any a = any::build(
 		{
-			{ "g", "there" }
-		}
-	} );
-	
-	REQUIRE( root.is_array() );
-	REQUIRE( root.size() == 5 );
-	
-	auto ret = root.find( std::string() );
-	REQUIRE( ret );
-	REQUIRE( !ret.parent );
-	
-	ret = root.find( "/" );
-	REQUIRE( !ret );
-	
-	ret = root.find( "/0/a" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_object() );
-	REQUIRE( ret.o_child->first == "a" );
-	REQUIRE( ret.o_child->second.is_integer() );
-	REQUIRE( ret.o_child->second.to_uint32() == 7 );
-	
-	ret = root.find( "/0/b" );
-	REQUIRE( !ret );
-	
-	ret = root.find( "/1/b" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_object() );
-	REQUIRE( ret.parent->size() == 1 );
-	REQUIRE( ret.o_child->first == "b" );
-	REQUIRE( ret.o_child->second.is_object() );
-	REQUIRE( ret.o_child->second.size() == 2 );
-	
-	ret = root.find( "/1/b/c" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_object() );
-	REQUIRE( ret.parent->size() == 2 );
-	REQUIRE( ret.o_child->first == "c" );
-	REQUIRE( ret.o_child->second.is_string() );
-	REQUIRE( ret.o_child->second.to_string() == "test" );
-	
-	ret = root.find( "/1/b/d" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_object() );
-	REQUIRE( ret.parent->size() == 2 );
-	REQUIRE( ret.o_child->first == "d" );
-	REQUIRE( ret.o_child->second.is_bool() );
-	REQUIRE( ret.o_child->second.to_bool() == false );
-	
-	ret = root.find( "/2/e" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_object() );
-	REQUIRE( ret.parent->size() == 1 );
-	REQUIRE( ret.o_child->first == "e" );
-	REQUIRE( ret.o_child->second.is_bool() );
-	REQUIRE( ret.o_child->second.to_bool() == true );
-	
-	ret = root.find( "/3/f" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_object() );
-	REQUIRE( ret.parent->size() == 1 );
-	REQUIRE( ret.o_child->first == "f" );
-	REQUIRE( ret.o_child->second.is_array() );
-	REQUIRE( ret.o_child->second.size() == 3 );
-	
-	ret = root.find( "/3/f/0" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_array() );
-	REQUIRE( ret.parent->size() == 3 );
-	REQUIRE( ret.a_child->is_string() );
-	REQUIRE( ret.a_child->to_string() == "7" );
-	
-	ret = root.find( "/3/f/1" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_array() );
-	REQUIRE( ret.parent->size() == 3 );
-	REQUIRE( ret.a_child->is_bool() );
-	REQUIRE( ret.a_child->to_bool() == true );
-	
-	ret = root.find( "/3/f/2" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_array() );
-	REQUIRE( ret.parent->size() == 3 );
-	REQUIRE( ret.a_child->is_string() );
-	REQUIRE( ret.a_child->to_string() == "hello" );
-	
-	ret = root.find( "/3/f/-" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_array() );
-	REQUIRE( ret.parent->size() == 3 );
-	REQUIRE( ret.a_child == ret.parent->end() );
-	
-	ret = root.find( "/3/f/3" );
-	REQUIRE( !ret );
-	
-	ret = root.find( "/4/g" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_object() );
-	REQUIRE( ret.parent->size() == 1 );
-	REQUIRE( ret.o_child->first == "g" );
-	REQUIRE( ret.o_child->second.is_string() );
-	REQUIRE( ret.o_child->second.to_string() == "there" );
-	
-	ret = root.find( "/4/h" );
-	REQUIRE( !ret );
-	
-	ret = root.find( "/-" );
-	REQUIRE( ret );
-	REQUIRE( ret.parent->is_array() );
-	REQUIRE( ret.parent->size() == 5 );
-	REQUIRE( ret.a_child == ret.parent->end() );
-}
+			{ "a", 1 },
+			{ "b", 2 },
+			{ "c", 3 },
+			{ "d", 4 }
+		} );
 
+		REQUIRE( a.is_object() );
+		REQUIRE( a.size() == 4 );
 
-TEST_CASE( "any: diff" )
-{
-	auto m1 = machine::self();
-	auto m2 = machine::self();
-	
-	auto patches = any::diff( m1.to_any(), m2.to_any(), {}, false );
-	
-	REQUIRE( patches.size() == 0 );
-}
+		any b = any::build(
+		{
+			{ "a", true },
+			{ "b", 7.5 }
+		} );
 
+		REQUIRE( b.is_object() );
+		REQUIRE( b.size() == 2 );
 
-TEST_CASE( "any: diff with exclusions" )
-{
-	auto m1 = machine::self();
-	auto m2 = machine::self();
-	
-	m2.set_cores( 32 );
-	
-	auto patches = any::diff( m1.to_any(), m2.to_any(), {}, false );
-	
-	REQUIRE( patches.size() != 0 );
-	
-	patches = any::diff( m1.to_any(), m2.to_any(), { "/cores" }, false );
-	
-	REQUIRE( patches.size() == 0 );
-}
+		auto patches = any::diff( a, b, {}, false );
 
+		REQUIRE( patches.size() == 4 );
 
-TEST_CASE( "any: diff by removing all members of array" )
-{
-	any a = any::array();
-	a.emplace_back( "a" );
-	a.emplace_back( "b" );
-	a.emplace_back( "c" );
+		any patched = any::patch( a, patches );
 
-	REQUIRE( a.is_array() );
-	REQUIRE( a.size() == 3 );
+		REQUIRE( patched.is_object() );
+		REQUIRE( patched.size() == 2 );
+		REQUIRE( patched[ "a" ].is_bool() );
+		REQUIRE( patched[ "a" ].to_bool() == true );
+		REQUIRE( patched[ "b" ].is_real() );
+		REQUIRE( patched[ "b" ].to_real() == 7.5 );
+	}
 
-	any b = any::array();
-
-	REQUIRE( b.is_array() );
-	REQUIRE( b.size() == 0 );
-
-	auto patches = any::diff( a, b, {}, false );
-
-	REQUIRE( patches.size() == 3 );
-
-	any patched = any::patch( a, patches );
-
-	REQUIRE( patched.is_array() );
-	REQUIRE( patched.size() == 0 );
-}
-
-
-TEST_CASE( "any: diff by removing some members of array" )
-{
-	any a = any::array();
-	a.emplace_back( "a" );
-	a.emplace_back( "b" );
-	a.emplace_back( "c" );
-	a.emplace_back( "d" );
-
-	REQUIRE( a.is_array() );
-	REQUIRE( a.size() == 4 );
-
-	any b = any::array();
-	b.emplace_back( "a" );
-	b.emplace_back( "b" );
-
-	REQUIRE( b.is_array() );
-	REQUIRE( b.size() == 2 );
-
-	auto patches = any::diff( a, b, {}, false );
-
-	REQUIRE( patches.size() == 2 );
-
-	any patched = any::patch( a, patches );
-
-	REQUIRE( patched.is_array() );
-	REQUIRE( patched.size() == 2 );
-	REQUIRE( patched[ 0 ].to_string() == "a" );
-	REQUIRE( patched[ 1 ].to_string() == "b" );
-}
-
-
-TEST_CASE( "any: diff by replacing and removing some members of array" )
-{
-	any a = any::array();
-	a.emplace_back( "a" );
-	a.emplace_back( "b" );
-	a.emplace_back( "c" );
-	a.emplace_back( "d" );
-
-	REQUIRE( a.is_array() );
-	REQUIRE( a.size() == 4 );
-
-	any b = any::array();
-	b.emplace_back( "a" );
-	b.emplace_back( "c" );
-
-	REQUIRE( b.is_array() );
-	REQUIRE( b.size() == 2 );
-
-	auto patches = any::diff( a, b, {}, false );
-
-	REQUIRE( patches.size() == 3 );
-
-	any patched = any::patch( a, patches );
-
-	REQUIRE( patched.is_array() );
-	REQUIRE( patched.size() == 2 );
-	REQUIRE( patched[ 0 ].to_string() == "a" );
-	REQUIRE( patched[ 1 ].to_string() == "c" );
-}
-
-
-TEST_CASE( "any: diff by replacing and adding some members of array" )
-{
-	any a = any::array();
-	a.emplace_back( "a" );
-	a.emplace_back( "b" );
-
-	REQUIRE( a.is_array() );
-	REQUIRE( a.size() == 2 );
-
-	any b = any::array();
-	b.emplace_back( "a" );
-	b.emplace_back( "c" );
-	b.emplace_back( "d" );
-	b.emplace_back( "e" );
-
-	REQUIRE( b.is_array() );
-	REQUIRE( b.size() == 4 );
-
-	auto patches = any::diff( a, b, {}, false );
-
-	REQUIRE( patches.size() == 3 );
-
-	any patched = any::patch( a, patches );
-
-	REQUIRE( patched.is_array() );
-	REQUIRE( patched.size() == 4 );
-	REQUIRE( patched[ 0 ].to_string() == "a" );
-	REQUIRE( patched[ 1 ].to_string() == "c" );
-	REQUIRE( patched[ 2 ].to_string() == "d" );
-	REQUIRE( patched[ 3 ].to_string() == "e" );
-}
-
-TEST_CASE( "any: diff by replacing and removing some members of object" )
-{
-	any a = any::build(
-	{
-		{ "a", 1 },
-		{ "b", 2 },
-		{ "c", 3 },
-		{ "d", 4 }
-	} );
-
-	REQUIRE( a.is_object() );
-	REQUIRE( a.size() == 4 );
-
-	any b = any::build(
-	{
-		{ "a", true },
-		{ "b", 7.5 }
-	} );
-
-	REQUIRE( b.is_object() );
-	REQUIRE( b.size() == 2 );
-
-	auto patches = any::diff( a, b, {}, false );
-
-	REQUIRE( patches.size() == 4 );
-
-	any patched = any::patch( a, patches );
-
-	REQUIRE( patched.is_object() );
-	REQUIRE( patched.size() == 2 );
-	REQUIRE( patched[ "a" ].is_bool() );
-	REQUIRE( patched[ "a" ].to_bool() == true );
-	REQUIRE( patched[ "b" ].is_real() );
-	REQUIRE( patched[ "b" ].to_real() == 7.5 );
-}
-
-
-TEST_CASE( "any: patch" )
-{
-	SUBCASE( "empty list, empty docs")
+	SUBCASE( "patch empty list, empty docs")
 	{
 		any doc( any::type_t::object );
 		any patches( any::type_t::array );
@@ -1331,7 +1320,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched.size() == 0 );
 	}
 	
-	SUBCASE( "empty patch list" )
+	SUBCASE( "patch empty patch list" )
 	{
 		any doc(
 		{
@@ -1350,7 +1339,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "rearrangements OK?" )
+	SUBCASE( "patch rearrangements OK?" )
 	{
 		any doc(
 		{
@@ -1373,7 +1362,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "rearrangements OK?  How about one level down ... array" )
+	SUBCASE( "patch rearrangements OK?  How about one level down ... array" )
 	{
 		any doc(
 		{
@@ -1400,7 +1389,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "add replaces any existing field" )
+	SUBCASE( "patch add replaces any existing field" )
 	/*
 	 * "patch": [{"op": "add", "path": "/foo", "value":1}],
 	 * "expected": {"foo": 1} },
@@ -1432,7 +1421,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "toplevel array" )
+	SUBCASE( "patch toplevel array" )
 	/*
       "doc": [],
       "patch": [{"op": "add", "path": "/0", "value": "foo"}],
@@ -1465,7 +1454,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "toplevel array, no change" )
+	SUBCASE( "patch toplevel array, no change" )
 	/*
       "doc": ["foo"],
       "patch": [],
@@ -1491,7 +1480,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "toplevel object, numeric string" )
+	SUBCASE( "patch toplevel object, numeric string" )
 	/*
       "doc": {},
       "patch": [{"op": "add", "path": "/foo", "value": "1"}],
@@ -1521,7 +1510,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "toplevel object, integer" )
+	SUBCASE( "patch toplevel object, integer" )
 	/*
       "doc": {},
       "patch": [{"op": "add", "path": "/foo", "value": 1}],
@@ -1551,7 +1540,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "Toplevel scalar values OK?" )
+	SUBCASE( "patch Toplevel scalar values OK?" )
 	/*
       "doc": "foo",
       "patch": [{"op": "replace", "path": "", "value": "bar"}],
@@ -1585,7 +1574,7 @@ TEST_CASE( "any: patch" )
 	*/
 	}
 	
-	SUBCASE( "replace object document with array document?" )
+	SUBCASE( "patch replace object document with array document?" )
 	/*
       "doc": {},
       "patch": [{"op": "add", "path": "", "value": []}],
@@ -1616,7 +1605,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "replace array document with object document?" )
+	SUBCASE( "patch replace array document with object document?" )
 	/*
       "doc": [],
       "patch": [{"op": "add", "path": "", "value": {}}],
@@ -1646,7 +1635,7 @@ TEST_CASE( "any: patch" )
 		REQUIRE( patched == expected );
 	}
 	
-	SUBCASE( "replace boolean property" )
+	SUBCASE( "patch replace boolean property" )
 	{
 		any doc(
 		{
@@ -1676,45 +1665,43 @@ TEST_CASE( "any: patch" )
 		REQUIRE( expected.size() == 1 );
 		REQUIRE( patched == expected );
 	}
-}
 
-
-TEST_CASE( "any: sanitize" )
-{
-	auto val = any::build(
+	SUBCASE ( "sanitize" )
 	{
+		auto val = any::build(
 		{
-			"markers",
 			{
+				"markers",
 				{
-					{ "name",		"black cartridge hp cc364x.\r" },
-					{ "type",		"toner" },
-					{ "level",		25 },
-					{ "color",		"#000000" },
-					{ "low_level",	0 },
-					{ "high_level",	100 }
+					{
+						{ "name",		"black cartridge hp cc364x.\r" },
+						{ "type",		"toner" },
+						{ "level",		25 },
+						{ "color",		"#000000" },
+						{ "low_level",	0 },
+						{ "high_level",	100 }
+					}
 				}
 			}
-		}
-	} );
-	
-	REQUIRE( val.is_object() );
-	REQUIRE( val.is_member( "markers" ) );
-	REQUIRE( val[ "markers" ].is_array() );
-	REQUIRE( val[ "markers" ].size() == 1 );
-	
-	auto copy = val;
-	
-	REQUIRE( val[ "markers" ][ 0 ][ "name" ] == "black cartridge hp cc364x.\r" );
-	REQUIRE( copy[ "markers" ][ 0 ][ "name" ] == "black cartridge hp cc364x.\r" );
-	REQUIRE( val == copy );
-	
-	copy.sanitize();
-	
-	REQUIRE( val != copy );
-	REQUIRE( val[ "markers" ][ 0 ][ "name" ] == "black cartridge hp cc364x.\r" );
-	REQUIRE( copy[ "markers" ][ 0 ][ "name" ] == "black cartridge hp cc364x._" );
-}
+		} );
+		
+		REQUIRE( val.is_object() );
+		REQUIRE( val.is_member( "markers" ) );
+		REQUIRE( val[ "markers" ].is_array() );
+		REQUIRE( val[ "markers" ].size() == 1 );
+		
+		auto copy = val;
+		
+		REQUIRE( val[ "markers" ][ 0 ][ "name" ] == "black cartridge hp cc364x.\r" );
+		REQUIRE( copy[ "markers" ][ 0 ][ "name" ] == "black cartridge hp cc364x.\r" );
+		REQUIRE( val == copy );
+		
+		copy.sanitize();
+		
+		REQUIRE( val != copy );
+		REQUIRE( val[ "markers" ][ 0 ][ "name" ] == "black cartridge hp cc364x.\r" );
+		REQUIRE( copy[ "markers" ][ 0 ][ "name" ] == "black cartridge hp cc364x._" );
+	}
 	
 		
 #if 0
@@ -2091,53 +2078,58 @@ TEST_CASE( "any: sanitize" )
 
 ]
 #endif
+}
 
-TEST_CASE( "nodeoze: any deflating" )
+
+TEST_CASE( "nodeoze/perf/any" )
 {
-	auto input = std::string( "{ \"table\": \"service\", \"created_logical\": 103, \"oid\": 48, \"acl\": [], \"created\": 1499359490, \"modified\": 1505243815, \"path\": \"/services/48\", \"name\": \"Brother HL-L6200DW (Windows Development)\", \"modified_logical\": 7284, \"tags\": [ \"Test 1\" ], \"location\": { \"latitude\": 37.44950103759765625, \"longitude\": -122.17974090576171875, \"horizontal_accuracy\": 0.0, \"altitude\": 0.0, \"size\": 0.0, \"vertical_accuracy\": 0.0 }, \"port\": 9631, \"agent\": 56, \"type\": [ \"_ipp\", \"_tcp\" ], \"status\": 0, \"host\": [ \"NAUSEA\", \"dnssd\", \"presto\" ], \"mac_addresses\": [ \"ABVdndfI\", \"ABxCDS4S\" ], \"addresses\": [ [ 172, 16, 80, 1 ], [ 192, 168, 1, 60 ] ], \"text_record\": \"CXR4dHZlcnM9MQhxdG90YWw9MQpwcmlvcml0eT0wB0NvbG9yPUYIRHVwbGV4PVQIQ29waWVzPVQtVVVJRD1Ccm90aGVyIEhMLUw2MjAwRFcgKFdpbmRvd3MgRGV2ZWxvcG1lbnQpBHFwPU4jcHJvZHVjdD0oQnJvdGhlciBITC1MNjIwMERXIHNlcmllcykcdHk9QnJvdGhlciBITC1MNjIwMERXIHNlcmllcyFVUkY9VzgsRE0zLFNSR0IyNCxDUDI1NSxSUzMwMC02MDAycGRsPWFwcGxpY2F0aW9uL3BkZixpbWFnZS9qcGVnLGltYWdlL3BuZyxpbWFnZS91cmYOcnA9c2VydmljZXMvNDgHVExTPTEuMhVhaXI9dXNlcm5hbWUscGFzc3dvcmQFbm90ZT0=\", \"priority\": 0, \"weight\": 0, \"printer\": { \"note\": \"\", \"info\": \"Brother HL-L6200DW (Windows Development)\", \"resource\": \"winspool://127.0.0.1/brother_hl_l6200dw__windows_development_\", \"name\": \"Brother HL-L6200DW (Windows Development)\", \"page_count\": 74, \"uuid\": \"Brother HL-L6200DW (Windows Development)\", \"media_ready\": [ \"na_letter_8.5x11in\", \"na_legal_8.5x14in\" ], \"kind\": 1, \"side_supported\": [ 0, 1, 2 ], \"make_and_model\": \"Brother HL-L6200DW series\", \"device_id\": \"\", \"quality_default\": 4, \"markers\": [ { \"name\": \"BK\", \"level\": 100, \"type\": \"toner\", \"low_level\": 7, \"color\": \"#000000\", \"high_level\": 100 } ], \"bpp\": 8, \"ipp\": true, \"side_default\": 0, \"copy\": 0, \"orientation_default\": 3, \"quality_supported\": [ 3, 4, 5 ], \"orientation_supported\": [ 3, 4 ], \"media_default\": \"na_letter_8.5x11in\", \"state\": 3, \"release\": false, \"reasons\": 0, \"secure\": true, \"strict\": false, \"provider\": \"System\", \"connection\": \"net://192.168.1.84\", \"airscan\": false, \"airprint\": true, \"snmp\": true } }" );
-	
-	const std::size_t count = 100000;
-	
-	auto any = json::inflate( input );
-	
-	ostringstream os;
-	os << any;
-	
-	auto any2 = json::inflate( os.str() );
-	
-	//CHECK( any == any2 );
-	
-	auto elapsed = stopwatch::run( [&]() mutable
+	SUBCASE( "deflating" )
 	{
-		for ( auto i = 0u; i < count; i++ )
+		auto input = std::string( "{ \"table\": \"service\", \"created_logical\": 103, \"oid\": 48, \"acl\": [], \"created\": 1499359490, \"modified\": 1505243815, \"path\": \"/services/48\", \"name\": \"Brother HL-L6200DW (Windows Development)\", \"modified_logical\": 7284, \"tags\": [ \"Test 1\" ], \"location\": { \"latitude\": 37.44950103759765625, \"longitude\": -122.17974090576171875, \"horizontal_accuracy\": 0.0, \"altitude\": 0.0, \"size\": 0.0, \"vertical_accuracy\": 0.0 }, \"port\": 9631, \"agent\": 56, \"type\": [ \"_ipp\", \"_tcp\" ], \"status\": 0, \"host\": [ \"NAUSEA\", \"dnssd\", \"presto\" ], \"mac_addresses\": [ \"ABVdndfI\", \"ABxCDS4S\" ], \"addresses\": [ [ 172, 16, 80, 1 ], [ 192, 168, 1, 60 ] ], \"text_record\": \"CXR4dHZlcnM9MQhxdG90YWw9MQpwcmlvcml0eT0wB0NvbG9yPUYIRHVwbGV4PVQIQ29waWVzPVQtVVVJRD1Ccm90aGVyIEhMLUw2MjAwRFcgKFdpbmRvd3MgRGV2ZWxvcG1lbnQpBHFwPU4jcHJvZHVjdD0oQnJvdGhlciBITC1MNjIwMERXIHNlcmllcykcdHk9QnJvdGhlciBITC1MNjIwMERXIHNlcmllcyFVUkY9VzgsRE0zLFNSR0IyNCxDUDI1NSxSUzMwMC02MDAycGRsPWFwcGxpY2F0aW9uL3BkZixpbWFnZS9qcGVnLGltYWdlL3BuZyxpbWFnZS91cmYOcnA9c2VydmljZXMvNDgHVExTPTEuMhVhaXI9dXNlcm5hbWUscGFzc3dvcmQFbm90ZT0=\", \"priority\": 0, \"weight\": 0, \"printer\": { \"note\": \"\", \"info\": \"Brother HL-L6200DW (Windows Development)\", \"resource\": \"winspool://127.0.0.1/brother_hl_l6200dw__windows_development_\", \"name\": \"Brother HL-L6200DW (Windows Development)\", \"page_count\": 74, \"uuid\": \"Brother HL-L6200DW (Windows Development)\", \"media_ready\": [ \"na_letter_8.5x11in\", \"na_legal_8.5x14in\" ], \"kind\": 1, \"side_supported\": [ 0, 1, 2 ], \"make_and_model\": \"Brother HL-L6200DW series\", \"device_id\": \"\", \"quality_default\": 4, \"markers\": [ { \"name\": \"BK\", \"level\": 100, \"type\": \"toner\", \"low_level\": 7, \"color\": \"#000000\", \"high_level\": 100 } ], \"bpp\": 8, \"ipp\": true, \"side_default\": 0, \"copy\": 0, \"orientation_default\": 3, \"quality_supported\": [ 3, 4, 5 ], \"orientation_supported\": [ 3, 4 ], \"media_default\": \"na_letter_8.5x11in\", \"state\": 3, \"release\": false, \"reasons\": 0, \"secure\": true, \"strict\": false, \"provider\": \"System\", \"connection\": \"net://192.168.1.84\", \"airscan\": false, \"airprint\": true, \"snmp\": true } }" );
+		
+		const std::size_t count = 100000;
+		
+		auto any = json::inflate( input );
+		
+		ostringstream os;
+		os << any;
+		
+		auto any2 = json::inflate( os.str() );
+		
+		//CHECK( any == any2 );
+		
+		auto elapsed = stopwatch::run( [&]() mutable
 		{
-			std::ostringstream os;
-			os << any;
-		}
-	} );
-	
-	auto milli = static_cast< double >( std::chrono::duration_cast< std::chrono::milliseconds >( elapsed ).count() );
-	auto per = milli / static_cast< double >( count );
-	
-	fprintf( stderr, "write: elapsed time: %f\n", milli );
-	fprintf( stderr, "write: %f msec per object\n", per );
-	fprintf( stderr, "write: %f objects per second\n", 1000.00 / per );
-	
-	elapsed = stopwatch::run( [&]() mutable
-	{
-		for ( auto i = 0u; i < count; i++ )
+			for ( auto i = 0u; i < count; i++ )
+			{
+				std::ostringstream os;
+				os << any;
+			}
+		} );
+		
+		auto milli = static_cast< double >( std::chrono::duration_cast< std::chrono::milliseconds >( elapsed ).count() );
+		auto per = milli / static_cast< double >( count );
+		
+		fprintf( stderr, "write: elapsed time: %f\n", milli );
+		fprintf( stderr, "write: %f msec per object\n", per );
+		fprintf( stderr, "write: %f objects per second\n", 1000.00 / per );
+		
+		elapsed = stopwatch::run( [&]() mutable
 		{
-			ostringstream os;
-			os << any;
-		}
-	} );
-	
-	milli = static_cast< double >( std::chrono::duration_cast< std::chrono::milliseconds >( elapsed ).count() );
-	per = milli / static_cast< double >( count );
-	
-	fprintf( stderr, "write: elapsed time: %f\n", milli );
-	fprintf( stderr, "write: %f msec per object\n", per );
-	fprintf( stderr, "write: %f objects per second\n", 1000.00 / per );
+			for ( auto i = 0u; i < count; i++ )
+			{
+				ostringstream os;
+				os << any;
+			}
+		} );
+		
+		milli = static_cast< double >( std::chrono::duration_cast< std::chrono::milliseconds >( elapsed ).count() );
+		per = milli / static_cast< double >( count );
+		
+		fprintf( stderr, "write: elapsed time: %f\n", milli );
+		fprintf( stderr, "write: %f msec per object\n", per );
+		fprintf( stderr, "write: %f objects per second\n", 1000.00 / per );
+	}
 }
 
 
