@@ -101,8 +101,8 @@ arp_win32::resolve( const ip::address &ip_address )
 			ip_address >> dest;
 
 			auto aerr = SendARP( dest, INADDR_ANY, &bytes, &len );
-			ncheck_error_action( aerr == NO_ERROR, err = make_error_code( err_t::internal_error ), exit, "SendARP to % failed (%)", ip_address.to_string(), err );
-			ncheck_error_action( len == 6, err = make_error_code( err_t::internal_error ), exit, "bad mac address size: %", len );
+			ncheck_error_action( aerr == NO_ERROR, err = make_error_code( std::errc::no_such_device_or_address ), exit, "SendARP to % failed (%)", ip_address.to_string(), err );
+			ncheck_error_action( len == 6, err = make_error_code( std::errc::no_such_device_or_address ), exit, "bad mac address size: %", len );
 			mac = mac::address( reinterpret_cast< std::uint8_t* >( &bytes ), len );
 
 			mlog( marker::arp, log::level_t::info, "% -> %", ip_address.to_string(), mac.to_string() );

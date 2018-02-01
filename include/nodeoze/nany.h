@@ -33,7 +33,6 @@
 #include <nodeoze/ndeque.h>
 #include <nodeoze/nbase64.h>
 #include <nodeoze/nmacros.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/nlog.h>
 #include <streambuf>
 #include <iostream>
@@ -912,12 +911,6 @@ public:
 	to_time() const
 	{
 		return std::chrono::system_clock::from_time_t( static_cast< std::time_t >( is_integer() ? m_data.m_integer : 0 ) );
-	}
-	
-	err_t
-	to_err() const
-	{
-		return is_integer() ? static_cast< err_t >( m_data.m_integer ) : err_t::ok;
 	}
 	
 	log::level_t

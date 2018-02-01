@@ -34,7 +34,6 @@
 #include <nodeoze/nany.h>
 #include <nodeoze/nuri.h>
 #include <nodeoze/nstring.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/ntypestring.h>
 #include <nodeoze/npath.h>
 #include <chrono>
@@ -147,9 +146,9 @@ public:
 	}
 			
 	static inline std::string
-	value( const std::string &val )
+	value( const std::string &val, bool quote = true )
 	{
-		return "'" + database::sanitize( val ) + "'";
+		return ( quote ? "'" : "" ) + database::sanitize( val ) + ( quote ? "'" : "" );
 	}
 
 	class statement
@@ -300,6 +299,11 @@ public:
 		{
 			if ( m_shared && ( --m_shared->refs == 0 ) )
 			{
+				if ( m_shared->stmt && m_shared->finalize )
+				{
+					finalize();
+				}
+
 				delete m_shared;
 				m_shared = nullptr;
 			}
@@ -434,8 +438,8 @@ public:
 	std::error_code
 	prepare( const std::string &str, std::function< std::error_code ( statement &stmt ) > func );
 	
-	bool
-	is_prepared( statement &stmt );
+	void
+	reset_all_prepared();
 	
 	nodeoze::scoped_operation
 	continuous_select( const std::string &columns, const std::string &from, const std::string &where, continuous_select_handler_f handler );
@@ -470,13 +474,6 @@ public:
 	exit:
 	
 		return err;
-	}
-	
-	template< class T >
-	std::size_t
-	count()
-	{
-		return count( T::table_name() );
 	}
 	
 	std::size_t
@@ -567,12 +564,6 @@ inline std::error_code
 make_error_code( nodeoze::database::errc val )
 {
 	return std::error_code( static_cast< int >( val ), nodeoze::database::error_category() );
-}
-
-inline std::error_condition
-make_error_condition( nodeoze::database::errc val )
-{
-	return std::error_condition( static_cast<int>( val ), nodeoze::database::error_category() );
 }
 
 }

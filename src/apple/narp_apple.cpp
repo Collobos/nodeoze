@@ -164,7 +164,7 @@ exit:
 
 	if ( !found )
 	{
-		ret.reject( make_error_code( err_t::not_exist ), reject_context );
+		ret.reject( make_error_code( std::errc::no_such_device_or_address ), reject_context );
 	}
 
 	return ret;

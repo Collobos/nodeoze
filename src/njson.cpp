@@ -82,7 +82,7 @@ struct parser_context
 			nlog( log::level_t::info, "error: %", error );
 
 #endif
-			err = make_error_code( err_t::parse_error );
+			err = make_error_code( std::errc::illegal_byte_sequence );
 			reset();
 		}
 	

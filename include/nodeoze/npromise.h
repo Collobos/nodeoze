@@ -230,23 +230,18 @@ public:
 	resolve()
 	{
 		assert( m_shared );
-		assert( !m_shared->resolved );
-		assert( !m_shared->rejected );
 
-		ncheck_error( m_shared && !m_shared->resolved && !m_shared->rejected, exit, "invalid promise" );
-
-		m_shared->resolved = true;
-
-		if ( m_shared->resolve )
+		if ( m_shared && !m_shared->resolved && !m_shared->rejected )
 		{
-			m_shared->resolve();
-			m_shared->resolve	= nullptr;
-			m_shared->reject	= nullptr;
+			m_shared->resolved = true;
+
+			if ( m_shared->resolve )
+			{
+				m_shared->resolve();
+				m_shared->resolve	= nullptr;
+				m_shared->reject	= nullptr;
+			}
 		}
-
-	exit:
-
-		return;
 	}
 
 	template< class Q = T >
@@ -254,27 +249,22 @@ public:
 	resolve( Q &&val )
 	{
 		assert( m_shared );
-		assert( !m_shared->resolved );
-		assert( !m_shared->rejected );
 
-		ncheck_error( m_shared && !m_shared->resolved && !m_shared->rejected, exit, "invalid promise" );
-
-		m_shared->resolved = true;
+		if ( m_shared && !m_shared->resolved && !m_shared->rejected )
+		{
+			m_shared->resolved = true;
 		
-		if ( m_shared->resolve )
-		{
-			m_shared->resolve( std::move( val ) );
-			m_shared->resolve	= nullptr;
-			m_shared->reject	= nullptr;
+			if ( m_shared->resolve )
+			{
+				m_shared->resolve( std::move( val ) );
+				m_shared->resolve	= nullptr;
+				m_shared->reject	= nullptr;
+			}
+			else
+			{
+				m_shared->val = std::move( val );
+			}
 		}
-		else
-		{
-			m_shared->val = std::move( val );
-		}
-
-	exit:
-
-		return;
 	}
 
 	template< class Q = T >
@@ -282,27 +272,22 @@ public:
 	resolve( const Q &val )
 	{
 		assert( m_shared );
-		assert( !m_shared->resolved );
-		assert( !m_shared->rejected );
 
-		ncheck_error( m_shared && !m_shared->resolved && !m_shared->rejected, exit, "invalid promise" );
-
-		m_shared->resolved = true;
-		
-		if ( m_shared->resolve )
+		if ( m_shared && !m_shared->resolved && !m_shared->rejected )
 		{
-			m_shared->resolve( val );
-			m_shared->resolve	= nullptr;
-			m_shared->reject	= nullptr;
+			m_shared->resolved = true;
+			
+			if ( m_shared->resolve )
+			{
+				m_shared->resolve( val );
+				m_shared->resolve	= nullptr;
+				m_shared->reject	= nullptr;
+			}
+			else
+			{
+				m_shared->val = val;
+			}
 		}
-		else
-		{
-			m_shared->val = val;
-		}
-
-	exit:
-
-		return;
 	}
 	
 	void
@@ -446,27 +431,22 @@ private:
 	reject( std::error_code err )
 	{
 		assert( m_shared );
-		assert( !m_shared->resolved );
-		assert( !m_shared->rejected );
 
-		ncheck_error( m_shared && !m_shared->resolved && !m_shared->rejected, exit, "invalid promise" );
-
-		m_shared->rejected = true;
-
-		if ( m_shared->reject )
+		if ( m_shared && !m_shared->resolved && !m_shared->rejected )
 		{
-			m_shared->reject( err );
-			m_shared->resolve	= nullptr;
-			m_shared->reject	= nullptr;
-		}
-		else
-		{
-			m_shared->err = err;
-		}
+			m_shared->rejected = true;
 
-	exit:
-
-		return;
+			if ( m_shared->reject )
+			{
+				m_shared->reject( err );
+				m_shared->resolve	= nullptr;
+				m_shared->reject	= nullptr;
+			}
+			else
+			{
+				m_shared->err = err;
+			}
+		}
 	}
 
 	template<

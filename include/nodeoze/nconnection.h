@@ -48,9 +48,6 @@ public:
 	
 	typedef std::shared_ptr< connection >																		ptr;
 	
-	typedef std::function< void ( nodeoze::err_t err, const uri &uri, std::deque< ip::address > addrs ) >	resolve_reply_f;
-	typedef std::function< void ( nodeoze::err_t err ) >													connect_reply_f;
-	typedef std::function< void ( nodeoze::err_t err ) >													send_reply_f;
 	typedef nodeoze::ip::tcp::socket::recv_reply_f																peek_reply_f;
 	
 	class factory

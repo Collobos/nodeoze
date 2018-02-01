@@ -587,7 +587,6 @@ class connection : public nodeoze::connection, public std::streambuf
 public:
 
 	typedef std::function< void ( nodeoze::buffer &buf ) >										on_body_handler_f;
-	typedef std::function< void ( nodeoze::err_t err, http::message::ptr &response ) >	request_reply_f;
 	typedef std::function< void ( buffer buf, bool close ) >									websocket_reply_f;
 	typedef std::function< void ( const buffer &buf, websocket_reply_f ) >						websocket_handler_f;
 	typedef std::function< void ( void ) >														will_close_f;

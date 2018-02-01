@@ -34,7 +34,6 @@
 #include <nodeoze/nbase64.h>
 #include <nodeoze/nuuid.h>
 #include <nodeoze/nlog.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/nmarkers.h>
 #include <nodeoze/nmacros.h>
 #include <nodeoze/nhttp.h>

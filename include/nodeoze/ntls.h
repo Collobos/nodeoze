@@ -30,7 +30,6 @@
 #include <nodeoze/nstream.h>
 #include <nodeoze/nbuffer.h>
 #include <nodeoze/ntypes.h>
-#include <nodeoze/nerror.h>
 
 namespace nodeoze {
 

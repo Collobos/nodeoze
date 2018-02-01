@@ -30,17 +30,17 @@
 
 using namespace nodeoze;
 
-class syslog : public log::sink
+class apple_syslog : public log::sink
 {
 public:
 
-	syslog()
+	apple_syslog()
 	:
 		m_log( os_log_create( "com.collobos.nodeoze", log::shared().name().c_str() ) )
 	{
 	}
 
-	virtual ~syslog()
+	virtual ~apple_syslog()
 	{
 	}
 
@@ -62,6 +62,6 @@ private:
 std::shared_ptr< log::sink >
 log::sink::system()
 {
-	return std::make_shared< syslog >();
+	return std::make_shared< apple_syslog >();
 }
 

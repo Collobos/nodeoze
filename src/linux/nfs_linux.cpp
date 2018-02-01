@@ -27,7 +27,6 @@
 #include "nfs_linux.h"
 #include <nodeoze/nmacros.h>
 #include <nodeoze/nshell.h>
-#include <nodeoze/nerror.h>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/file.h>
@@ -238,7 +237,7 @@ fs_linux::rmdir( const path &p )
 
 	auto ret = shell::execute( "/bin/rm -fr \"%\"", p );
 
-	return ( ret == 0 ) ? std::error_code() : make_error_code( err_t::internal_error );
+	return ( ret == 0 ) ? std::error_code() : make_error_code( std::errc::no_such_process );
 }
 
 

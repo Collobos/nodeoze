@@ -27,7 +27,6 @@
 #include <nodeoze/nfs.h>
 #include <nodeoze/nunicode.h>
 #include <nodeoze/nmacros.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/nlog.h>
 #include <iostream>
 #include <sys/types.h>

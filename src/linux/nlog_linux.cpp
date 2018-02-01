@@ -42,60 +42,58 @@ using namespace nodeoze;
 
 static const int FACILITY = LOG_DAEMON;
 
-void
-log::init( const std::string &name )
+class linux_syslog : public log::sink
 {
-    if ( !m_mutex )
+public:
+
+	linux_syslog()
 	{
-		m_mutex = new std::recursive_mutex;
-		init_limiter();
+		openlog( log::shared().name().c_str(), LOG_PID, FACILITY );
 	}
 
-	openlog( name.c_str(), LOG_PID, FACILITY );
-}
+	virtual ~linux_syslog()
+	{
+	}
+
+	virtual void
+	put( log::level_t level, std::chrono::system_clock::time_point when, std::uint32_t pid, std::uint32_t tid, const std::string &file, const std::string &func, std::uint32_t line, const std::string &message )
+	{
+		std::ostringstream os;
+
+		os << pid << ":" << tid << " " << std::to_string( when ) << " " << prune_filename( file ) << ":" << line << " " << prune_function( func ) << " " << message << std::endl;
+
+		switch ( level )
+		{
+			case log::level_t::info:
+			{
+				syslog( LOG_INFO, "%s", os.str().c_str() );
+			}
+			break;
+
+			case log::level_t::warning:
+			{
+				syslog( LOG_WARNING, "%s", os.str().c_str() );
+			}
+			break;
+
+			case log::level_t::error:
+			{
+				syslog( LOG_ERR, "%s", os.str().c_str() );
+			}
+			break;
+
+			default:
+			{
+				syslog( LOG_DEBUG, "%s", os.str().c_str() );
+			}
+			break;
+		}
+	}
+};
 
 
-void
-log::cleanup( const std::string &name )
+std::shared_ptr< log::sink >
+log::sink::system()
 {
-}
-
-
-void
-log::put_system_log( level_t l, const std::string &message )
-{
-    switch ( l )
-    {
-        case level_t::info:
-        {
-            syslog( LOG_INFO, "%s", message.c_str() );
-        }
-        break;
-
-        case level_t::warning:
-        {
-            syslog( LOG_WARNING, "%s", message.c_str() );
-        }
-        break;
-
-        case level_t::error:
-        {
-            syslog( LOG_ERR, "%s", message.c_str() );
-        }
-        break;
-
-        default:
-        {
-            syslog( LOG_DEBUG, "%s", message.c_str() );
-        }
-        break;
-    }
-}
-
-
-void
-log::put_console_log( const std::string &message )
-{
-	std::lock_guard< std::recursive_mutex > lock( *m_mutex );
-	fprintf( stderr, "%s\n", message.c_str() );
+	return std::make_shared< linux_syslog >();
 }

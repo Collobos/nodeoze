@@ -31,7 +31,6 @@
 #include <nodeoze/nendpoint.h>
 #include <nodeoze/nbuffer.h>
 #include <nodeoze/nstream.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/nuri.h>
 #include <algorithm>
 #include <vector>

@@ -42,6 +42,43 @@ namespace nodeoze {
 
 namespace rpc {
 
+enum class errc : std::int32_t
+{
+	ok					= 0,
+	invalid_request		= -32600,
+	method_not_found	= -32601,
+	invalid_params		= -32602,
+	internal_error		= -32603,
+	parse_error			= -32700
+};
+
+const std::error_category&
+error_category();
+
+inline std::error_code
+make_error_code( const nodeoze::rpc::errc &val )
+{
+	return std::error_code( static_cast< int >( val ), nodeoze::rpc::error_category() );
+}
+
+inline bool
+is_system_defined_error( std::int32_t val )
+{
+	return ( ( static_cast< errc >( val ) == errc::parse_error ) || ( ( static_cast< errc >( val )  >= errc::internal_error ) && ( static_cast< errc >( val ) <= errc::invalid_request ) ) );
+}
+
+inline bool
+is_user_defined_error( std::int32_t val )
+{
+	return ( ( val >= -32099 ) && ( val <= -32000 ) );
+}
+
+any
+make_error( std::error_code error );
+
+any
+make_error( const any &message, std::error_code err );
+	
 class connection : public nodeoze::connection
 {
 public:
@@ -77,7 +114,7 @@ class manager
 	
 public:
 
-	typedef std::function< nodeoze::err_t ( any &params ) >				server_preflight_f;
+	typedef std::function< std::error_code ( any &params ) >			server_preflight_f;
 	typedef std::function< void ( any &result, bool close ) >			server_reply_f;
 	typedef std::function< void ( any &params ) >						server_notification_f;
 	typedef std::function< void ( any &params, server_reply_f reply ) >	server_request_f;
@@ -155,17 +192,17 @@ public:
 			
 				if ( message.is_member( "id" ) )
 				{
-					auto status = err_t::ok;
+					auto err 	= std::error_code();
 					auto id		= message[ "id" ].to_uint32();
 	
 					mlog( marker::rpc, log::level_t::info, "<-- % (%)", message, id );
 		
 					if ( m_preflight_handler )
 					{
-						status = m_preflight_handler( message );
+						err = m_preflight_handler( message );
 					}
 					
-					if ( status == nodeoze::err_t::ok )
+					if ( !err )
 					{
 						auto it = m_request_handlers.find( method );
 								
@@ -182,7 +219,7 @@ public:
 									
 									if ( root.is_member( "error" ) )
 									{
-										mlog( marker::rpc, log::level_t::info, "--> % (%) : %", message[ "method" ], id, root[ "error" ][ "code" ].to_err() );
+										mlog( marker::rpc, log::level_t::info, "--> % (%) : %", message[ "method" ], id, root[ "error" ][ "code" ] );
 									}
 									else
 									{
@@ -194,17 +231,17 @@ public:
 							}
 							else
 							{
-								func( make_error( message, err_t::invalid_params ), false );
+								func( make_error( message, make_error_code( errc::invalid_params ) ), false );
 							}
 						}
 						else
 						{
-							func( make_error( message, err_t::method_not_found ), false );
+							func( make_error( message, make_error_code( errc::method_not_found ) ), false );
 						}
 					}
 					else
 					{
-						func( make_error( message, status ), false );
+						func( make_error( message, err ), false );
 					}
 				}
 				else
@@ -252,22 +289,33 @@ public:
 						
 				if ( it != m_reply_handlers.end() )
 				{
-					nodeoze::err_t		error_code = nodeoze::err_t::ok;
-					std::string			error_message;
+					std::error_code	err;
 			
 					if ( !message[ "error" ].is_null() )
 					{
-						error_code		= message[ "error" ][ "code" ].to_err();
-						error_message	= message[ "error" ][ "message" ].to_string();
+						auto code = message[ "error" ][ "code" ].to_int32();
+
+						if ( is_system_defined_error( code ) )
+						{
+							err = make_error_code( static_cast< errc >( message[ "error" ][ "code" ].to_int32() ) );
+						}
+						else if ( is_user_defined_error( code ) && m_user_defined_error_category )
+						{
+							err = std::error_code( message[ "error" ][ "code" ].to_int32(), *m_user_defined_error_category );
+						}
+						else
+						{
+							err = make_error_code( errc::internal_error );
+						}
 					}
 					
-					mlog( marker::rpc, log::level_t::info, "<-- (%) : %", id, error_code );
+					mlog( marker::rpc, log::level_t::info, "<-- (%) : % (%)", id, err.value(), err.message() );
 					
 					auto promise = it->second.second;
 					
 					m_reply_handlers.erase( it );
 					
-					if ( error_code == err_t::ok )
+					if ( !err )
 					{
 						any result = message[ "result" ];
 						
@@ -275,7 +323,7 @@ public:
 					}
 					else
 					{
-						promise.reject( make_error_code( error_code ), reject_context );
+						promise.reject( err, reject_context );
 					}
 				}
 				else
@@ -294,12 +342,12 @@ public:
 	void
 	terminate_requests( oid_t oid );
 	
-	static any
-	make_error( std::error_code error );
+	inline void
+	set_user_defined_error_category( std::error_category *category )
+	{
+		m_user_defined_error_category = category;
+	}
 
-	static any
-	make_error( err_t err );
-	
 private:
 
 	typedef std::pair< std::size_t, server_notification_f >								notification_target;
@@ -310,12 +358,10 @@ private:
 	
 	typedef std::unordered_map< std::uint64_t, std::chrono::system_clock::time_point >	request_start_times;
 	
-	static any
-	make_error( const any &message, err_t err );
-	
 	bool
 	validate( const any &message, any &error );
 	
+	std::error_category								*m_user_defined_error_category	= nullptr;
 	server_preflight_f								m_preflight_handler;
 	notification_handlers							m_notification_handlers;
 	request_handlers								m_request_handlers;
@@ -327,6 +373,12 @@ private:
 
 }
 
+}
+
+namespace std
+{
+	template<>
+	struct is_error_code_enum< nodeoze::rpc::errc > : public std::true_type {};
 }
 
 #endif

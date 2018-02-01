@@ -30,7 +30,6 @@
 #include <nodeoze/nstream.h>
 #include <nodeoze/nuri.h>
 #include <nodeoze/nbuffer.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/ntypes.h>
 #include <queue>
 

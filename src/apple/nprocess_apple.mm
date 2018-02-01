@@ -28,7 +28,6 @@
 #include <nodeoze/nrunloop.h>
 #include <nodeoze/nmarkers.h>
 #include <nodeoze/nthread.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/nlog.h>
 #include <Foundation/Foundation.h>
 #include <thread>

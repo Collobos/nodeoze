@@ -47,7 +47,6 @@
 #include <nodeoze/nevent.h>
 #include <nodeoze/nexpected.h>
 #include <nodeoze/nfs.h>
-#include <nodeoze/nkeychain.h>
 #include <nodeoze/nnotification.h>
 #include <nodeoze/nuuid.h>
 #include <nodeoze/nsha1.h>
@@ -60,7 +59,6 @@
 #include <nodeoze/nmacros.h>
 #include <nodeoze/nmime.h>
 #include <nodeoze/nmsgpack.h>
-#include <nodeoze/noauth.h>
 #include <nodeoze/noid.h>
 #include <nodeoze/npath.h>
 #include <nodeoze/nprocess.h>

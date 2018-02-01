@@ -75,8 +75,6 @@ class socket::handle : protected uv_tcp_s
 {
 public:
 
-	typedef std::function< void ( nodeoze::err_t err, buffer &buf ) >	recv_reply_f;
-	
 	handle( tcp::socket *owner )
 	{
 		auto err = uv_tcp_init( uv_default_loop(), this );
@@ -510,8 +508,6 @@ class socket::handle : protected uv_udp_s
 {
 public:
 
-	typedef std::function< void ( nodeoze::err_t err, const ip::endpoint &from, buffer buf ) >	recv_reply_f;
-
 	handle( udp::socket *owner )
 	{
 		auto err = uv_udp_init( uv_default_loop(), this );
@@ -730,18 +726,6 @@ protected:
 		else if ( nread < 0 )
 		{
 			self->owner()->on_recv( std::error_code( nread, libuv::error_category() ), from, buffer() );
-			/*
-			else if ( nread == UV__EOF )
-			{
-				self->owner()->on_recv( err_t::eof, from, buffer() );
-			}
-			else if ( nread != 0 )
-			{
-				nlog( log::level_t::error, "recv error % (%)", nread, uv_strerror( static_cast< int >( nread ) ) );
-			
-				self->owner()->on_recv( err_t::network_error, from, buffer() );
-			}
-		*/
 		}
 		
 	exit:

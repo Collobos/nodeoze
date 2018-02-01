@@ -588,7 +588,7 @@ machine_win32::get_index_and_mask( sockaddr *addr, std::uint32_t &index, ip::add
 	for ( i = 0; i < 100; i++ )
 	{
 		auto res = GetIpAddrTable( pIPAddrTable, &dwSize, 0 );
-		ncheck_error_action_quiet( ( res == ERROR_SUCCESS ) || ( res == ERROR_INSUFFICIENT_BUFFER ), err = make_error_code( err_t::internal_error ), exit );
+		ncheck_error_action_quiet( ( res == ERROR_SUCCESS ) || ( res == ERROR_INSUFFICIENT_BUFFER ), err = error_code( res, std::system_category() ), exit );
 
 		if ( res != ERROR_INSUFFICIENT_BUFFER )
 		{
@@ -596,10 +596,10 @@ machine_win32::get_index_and_mask( sockaddr *addr, std::uint32_t &index, ip::add
 		}
 
 		pIPAddrTable = (MIB_IPADDRTABLE *) realloc( pIPAddrTable, dwSize );
-		ncheck_error_action_quiet( pIPAddrTable, err = make_error_code( err_t::no_memory ), exit );
+		ncheck_error_action_quiet( pIPAddrTable, err = make_error_code( std::errc::not_enough_memory ), exit );
 	}
 
-	err = make_error_code( err_t::internal_error );
+	err = make_error_code( std::errc::no_such_device_or_address );
 
 	for ( i = 0; i < pIPAddrTable->dwNumEntries; i++ )
 	{

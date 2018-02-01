@@ -196,7 +196,7 @@ rpc::manager::validate( const any &message, any &error )
       
 	if ( !message.is_object() || !message.is_member( "jsonrpc" ) || ( message[ "jsonrpc" ].to_string() != "2.0" ) )
 	{
-		err[ "code" ]		= err_t::invalid_request;
+		err[ "code" ]		= errc::invalid_request;
 		err[ "message" ]	= "Invalid JSON-RPC request.";
 		
 		error[ "id" ]		= any::null();
@@ -207,7 +207,7 @@ rpc::manager::validate( const any &message, any &error )
 	}
 	else if ( !message.is_member( "method" ) && !message.is_member( "id" ) )
 	{
-        err[ "code" ]		= err_t::invalid_request;
+        err[ "code" ]		= errc::invalid_request;
         err[ "message" ]	= "Invalid JSON-RPC request.";
 		
 		error[ "id" ]		= any::null();
@@ -218,7 +218,7 @@ rpc::manager::validate( const any &message, any &error )
 	}
 	else if ( message.is_member( "id" ) && !message[ "id" ].is_integer() )
 	{
-        err[ "code" ]		= err_t::invalid_request;
+        err[ "code" ]		= errc::invalid_request;
         err[ "message" ]	= "Invalid JSON-RPC request.";
 		
 		error[ "id" ]		= any::null();
@@ -229,7 +229,7 @@ rpc::manager::validate( const any &message, any &error )
 	}
 	else if ( message.is_member( "method" ) && !message["method"].is_string() )
 	{
-        err[ "code" ]		= err_t::invalid_request;
+        err[ "code" ]		= errc::invalid_request;
         err[ "message" ]	= "Invalid JSON-RPC request.";
 		
 		error[ "id" ]		= any::null();
@@ -266,20 +266,90 @@ rpc::manager::terminate_requests( oid_t oid )
 }
 
 
+class rpc_error_category : public std::error_category
+{
+public:
+
+	virtual const char*
+	name() const noexcept override
+    {
+		return "rpc";
+    }
+	
+    virtual std::string
+	message( int value ) const override
+    {
+		std::ostringstream os;
+		
+		switch ( static_cast< rpc::errc >( value ) )
+        {
+			case rpc::errc::ok:
+			{
+				os << "ok";
+			}
+			break;
+			
+			case rpc::errc::invalid_request:
+			{
+				os << "invalid request";
+			}
+			break;
+			
+			case rpc::errc::method_not_found:
+			{
+				os << "method not found";
+			}
+			break;
+			
+			case rpc::errc::invalid_params:
+			{
+				os << "invalid params";
+			}
+			break;
+			
+			case rpc::errc::internal_error:
+			{
+				os << "internal error";
+			}
+			break;
+			
+			case rpc::errc::parse_error:
+			{
+				os << "parse error";
+			}
+			break;
+		}
+		
+		return os.str();
+    }
+};
+
+const std::error_category&
+nodeoze::rpc::error_category()
+{
+	static auto instance = new rpc_error_category;
+    return *instance;
+}
+
 any
-rpc::manager::make_error( std::error_code error )
+rpc::make_error( std::error_code err )
 {
 	any reply;
 
-	if ( error.category() == nodeoze::error_category() )
+	if ( err.category() == rpc::error_category() )
 	{
-		reply[ "error" ][ "code" ]		= error.value();
-		reply[ "error" ][ "message" ]	= error.message();
+		reply[ "error" ][ "code" ]		= err.value();
+		reply[ "error" ][ "message" ]	= err.message();
+	}
+	else if ( is_user_defined_error( err.value() ) )
+	{
+		reply[ "error" ][ "code" ]		= err.value();
+		reply[ "error" ][ "message" ]	= err.message();
 	}
 	else
 	{
-		reply[ "error" ][ "code" ]		= err_t::unexpected;
-		reply[ "error" ][ "message" ]	= "Unknown error";
+		reply[ "error" ][ "code" ]		= errc::internal_error;
+		reply[ "error" ][ "message" ]	= "unknown";
 	}
 
 	return reply;
@@ -287,26 +357,11 @@ rpc::manager::make_error( std::error_code error )
 
 
 any
-rpc::manager::make_error( err_t err )
+rpc::make_error( const any &in, std::error_code err )
 {
-	any reply;
-					
-	reply[ "error" ][ "code" ]		= err;
-	reply[ "error" ][ "message" ]	= err_to_string( err );
-	
-	return reply;
-}
-
-
-any
-rpc::manager::make_error( const any &in, err_t err )
-{
-	any error;
 	any out;
 					
-	error[ "code" ]		= err;
-	error[ "message" ]	= err_to_string( err );
-	out[ "error" ]		= error;
+	out[ "error" ]		= make_error( err );
 	out[ "jsonrpc" ]	= "2.0";
 	out[ "id" ]			= in[ "id" ];
 	

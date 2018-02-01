@@ -30,7 +30,6 @@
 #include <nodeoze/nusername.h>
 #include <nodeoze/win32/nuser.h>
 #include <nodeoze/nmacros.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/njson.h>
 #include <nodeoze/nmarkers.h>
 #include <nodeoze/nthread.h>

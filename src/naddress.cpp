@@ -44,7 +44,6 @@
 #include <nodeoze/nrunloop.h>
 #include <nodeoze/nunicode.h>
 #include <nodeoze/nmachine.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/ntest.h>
 #include <nodeoze/nlog.h>
 #include <algorithm>

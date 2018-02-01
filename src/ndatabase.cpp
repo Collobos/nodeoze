@@ -64,13 +64,8 @@ database::open( const std::string &name )
 	if ( !name.empty() )
 	{
 		mlog( marker::database, log::level_t::info, "opening %", name.c_str() );
-		
-		m_prepared_statement_map.clear();
-		
-		for ( auto &stmt : m_prepared_statements )
-		{
-			stmt.finalize();
-		}
+
+		reset_all_prepared();
 		
 #if defined( UNICODE )
 		m_err = make_error_code( static_cast< errc >( sqlite3_open16( widen( name ).c_str(), &m_db ) ) );
@@ -87,7 +82,9 @@ database::open( const std::string &name )
 #endif
 			}
 
-			sqlite3_preupdate_hook( m_db, on_preupdate, this );
+			typedef void(*preupdate_hook_type)( void*, sqlite3*, int, char const*, char const*, sqlite3_int64, sqlite3_int64 );
+
+			sqlite3_preupdate_hook( m_db, reinterpret_cast< preupdate_hook_type >( on_preupdate ), this );
 			exec( "PRAGMA foreign_keys = ON;" );
 		}
 	}
@@ -109,14 +106,9 @@ database::close()
 	m_err = std::error_code();
 
 	mlog( marker::database, log::level_t::info, "closing db" );
-	
-	for ( auto stmt : m_prepared_statements )
-	{
-		stmt.finalize();
-	}
-	
-	m_prepared_statements.clear();
 
+	reset_all_prepared();
+	
 	remove_all_listeners( "insert" );
 	remove_all_listeners( "update" );
 	remove_all_listeners( "delete" );
@@ -142,30 +134,12 @@ database::close()
 std::error_code
 database::exec( const std::string &str )
 {
-	char		*error	= nullptr;
-	
 	mlog( marker::database, log::level_t::info, "m_db = %, %", m_db, str );
 
-	int err = sqlite3_exec( m_db, str.c_str(), nullptr, nullptr, &error );
+	m_err = make_error_code( static_cast< errc >( sqlite3_exec( m_db, str.c_str(), nullptr, nullptr, nullptr ) ) );
 	
-	mlog( marker::database, log::level_t::info, "exec result code = %(%)", err, sqlite3_errstr( err ) );
+	mlog( marker::database, log::level_t::info, "exec % (%)", m_err.value(), m_err.message() );
 	
-	if ( err )
-	{
-		nlog( log::level_t::error, "sqlite3_exec() failed: %, %", err, error );
-		nlog( log::level_t::error, "exec string: %", str );
-		m_err = make_error_code( static_cast< database::errc >( err ) );
-	}
-	else
-	{
-		m_err = make_error_code( database::errc::ok );
-	}
-	
-	if ( error )
-	{
-		sqlite3_free( error );
-	}
-
 	return m_err;
 }
 
@@ -180,6 +154,71 @@ database::select( const std::string &str )
 	auto err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
 
 	return ( !err ) ? statement( stmt ) : statement( err );
+}
+
+
+database::statement
+database::prepare( const std::string &str )
+{
+	mlog( marker::database, log::level_t::info, "%", str );
+
+	sqlite3_stmt	*stmt;
+	statement		ret;
+	
+	m_err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
+
+	if ( !m_err )
+	{
+		ret = statement( stmt );
+		m_prepared_statements.push_back( ret );
+	}
+	else
+	{
+		ret = statement( m_err );
+	}
+	
+	return ret;
+}
+
+
+std::error_code
+database::prepare( const std::string &str, std::function< std::error_code ( statement &stmt ) > func )
+{
+	mlog( marker::database, log::level_t::info, "%", str );
+	
+	auto err	= std::error_code();
+	auto it		= m_prepared_statement_map.find( str );
+	
+	if ( it == m_prepared_statement_map.end() )
+	{
+		sqlite3_stmt *stmt;
+
+		err = make_error_code( static_cast< database::errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
+		ncheck_error_quiet( !err, exit );
+
+		m_prepared_statement_map.emplace( std::piecewise_construct, std::forward_as_tuple( str ), std::forward_as_tuple( stmt ) );
+		it = m_prepared_statement_map.find( str );
+	}
+	
+	err = func( it->second );
+	
+	it->second.reset_prepared();
+	
+exit:
+	
+	return err;
+}
+
+
+void
+database::reset_all_prepared()
+{
+	m_prepared_statement_map.clear();
+
+	for ( auto &stmt : m_prepared_statements )
+	{
+		stmt.reset_prepared();
+	}
 }
 
 
@@ -396,58 +435,6 @@ exit:
 	} );
 }
 
-
-database::statement
-database::prepare( const std::string &str )
-{
-	mlog( marker::database, log::level_t::info, "%", str );
-
-	sqlite3_stmt	*stmt;
-	statement		ret;
-	
-	m_err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
-
-	if ( !m_err )
-	{
-		ret = statement( stmt );
-		m_prepared_statements.push_back( ret );
-	}
-	else
-	{
-		ret = statement( m_err );
-	}
-	
-	return ret;
-}
-
-
-std::error_code
-database::prepare( const std::string &str, std::function< std::error_code ( statement &stmt ) > func )
-{
-	mlog( marker::database, log::level_t::info, "%", str );
-	
-	auto err	= std::error_code();
-	auto it		= m_prepared_statement_map.find( str );
-	
-	if ( it == m_prepared_statement_map.end() )
-	{
-		sqlite3_stmt *stmt;
-
-		err = make_error_code( static_cast< database::errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
-		ncheck_error_quiet( !err, exit );
-
-		m_prepared_statement_map.emplace( std::piecewise_construct, std::forward_as_tuple( str ), std::forward_as_tuple( stmt ) );
-		it = m_prepared_statement_map.find( str );
-	}
-	
-	err = func( it->second );
-	
-	it->second.reset_prepared();
-	
-exit:
-	
-	return err;
-}
 
 
 std::error_code
@@ -815,19 +802,7 @@ database::statement::statement( std::error_code err )
 	m_shared->refs		= 1;
 }
 
-#if 0
-database::statement::~statement()
-{
-	unshared();
 
-	//if ( m_stmt && m_finalize )
-	{
-	//	finalize();
-	}
-}
-#endif
-
-	
 void
 database::statement::finalize()
 {
@@ -1445,25 +1420,16 @@ database::statement::set_text( const std::string& value, const std::string& var_
 bool
 database::statement::set_text( const std::string& value, int var_index )
 {
-	auto ok = true;
-	
-	m_shared->err = make_error_code( database::errc::ok );
-
 	if ( m_shared->stmt )
 	{
-		auto result = sqlite3_bind_text( m_shared->stmt, var_index, value.c_str(), -1, SQLITE_TRANSIENT );
-		if ( result != SQLITE_OK )
-		{
-			ok = false;
-			m_shared->err = make_error_code( static_cast< database::errc >( result ) );
-		}
+		m_shared->err = make_error_code( static_cast< errc >( sqlite3_bind_text( m_shared->stmt, var_index, value.c_str(), -1, SQLITE_TRANSIENT ) ) );
 	}
 	else
 	{
-		ok = false;
 		m_shared->err = make_error_code( database::errc::internal_error );
 	}
-	return ok;
+
+	return ( !m_shared->err ) ? true : false;;
 }
 
 
@@ -1907,5 +1873,13 @@ TEST_CASE( "nodeoze/scalability/database" )
 		runloop::shared().run( runloop::mode_t::nowait );
 		
 		CHECK( got_callback == tries );
+	}
+
+	SUBCASE( "value" )
+	{
+		auto s = database::value( std::string( "test" ) );
+		CHECK( s == "'test'" );
+		s = database::value( std::string( "test" ), false );
+		CHECK( s == "test" );
 	}
 }

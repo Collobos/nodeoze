@@ -29,7 +29,6 @@
 #include <nodeoze/nlog.h>
 #include <nodeoze/nrandom.h>
 #include <nodeoze/nmacros.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/ntest.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>

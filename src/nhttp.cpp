@@ -34,7 +34,6 @@
 #include <nodeoze/nws.h>
 #include <nodeoze/nbase64.h>
 #include <nodeoze/nstring.h>
-#include <nodeoze/nerror.h>
 #include <nodeoze/nproxy.h>
 #include <nodeoze/nmacros.h>
 #include <nodeoze/nlog.h>

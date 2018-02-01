@@ -1,5 +1,6 @@
 #include <nodeoze/npath.h>
 #include <nodeoze/nmacros.h>
+#include <nodeoze/nlog.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
