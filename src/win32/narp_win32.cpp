@@ -117,7 +117,7 @@ arp_win32::resolve( const ip::address &ip_address )
 				}
 				else
 				{
-					ret.reject( err );
+					ret.reject( err, reject_context );
 				}
 			} );
 		} );

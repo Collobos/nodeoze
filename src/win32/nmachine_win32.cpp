@@ -588,7 +588,7 @@ machine_win32::get_index_and_mask( sockaddr *addr, std::uint32_t &index, ip::add
 	for ( i = 0; i < 100; i++ )
 	{
 		auto res = GetIpAddrTable( pIPAddrTable, &dwSize, 0 );
-		ncheck_error_action_quiet( ( res == ERROR_SUCCESS ) || ( res == ERROR_INSUFFICIENT_BUFFER ), err = error_code( res, std::system_category() ), exit );
+		ncheck_error_action_quiet( ( res == ERROR_SUCCESS ) || ( res == ERROR_INSUFFICIENT_BUFFER ), err = std::error_code( res, std::system_category() ), exit );
 
 		if ( res != ERROR_INSUFFICIENT_BUFFER )
 		{

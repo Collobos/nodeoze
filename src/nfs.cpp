@@ -78,7 +78,7 @@ fs::create_only( const path &p )
 
 	fd = ::open( p.to_string().c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0660 );
 
-	ncheck_error( fd != -1, exit, "exclusive open failed: %", nodeoze::system_error() );
+	ncheck_error( fd != -1, exit, "exclusive open failed" );
 
 #if defined( WIN32 )
 	fp = ::_fdopen( fd, "wb" );

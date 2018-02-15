@@ -11,23 +11,14 @@
 
 using namespace nodeoze;
 
-static HANDLE g_event_source	= nullptr;
-
-void
-log::init( const std::string &name )
+class system_logger : public log::sink
 {
-	m_name = name;
+public:
 
-	HKEY key = NULL;
-
-	if ( !m_mutex )
+	system_logger()
 	{
-		m_mutex = new std::recursive_mutex;
-		init_limiter();
-	}
+		HKEY key = NULL;
 
-	if ( g_event_source == nullptr )
-	{
 		TCHAR			path[ MAX_PATH ];
 		int				typesSupported;
 		int				err;
@@ -35,7 +26,7 @@ log::init( const std::string &name )
 	
 		// Build the path string using the fixed registry path and app name.
 	
-		auto key_name = std::wstring( TEXT( "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\" ) ) + widen( name );
+		auto key_name = std::wstring( TEXT( "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\" ) ) + widen( log::shared().name() );
 	
     	// Add/Open the source name as a sub-key under the Application key in the EventLog registry key.
 	
@@ -75,69 +66,74 @@ log::init( const std::string &name )
 			goto exit;
 		}
 	
-		g_event_source = RegisterEventSource( NULL, widen( name ).c_str() );
+		m_event_source = RegisterEventSource( NULL, widen( log::shared().name() ).c_str() );
 		
-		std::atexit( []()
+	exit:
+
+		if ( key )
 		{
-			if ( g_event_source )
+			RegCloseKey( key );
+		}
+	}
+
+	virtual ~system_logger()
+	{
+		if ( m_event_source )
+		{
+			DeregisterEventSource( m_event_source );
+			m_event_source = nullptr;
+		}
+	}
+
+	virtual void
+	put( log::level_t level, std::chrono::system_clock::time_point when, std::uint32_t pid, std::uint32_t tid, const std::string &file, const std::string &func, std::uint32_t line, const std::string &message )
+	{
+		if ( m_event_source )
+		{
+			WORD				type;
+			const char			*array[ 1 ];
+			std::ostringstream	os;
+			BOOL				ok;
+
+			os << pid << ":" << tid << " " << std::to_string( when ) << " " << prune_filename( file ) << ":" << line << " " << prune_function( func ) << " " << message << std::endl;
+
+			// Map the debug level to a Windows EventLog type.
+		
+			if ( level == log::level_t::warning )
 			{
-				DeregisterEventSource( g_event_source );
+				type = EVENTLOG_WARNING_TYPE;
 			}
-			
-		exit:
+			else if ( level == log::level_t::error )
+			{
+				type = EVENTLOG_ERROR_TYPE;
+			}
+			else
+			{
+				type = EVENTLOG_INFORMATION_TYPE;
+			}
+		
+			// Add the the string to the event log.
 
-			return;
-		} );
+			array[ 0 ] = os.str().c_str();
+		
+			ok = ReportEventA( m_event_source, type, 0, NETKIT_LOG, NULL, 1, 0, array, NULL );
+		}
 	}
 
-exit:
+private:
 
-	if ( key )
-	{
-		RegCloseKey( key );
-	}
-}
+	HANDLE m_event_source = nullptr;
+};
 
 
-void
-log::cleanup( const std::string &name )
+std::shared_ptr< log::sink >
+log::sink::system()
 {
+	return std::make_shared< system_logger >();
 }
 
 
-void
-log::put_system_log( log::level_t l, const std::string &message )
-{
-	if ( g_event_source )
-	{
-		WORD		type;
-		const char	*array[ 1 ];
-		BOOL		ok;
-
-		// Map the debug level to a Windows EventLog type.
-	
-		if ( l == log::level_t::warning )
-		{
-			type = EVENTLOG_WARNING_TYPE;
-		}
-		else if ( l == log::level_t::error )
-		{
-			type = EVENTLOG_ERROR_TYPE;
-		}
-		else
-		{
-			type = EVENTLOG_INFORMATION_TYPE;
-		}
-	
-		// Add the the string to the event log.
-
-		array[ 0 ] = message.c_str();
-	
-		ok = ReportEventA( g_event_source, type, 0, NETKIT_LOG, NULL, 1, 0, array, NULL );
-	}
-}
-
-
+/*
 void
 log::put_console_log( const std::string &message )
 {
@@ -145,3 +141,4 @@ log::put_console_log( const std::string &message )
 	OutputDebugStringA( "\n" );
 	fprintf( stderr, "%s\n", message.c_str() );
 }
+*/

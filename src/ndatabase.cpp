@@ -181,35 +181,6 @@ database::prepare( const std::string &str )
 }
 
 
-std::error_code
-database::prepare( const std::string &str, std::function< std::error_code ( statement &stmt ) > func )
-{
-	mlog( marker::database, log::level_t::info, "%", str );
-	
-	auto err	= std::error_code();
-	auto it		= m_prepared_statement_map.find( str );
-	
-	if ( it == m_prepared_statement_map.end() )
-	{
-		sqlite3_stmt *stmt;
-
-		err = make_error_code( static_cast< database::errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
-		ncheck_error_quiet( !err, exit );
-
-		m_prepared_statement_map.emplace( std::piecewise_construct, std::forward_as_tuple( str ), std::forward_as_tuple( stmt ) );
-		it = m_prepared_statement_map.find( str );
-	}
-	
-	err = func( it->second );
-	
-	it->second.reset_prepared();
-	
-exit:
-	
-	return err;
-}
-
-
 void
 database::reset_all_prepared()
 {
@@ -683,12 +654,53 @@ exit:
 }
 
 
-oid_t
+database::oid_type
 database::last_oid() const
 {
 	return m_last_oid;
 }
 
+
+std::unordered_map< std::string, database::statement >::iterator
+database::tracked_prepared_statement( const std::string &str )
+{
+	sqlite3_stmt	*stmt;
+	auto			ret = m_prepared_statement_map.end();
+
+	auto err = make_error_code( static_cast< database::errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
+
+	if ( !err )
+	{
+		m_prepared_statement_map.emplace( std::piecewise_construct, std::forward_as_tuple( str ), std::forward_as_tuple( stmt ) );
+		ret = m_prepared_statement_map.find( str );
+	}
+
+	return ret;
+}
+
+
+database::statement
+database::transient_prepared_statement( const std::string &str )
+{
+	mlog( marker::database, log::level_t::info, "%", str );
+
+	sqlite3_stmt	*stmt;
+	statement		ret;
+	
+	m_err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, str.c_str(), -1, &stmt, nullptr ) ) );
+
+	if ( !m_err )
+	{
+		ret = statement( stmt );
+		m_prepared_statements.push_back( ret );
+	}
+	else
+	{
+		ret = statement( m_err );
+	}
+	
+	return ret;
+}
 
 void
 database::on_preupdate( void *v, sqlite3 *db, int op, char const *z_db, char const *z_name, std::int64_t key1, std::int64_t key2 )
@@ -1766,7 +1778,7 @@ TEST_CASE( "nodeoze/smoke/database" )
 		bool	got_callback = false;
 		int		check = 0;
 		
-		auto select = db.continuous_select( "*", "test", "WHERE count = 1", [&]( database::action_type action, oid_t oid, database::statement &stmt ) mutable
+		auto select = db.continuous_select( "*", "test", "WHERE count = 1", [&]( database::action_type action, database::oid_type oid, database::statement &stmt ) mutable
 		{
 			nunused( oid );
 			
@@ -1812,6 +1824,62 @@ TEST_CASE( "nodeoze/smoke/database" )
 
 		select.reset();
 	}
+
+	SUBCASE( "value" )
+	{
+		auto s = database::value( std::string( "test" ) );
+		CHECK( s == "'test'" );
+		s = database::value( std::string( "test" ), false );
+		CHECK( s == "test" );
+	}
+
+	SUBCASE( "prepare template func" )
+	{
+		auto err = db.prepare( std::string( "SELECT * from test WHERE oid = 1" ), [&]( auto &statement ) mutable
+		{
+			CHECK( statement.step() );
+
+			return std::error_code();
+		} );
+
+		CHECK( !err );
+	}
+
+	SUBCASE( "prepare template func reentrant" )
+	{
+		db.exec( "INSERT into test VALUES( NULL, \"hello world 2\", 2 );" );
+
+		CHECK( db.count( "test" ) == 2 );
+
+		auto err = db.prepare( std::string( "SELECT * from test WHERE message like ?" ), [&]( auto &statement ) mutable
+		{
+			statement.set_text( "%hello%", 1 );
+
+			CHECK( statement.step() );
+			CHECK( statement.int64_at_column( 0 ) == 1 );
+
+			auto err = db.prepare( std::string( "SELECT * from test WHERE message like ?" ), [&]( auto &statement ) mutable
+			{
+				statement.set_text( "%hello%", 1 );
+
+				CHECK( statement.step() );
+				CHECK( statement.int64_at_column( 0 ) == 1 );
+				CHECK( statement.step() );
+				CHECK( statement.int64_at_column( 0 ) == 2 );
+
+				return std::error_code();
+			} );
+
+			CHECK( !err );
+
+			CHECK( statement.step() );
+			CHECK( statement.int64_at_column( 0 ) == 2 );
+
+			return std::error_code();
+		} );
+
+		CHECK( !err );
+	}
 }
 
 TEST_CASE( "nodeoze/scalability/database" )
@@ -1829,7 +1897,7 @@ TEST_CASE( "nodeoze/scalability/database" )
 
 		for ( auto i = 0; i < tries; i++ )
 		{
-			selects.emplace_back( db.continuous_select( "*", "test", "WHERE count = 1", [&]( database::action_type action, oid_t oid, database::statement &stmt ) mutable
+			selects.emplace_back( db.continuous_select( "*", "test", "WHERE count = 1", [&]( database::action_type action, database::oid_type oid, database::statement &stmt ) mutable
 			{
 				nunused( oid );
 				
@@ -1873,13 +1941,5 @@ TEST_CASE( "nodeoze/scalability/database" )
 		runloop::shared().run( runloop::mode_t::nowait );
 		
 		CHECK( got_callback == tries );
-	}
-
-	SUBCASE( "value" )
-	{
-		auto s = database::value( std::string( "test" ) );
-		CHECK( s == "'test'" );
-		s = database::value( std::string( "test" ), false );
-		CHECK( s == "test" );
 	}
 }

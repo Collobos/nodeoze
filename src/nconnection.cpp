@@ -250,7 +250,7 @@ connection::subnet() const
 void
 connection::handle_resolve( const uri &resource, std::deque< ip::address > addrs, promise< void > ret )
 {
-	auto promises	= promise< ip::tcp::socket >::array_t();
+	auto promises	= promise< ip::tcp::socket >::array_type();
 	auto id			= m_id;
 	
 	assert( addrs.size() > 0 );

@@ -33,6 +33,9 @@
 #include <functional>
 #include <chrono>
 
+#if defined( WIN32 )
+#	include <winsock2.h>
+#endif
 
 namespace nodeoze {
 

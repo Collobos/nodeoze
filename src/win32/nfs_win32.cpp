@@ -26,6 +26,7 @@
 
 #include "nfs_win32.h"
 #include <nodeoze/nmacros.h>
+#include <nodeoze/nlog.h>
 #include <shlobj.h>
 #include <uv.h>
 #include <shellapi.h>

@@ -1,5 +1,6 @@
 #include <nodeoze/nusername.h>
 #include <nodeoze/nmacros.h>
+#include <nodeoze/nlog.h>
 #if defined( WIN32 )
 #	include <WinSock2.h>
 #	include <DSRole.h>

@@ -116,7 +116,7 @@ struct __promise_shared
 {
 	typedef std::function< void ( T&& ) >				resolve_f;
 	typedef std::function< void ( std::error_code ) >	reject_f;
-	typedef deque< T >									maybe_array_t;
+	typedef deque< T >									maybe_array_type;
 	
 	bool				resolved;
 	bool				rejected;
@@ -133,7 +133,7 @@ struct __promise_shared< void >
 {
 	typedef std::function< void () >					resolve_f;
 	typedef std::function< void ( std::error_code ) >	reject_f;
-	typedef void										maybe_array_t;
+	typedef void										maybe_array_type;
 	
 	bool				resolved;
 	bool				rejected;
@@ -149,22 +149,65 @@ class promise
 {
 public:
 
-	typedef deque< promise< T > >					promises_t;
-	typedef deque< promise< T > >					array_t;
-	typedef __promise_shared< T >					shared_t;
-	typedef typename shared_t::maybe_array_t		maybe_array_t;
-	
-	static promise< maybe_array_t >
-	all( promises_t promises );
+	typedef deque< promise< T > >					promises_type;
+	typedef deque< promise< T > >					array_type;
+	typedef __promise_shared< T >					shared_type;
+	typedef typename shared_type::maybe_array_type	maybe_array_type;
+
+	template< class Q = T >
+	static typename std::enable_if< std::is_void< Q >::value, promise< T > >::type
+	build()
+	{
+		auto ret = promise< T >();
+
+		ret.resolve();
+
+		return ret;
+	}
+
+	template< class Q = T >
+	static typename std::enable_if< !std::is_void< Q >::value, promise< T > >::type
+	build( Q &&val )
+	{
+		auto ret = promise< T >();
+
+		ret.resolve( std::move( val ) );
+
+		return ret;
+	}
+
+	template< class Q = T >
+	static typename std::enable_if< !std::is_void< Q >::value, promise< T > >::type
+	build( const Q &val )
+	{
+		auto ret = promise< T >();
+
+		ret.resolve( val );
+
+		return ret;
+	}
 
 	static promise< T >
-	race( promises_t promises );
+	build( std::error_code err )
+	{
+		auto ret = promise< T >();
+
+		ret.reject( err, reject_context );
+
+		return ret;
+	}
+
+	static promise< maybe_array_type >
+	all( promises_type promises );
+
+	static promise< T >
+	race( promises_type promises );
 	
 	static promise< T >
-	any( promises_t promises );
+	any( promises_type promises );
 	
 	static bool
-	are_all_finished( const promises_t &promises )
+	are_all_finished( const promises_type &promises )
 	{
 		bool ok = true;
 
@@ -627,7 +670,7 @@ private:
 		
 		m_shared->resolve	= [=]( Q &&val ) mutable
 		{
-			resolve_func( val ).then( [=]() mutable
+			resolve_func( std::move( val ) ).then( [=]() mutable
 			{
 				ret.resolve();
 			},
@@ -803,8 +846,8 @@ private:
 }
 
 template< class T >
-inline nodeoze::promise< typename nodeoze::promise< T >::maybe_array_t >
-nodeoze::promise< T >::all( promises_t promises )
+inline nodeoze::promise< typename nodeoze::promise< T >::maybe_array_type >
+nodeoze::promise< T >::all( promises_type promises )
 {
 	auto count			= std::make_shared< std::uint32_t >( 0 );
 	auto total			= promises.size();
@@ -857,8 +900,8 @@ nodeoze::promise< T >::all( promises_t promises )
 }
 
 template<>
-inline nodeoze::promise< typename nodeoze::promise< void >::maybe_array_t >
-nodeoze::promise< void >::all( promises_t promises )
+inline nodeoze::promise< typename nodeoze::promise< void >::maybe_array_type >
+nodeoze::promise< void >::all( promises_type promises )
 {
 	auto count			= std::make_shared< std::uint32_t >( 0 );
 	auto total			= promises.size();
@@ -902,7 +945,7 @@ nodeoze::promise< void >::all( promises_t promises )
 
 template< class T >
 inline nodeoze::promise< T >
-nodeoze::promise< T >::race( promises_t promises )
+nodeoze::promise< T >::race( promises_type promises )
 {
 	promise< T > ret;
 	
@@ -936,7 +979,7 @@ nodeoze::promise< T >::race( promises_t promises )
 
 template<>
 inline nodeoze::promise< void >
-nodeoze::promise< void >::race( promises_t promises )
+nodeoze::promise< void >::race( promises_type promises )
 {
 	promise< void > ret;
 	
@@ -970,7 +1013,7 @@ nodeoze::promise< void >::race( promises_t promises )
 
 template< class T >
 inline nodeoze::promise< T >
-nodeoze::promise< T >::any( promises_t promises )
+nodeoze::promise< T >::any( promises_type promises )
 {
 	auto count			= std::make_shared< std::uint32_t >( 0 );
 	auto total			= promises.size();
@@ -1014,7 +1057,7 @@ nodeoze::promise< T >::any( promises_t promises )
 
 template<>
 inline nodeoze::promise< void >
-nodeoze::promise< void >::any( promises_t promises )
+nodeoze::promise< void >::any( promises_type promises )
 {
 	auto count			= std::make_shared< std::uint32_t >( 0 );
 	auto total			= promises.size();

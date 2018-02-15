@@ -294,7 +294,7 @@ private:
 	inline void
 	really_post( event_type event, nodeoze::any data, std::error_code err )
 	{
-		if ( !m_in_transition )
+		if ( !m_in_transition && m_event_queue.empty() )
 		{
 			auto transition = m_machine.find( std::make_pair( m_state.value(), event ) );
 			
@@ -321,6 +321,7 @@ private:
 #if defined( DEBUG )
 					assert( m_state == saved );
 #endif
+					m_in_transition = false;
 				}
 				else
 				{
@@ -364,8 +365,6 @@ private:
 				err
 			} );
 		}
-
-		m_in_transition = false;
 	}
 
 	inline void

@@ -55,6 +55,8 @@ public:
 
 	class statement;
 
+	typedef std::int64_t oid_type;
+
 	enum class action_type : std::uint8_t
 	{
 		insert = 0,
@@ -62,11 +64,11 @@ public:
 		remove = 2
 	};
 
-	typedef std::function< void ( action_type action, oid_t oid, statement &stmt ) >						continuous_select_handler_f;
+	typedef std::function< void ( action_type action, oid_type oid, statement &stmt ) >						continuous_select_handler_f;
 	typedef std::function < std::string ( void ) >															backup_hook_f;
 	typedef std::function < std::string ( void ) >															restore_hook_f;
 	
-	typedef std::vector< oid_t > oids;
+	typedef std::vector< oid_type > oids;
 
 	enum class errc
 	{
@@ -283,6 +285,8 @@ public:
 
 	private:
 
+		friend class database;
+
 		inline void
 		share( const statement &rhs )
 		{
@@ -325,10 +329,33 @@ public:
 			rhs.m_shared	= nullptr;
 		}
 
+		bool
+		reentrant() const
+		{
+			auto ret = bool( false );
+
+			if ( m_shared )
+			{
+				ret = m_shared->reentrant;
+			}
+
+			return ret;
+		}
+
+		void
+		set_reentrant( bool val )
+		{
+			if ( m_shared )
+			{
+				m_shared->reentrant = val;
+			}
+		}
+
 		struct shared
 		{
 			sqlite3_stmt			*stmt;
 			bool					finalize;
+			bool					reentrant;
 			sqlite3					*db;
 			preupdate_getter_type	getter;
 			std::error_code			err;
@@ -388,7 +415,7 @@ public:
 
 	template< class T >
 	statement
-	select( oid_t oid )
+	select( oid_type oid )
 	{
 		return select( "SELECT * FROM % WHERE oid = %;", T::table_name(), oid );
 	}
@@ -435,9 +462,43 @@ public:
 	statement
 	prepare( const std::string &str );
 	
+	template< class F >
 	std::error_code
-	prepare( const std::string &str, std::function< std::error_code ( statement &stmt ) > func );
+	prepare( const std::string &str, F func )
+	{
+		mlog( marker::database, log::level_t::info, "%", str );
 	
+		auto err	= std::error_code();
+		auto it		= m_prepared_statement_map.find( str );
+		
+		if ( it == m_prepared_statement_map.end() )
+		{
+			it = tracked_prepared_statement( str );
+		}
+
+		if ( it != m_prepared_statement_map.end() )
+		{
+			if ( !it->second.reentrant() )
+			{
+				it->second.set_reentrant( true );
+				err = func( it->second );
+				it->second.set_reentrant( false );
+				it->second.reset_prepared();
+			}
+			else
+			{
+				auto stmt = transient_prepared_statement( str );
+				err = func( stmt );
+			}
+		}
+		else
+		{
+			err = make_error_code( std::errc::invalid_argument );
+		}
+		
+		return err;
+	}
+
 	void
 	reset_all_prepared();
 	
@@ -507,7 +568,7 @@ public:
 	std::error_code
 	backup_database( const nodeoze::path& backup_path, const std::vector<std::string>& statements, std::size_t step_size, int sleep_ms, std::atomic<bool>& exiting );
 	
-	oid_t
+	oid_type
 	last_oid() const;
 
 	std::error_code
@@ -517,7 +578,13 @@ public:
 	clear_error();
 
 private:
+
+	std::unordered_map< std::string, statement >::iterator
+	tracked_prepared_statement( const std::string &str );
 	
+	statement
+	transient_prepared_statement( const std::string &str );
+
 	static void
 	on_preupdate( void *v, sqlite3 *db, int op, char const *z_db, char const *z_name, std::int64_t key1, std::int64_t key2 );
 	
@@ -525,7 +592,7 @@ private:
 	log_callback( void *p_arg, int code, const char *msg );
 
 	sqlite3											*m_db;
-	oid_t											m_last_oid;
+	oid_type										m_last_oid;
 	std::error_code									m_err;
 	
 	std::unordered_map< std::string, statement >	m_prepared_statement_map;
