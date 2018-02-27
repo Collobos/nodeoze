@@ -25,6 +25,7 @@
  */
 
 #include <nodeoze/ntime.h>
+#include <string.h>
 #include <iostream>
 #include <ctime>
 

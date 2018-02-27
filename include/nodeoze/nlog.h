@@ -28,6 +28,7 @@
 #define _nodeoze_log_h
 
 #include <nodeoze/nsingleton.h>
+#include <nodeoze/unordered_map.h>
 #include <nodeoze/nevent.h>
 #include <nodeoze/nprintf.h>
 #include <nodeoze/nmacros.h>
@@ -39,7 +40,6 @@
 #include <memory>
 #include <vector>
 #include <mutex>
-#include <unordered_map>
 #include <unordered_set>
 #include <set>
 #include <assert.h>
@@ -264,12 +264,12 @@ public:
 				return !m_parent;
 			}
 
-			std::string												m_name;
-			ptr														m_parent;
-			mutable std::unordered_map<std::string, log::marker>	m_children;
-			std::string												m_path;
-			bool													m_path_created;
-			bool													m_enabled;
+			std::string										m_name;
+			ptr												m_parent;
+			mutable unordered_map<std::string, log::marker>	m_children;
+			std::string										m_path;
+			bool											m_path_created;
+			bool											m_enabled;
 		};
 
 	protected:

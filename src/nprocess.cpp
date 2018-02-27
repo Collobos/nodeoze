@@ -127,7 +127,7 @@ TEST_CASE( "nodeoze/smoke/process" )
 
 #elif defined( __linux__ )
 
-		auto command	= nodeoze::path( "/usr/bin/nodejs" );
+		auto command	= nodeoze::path( "/usr/bin/node" );
 
 #endif
 

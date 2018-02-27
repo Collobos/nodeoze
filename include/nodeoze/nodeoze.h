@@ -78,6 +78,7 @@
 #include <nodeoze/ntls.h>
 #include <nodeoze/ntime.h>
 #include <nodeoze/nrunloop.h>
+#include <nodeoze/unordered_map.h>
 #include <nodeoze/nunicode.h>
 #include <nodeoze/nuri.h>
 #include <nodeoze/nusername.h>

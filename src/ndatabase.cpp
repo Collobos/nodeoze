@@ -207,16 +207,21 @@ database::continuous_select( const std::string &columns, const std::string &tabl
 	auto os			= std::ostringstream();
 	auto operation	= scoped_operation();
 	auto context 	= std::make_shared< context_s >();
-	auto check_stmt	= static_cast< sqlite3_stmt* >( nullptr );
+	auto check_stmt	= std::shared_ptr< sqlite3_stmt >( nullptr );
 	auto checker	= []( sqlite3_stmt *check_stmt, auto oid ) mutable
 	{
-		sqlite3_reset( check_stmt );
+		auto err = std::error_code();
 
-		auto err = make_error_code( static_cast< errc >( sqlite3_bind_int64( check_stmt, 1, oid ) ) );
-
-		if ( err == errc::ok )
+		if ( check_stmt )
 		{
-			err = make_error_code( static_cast< errc >( sqlite3_step( check_stmt ) ) );
+			sqlite3_reset( check_stmt );
+
+			err = make_error_code( static_cast< errc >( sqlite3_bind_int64( check_stmt, 1, oid ) ) );
+
+			if ( err == errc::ok )
+			{
+				err = make_error_code( static_cast< errc >( sqlite3_step( check_stmt ) ) );
+			}
 		}
 
 		return err;
@@ -245,31 +250,43 @@ database::continuous_select( const std::string &columns, const std::string &tabl
 	{
 		os << "SELECT " << columns << " FROM " << table << " " << where << " AND oid = ?";
 	}
+
+	sqlite3_stmt *try_stmt;
 	
-	auto err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, os.str().c_str(), -1, &check_stmt, nullptr ) ) );
+	auto err = make_error_code( static_cast< errc >( sqlite3_prepare_v2( m_db, os.str().c_str(), -1, &try_stmt, nullptr ) ) );
 	ncheck_error( !err, exit, "sqlite3_prepare_v2() failed (%)", err );
-	
+
+	check_stmt = std::shared_ptr< sqlite3_stmt >( try_stmt, []( auto stmt )
+	{
+		assert( stmt );
+
+		sqlite3_finalize( stmt );
+	} );
+
 	context->insert = on( "insert", [=]( std::string target, std::int64_t oid, statement /* stmt */ ) mutable
 	{
 		if ( table == target )
 		{
 			runloop::shared().dispatch( [=]() mutable
 			{
-				auto action = action_type::insert;
-				auto stmt	= statement( check_stmt, false );
-				auto err	= checker( check_stmt, oid );
+				if ( check_stmt )
+				{
+					auto action = action_type::insert;
+					auto stmt	= statement( check_stmt.get(), false );
+					auto err	= checker( check_stmt.get(), oid );
 
-				if ( err == errc::row )
-				{
-					assert( !context->bitmap.is_bit_set( oid ) );
-					context->bitmap.set_bit( oid );
-								
-					handler( action, oid, stmt );
-				}
-				else if ( ( err == errc::done ) && context->bitmap.is_bit_set( oid ) )
-				{
-					context->bitmap.clear_bit( oid );
-					handler( action_type::remove, oid, stmt );
+					if ( err == errc::row )
+					{
+						assert( !context->bitmap.is_bit_set( oid ) );
+						context->bitmap.set_bit( oid );
+									
+						handler( action, oid, stmt );
+					}
+					else if ( ( err == errc::done ) && context->bitmap.is_bit_set( oid ) )
+					{
+						context->bitmap.clear_bit( oid );
+						handler( action_type::remove, oid, stmt );
+					}
 				}
 			} );
 		}
@@ -284,26 +301,29 @@ database::continuous_select( const std::string &columns, const std::string &tabl
 		{
 			runloop::shared().dispatch( [=]() mutable
 			{
-				auto action = action_type::update;
-				auto stmt	= statement( check_stmt, false );
-				auto err	= checker( check_stmt, oid );
+				if ( check_stmt )
+				{
+					auto action = action_type::update;
+					auto stmt	= statement( check_stmt.get(), false );
+					auto err	= checker( check_stmt.get(), oid );
 
-				if ( err == errc::row )
-				{
-					if ( !context->bitmap.is_bit_set( oid ) )
+					if ( err == errc::row )
 					{
-						context->bitmap.set_bit( oid );
-						action = action_type::insert;
+						if ( !context->bitmap.is_bit_set( oid ) )
+						{
+							context->bitmap.set_bit( oid );
+							action = action_type::insert;
+						}
+										
+						handler( action, oid, stmt );
 					}
-									
-					handler( action, oid, stmt );
-				}
-				else if ( err == errc::done )
-				{
-					if ( context->bitmap.is_bit_set( oid ) )
+					else if ( err == errc::done )
 					{
-						context->bitmap.clear_bit( oid );
-						handler( action_type::remove, oid, stmt );
+						if ( context->bitmap.is_bit_set( oid ) )
+						{
+							context->bitmap.clear_bit( oid );
+							handler( action_type::remove, oid, stmt );
+						}
 					}
 				}
 			} );
@@ -316,76 +336,19 @@ database::continuous_select( const std::string &columns, const std::string &tabl
 		{
 			runloop::shared().dispatch( [=]() mutable
 			{
-				if ( context->bitmap.is_bit_set( oid ) )
+				if ( check_stmt )
 				{
-					auto stmt = statement( check_stmt, false );
-
-					context->bitmap.clear_bit( oid );
-					handler( action_type::remove, oid, stmt );
-				}
-			} );
-		}
-	} );
-
-#if 0
-		nunused( before );
-		nunused( after );
-	
-		runloop::shared().dispatch( [=]() mutable
-		{
-			auto stmt = statement( check_stmt, false );
-
-			switch ( action )
-			{
-				case action_type::insert:
-				case action_type::update:
-				{
-					sqlite3_reset( check_stmt );
-					err = sqlite3_bind_int64( check_stmt, 1, oid );
-					ncheck_error( err == SQLITE_OK, exit, "sqlite3_bind_int64() failed (%)", err );
-					err = sqlite3_step( check_stmt );
-					ncheck_error( ( err == SQLITE_ROW ) || ( err == SQLITE_DONE ), exit, "sqlite3_step() failed (%)", err );
-					
-					if ( err == SQLITE_ROW )
+					if ( context->bitmap.is_bit_set( oid ) )
 					{
-						if ( action == action_type::insert )
-						{
-							assert( !context->bitmap.is_bit_set( oid ) );
-							context->bitmap.set_bit( oid );
-						}
-						else if ( !context->bitmap.is_bit_set( oid ) )
-						{
-							context->bitmap.set_bit( oid );
-							action = action_type::insert;
-						}
-						
-						handler( action, oid, stmt );
-					}
-					else if ( context->bitmap.is_bit_set( oid ) )
-					{
+						auto stmt = statement( check_stmt.get(), false );
+
 						context->bitmap.clear_bit( oid );
 						handler( action_type::remove, oid, stmt );
 					}
 				}
-				break;
-				
-				case action_type::remove:
-				{
-					if ( context->bitmap.is_bit_set( oid ) )
-					{
-						context->bitmap.clear_bit( oid );
-						handler( action, oid, stmt );
-					}
-				}
-				break;
-			}
-
-		exit:
-
-			return;
- 		} );
+			} );
+		}
 	} );
-#endif
 
 exit:
 	
@@ -396,13 +359,8 @@ exit:
 		remove_listener( "insert", context->insert );
 		remove_listener( "update", context->update );
 		remove_listener( "delete", context->remove );
-	
-		if ( check_stmt != nullptr )
-		{
-			sqlite3_finalize( check_stmt );
-			check_stmt = nullptr;
-		}
 
+		check_stmt.reset();
 	} );
 }
 

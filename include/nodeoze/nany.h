@@ -33,6 +33,7 @@
 #include <nodeoze/ndeque.h>
 #include <nodeoze/nbase64.h>
 #include <nodeoze/nmacros.h>
+#include <nodeoze/unordered_map.h>
 #include <nodeoze/nlog.h>
 #include <streambuf>
 #include <iostream>
@@ -40,7 +41,6 @@
 #include <chrono>
 #include <string>
 #include <ctime>
-#include <unordered_map>
 
 #if defined( __APPLE__ )
 #	define NODEOZE_SIZE_T_IS_UNIQUE_TYPE
@@ -64,11 +64,11 @@ class any
 {
 public:
 
-	typedef std::string								string_type;
-	typedef nodeoze::buffer							blob_type;
-	typedef deque< any >							array_type;
-	typedef std::unordered_map< std::string, any >	object_type;
-	typedef std::vector<std::string>				keys;
+	typedef std::string							string_type;
+	typedef nodeoze::buffer						blob_type;
+	typedef deque< any >						array_type;
+	typedef unordered_map< std::string, any >	object_type;
+	typedef std::vector<std::string>			keys;
 	
 	struct find_t;
 

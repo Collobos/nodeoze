@@ -29,6 +29,7 @@
 
 #include <functional>
 #include <map>
+#include <string.h>
 #include <memory>
 #include <list>
 #include <algorithm>
