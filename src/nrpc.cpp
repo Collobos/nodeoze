@@ -95,7 +95,11 @@ rpc::connection::send_request( const std::string &method, const any::array_type 
 	
 	rpc::manager::shared().send_request( method, params, make_oid( this ), ret, [&]( any &message ) mutable
 	{
-		connection::send( deflate( message ) )
+		auto buf = deflate( message );
+
+		mlog( marker::msgpack, log::level_t::info, "sending % bytes of msgpack data", buf.size() );
+
+		connection::send( std::move( buf ) )
 		.then( [=]() mutable
 		{
 			// we should give promise to manager right now instead of in send_request
@@ -244,7 +248,7 @@ rpc::manager::validate( const any &message, any &error )
 
 
 void
-rpc::manager::terminate_requests( oid_t oid )
+rpc::manager::terminate_requests( std::uint64_t oid )
 {
 	auto it = m_reply_handlers.begin();
 	

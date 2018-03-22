@@ -47,6 +47,8 @@ public:
 	static const std::string																					close_event;
 	
 	typedef std::shared_ptr< connection >																		ptr;
+
+	typedef std::function< void () >																			idle_timer_handler_f;
 	
 	typedef nodeoze::ip::tcp::socket::recv_reply_f																peek_reply_f;
 	
@@ -175,6 +177,9 @@ public:
 	
 	virtual std::error_code
 	process( const buffer &buf ) = 0;
+
+	virtual bool
+	is_colocated();
 	
 	virtual void
 	close();
@@ -214,6 +219,9 @@ public:
 	{
 		return m_id;
 	}
+
+	void
+	set_idle_timer( std::chrono::milliseconds timeout, idle_timer_handler_f handler );
 	
 protected:
 
@@ -228,6 +236,9 @@ protected:
 
 	connection();
 
+	void
+	maybe_reset_idle_timer();
+
 	virtual nodeoze::uri
 	destination() const;
 	
@@ -241,6 +252,8 @@ protected:
 	std::queue< std::pair< nodeoze::buffer, promise< void > > >		m_send_queue;
 	filters_t														m_filters;
 	ip::tcp::socket													m_socket;
+	nodeoze::runloop::event											m_idle_timer	= nullptr;
+	idle_timer_handler_f											m_idle_timer_handler;
 	std::string														m_id;
 };
 

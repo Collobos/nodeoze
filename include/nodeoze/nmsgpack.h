@@ -95,6 +95,8 @@ public:
 	connection( const uri &resource );
 
 	connection( ip::tcp::socket sock );
+
+	connection( http::connection::ptr wrapped );
 	
 	virtual ~connection();
 

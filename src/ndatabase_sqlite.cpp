@@ -342,7 +342,6 @@ database::manager_impl::prepare( const std::string &str )
 	else
 	{
 		m_error = make_error_code( static_cast< database::code_t >( err ) );
-nlog( log::level_t::info, "err % (%)", m_error.value(), m_error.message() );
 		ret.reset( new statement_impl( NULL ) );
 	}
 	

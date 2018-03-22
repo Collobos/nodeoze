@@ -906,6 +906,12 @@ public:
 			return is_integer() ? static_cast< std::uint64_t >( m_data.m_integer ) : 0;
 		}
 	}
+
+	inline auto
+	to_oid() const
+	{
+		return to_int64();
+	}
 	
 	std::chrono::system_clock::time_point
 	to_time() const

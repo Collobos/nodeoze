@@ -178,7 +178,7 @@ public:
 	ndefine_global_static( log_markers_option,			option, "--log-markers",		1 );
 	ndefine_global_static( unset_log_markers_option,	option, "--unset-log-markers",	1 );
 	ndefine_global_static( log_level_option,			option, "--log-level",			1 );
-	ndefine_global_static( log_throttle_option,			option, "--log-throttle",		1 );
+	ndefine_global_static( version_option,				option, "--version",			0 );
 	ndefine_global_static( test_option,					option, "--test",				0 );
 	
 	static inline void
@@ -187,7 +187,7 @@ public:
 		log_markers_option();
 		unset_log_markers_option();
 		log_level_option();
-		log_throttle_option();
+		version_option();
 		test_option();
 	}
 	

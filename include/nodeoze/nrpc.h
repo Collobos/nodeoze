@@ -335,12 +335,11 @@ public:
 		else
 		{
 			mlog( marker::rpc, log::level_t::error, "validation failed: %", message );
-			func( error, false );
 		}
 	}
 	
 	void
-	terminate_requests( oid_t oid );
+	terminate_requests( std::uint64_t oid );
 	
 	inline void
 	set_user_defined_error_category( std::error_category *category )

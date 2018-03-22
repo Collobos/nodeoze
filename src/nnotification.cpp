@@ -136,7 +136,7 @@ notification::~notification()
 
 
 void
-notification::subscribe( const uri &resource, oid_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply )
+notification::subscribe( const uri &resource, std::uint64_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply )
 {
 	ncheck_error_action( resource.scheme() == "notification", reply ? reply( scoped_operation() ) : ( void ) 0, exit, "bad resource: %", resource );
 	
@@ -156,7 +156,7 @@ exit:
 
 
 void
-notification::publish( const uri &resource, oid_t subscription_oid, oid_t source_oid, const std::string &event, any info )
+notification::publish( const uri &resource, std::uint64_t subscription_oid, std::uint64_t source_oid, const std::string &event, any info )
 {
 	ncheck_error_quiet( resource.scheme() == "notification", exit );
 	
@@ -184,7 +184,7 @@ exit:
 
 
 void
-notification::subscribe_local( oid_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply )
+notification::subscribe_local( std::uint64_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply )
 {
 	local_subscriber::ptr subscriber;
 	
@@ -224,7 +224,7 @@ notification::subscribe_local( oid_t source_oid, const std::string &event, handl
 
 
 void
-notification::subscribe_remote( const uri &resource, oid_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply )
+notification::subscribe_remote( const uri &resource, std::uint64_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply )
 {
 	uri rewrite( resource );
 		
@@ -275,7 +275,7 @@ notification::subscribe_remote( const uri &resource, oid_t source_oid, const std
 
 
 void
-notification::subscribe_proxy( http::connection::ptr client, const std::string &remote_oid, oid_t source_oid, const std::string &event )
+notification::subscribe_proxy( http::connection::ptr client, const std::string &remote_oid, std::uint64_t source_oid, const std::string &event )
 {
 	auto subscriber = std::make_shared< proxy_subscriber >( remote_oid );
 	
@@ -336,7 +336,7 @@ exit:
 
 
 void
-notification::publish_local( oid_t subscription_oid, oid_t source_oid, const std::string &event, const any &info )
+notification::publish_local( std::uint64_t subscription_oid, std::uint64_t source_oid, const std::string &event, const any &info )
 {
 	auto it1 = m_local_subscribers.find( event );
 			
@@ -402,7 +402,7 @@ notification::publish_local( oid_t subscription_oid, oid_t source_oid, const std
 
 
 void
-notification::publish_remote( const uri &resource, oid_t subscription_oid, oid_t source_oid, const std::string &event, const any &info )
+notification::publish_remote( const uri &resource, std::uint64_t subscription_oid, std::uint64_t source_oid, const std::string &event, const any &info )
 {
 	uri rewrite( resource );
 		
