@@ -41,17 +41,215 @@ add_custom_command(	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/botan_all.h ${CMAKE_CURRE
 					COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/ext/botan/configure.py --minimized-build --enable-modules=md5,sha1,sha2_64,tls --single-amalgamation-file --amalgamation --disable-shared
 					WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
 
-include_directories( include src/win32 ext/libuv/include ext/libuv/src ext/rapidjson/include ext/botan ../openssl/include-darwin ext/sqlite ext/http-parser ext/yajl/src/api ext/uriparser/include ext/msgpack-c/include ${CMAKE_CURRENT_BINARY_DIR}/build/include/external)
+include_directories( include src/win32 
+	ext/libuv/include 
+	ext/libuv/src 
+	ext/rapidjson/include 
+	ext/botan 
+	../openssl/include-darwin 
+	ext/sqlite 
+	ext/http-parser 
+	ext/yajl/src/api 
+	ext/uriparser/include 
+	ext/msgpack-c/include 
+	${CMAKE_CURRENT_BINARY_DIR}/build/include/external)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_OMIT_LOAD_EXTENSION=1 -DSQLITE_ENABLE_SESSION -DSQLITE_ENABLE_PREUPDATE_HOOK -DSQLITE_ENABLE_JSON1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_OMIT_LOAD_EXTENSION=1 -DSQLITE_ENABLE_SESSION -DSQLITE_ENABLE_PREUPDATE_HOOK -DSQLITE_ENABLE_JSON1")
 
-set(NODEOZE_SRCS ${CMAKE_CURRENT_BINARY_DIR}/botan_all.h ${CMAKE_CURRENT_BINARY_DIR}/botan_all_internal.h ${CMAKE_CURRENT_BINARY_DIR}/botan_all.cpp ext/http-parser/http_parser.c ext/uriparser/src/UriCommon.c ext/uriparser/src/UriCompare.c ext/uriparser/src/UriEscape.c ext/uriparser/src/UriFile.c ext/uriparser/src/UriIp4.c ext/uriparser/src/UriIp4Base.c ext/uriparser/src/UriNormalize.c ext/uriparser/src/UriNormalizeBase.c ext/uriparser/src/UriParse.c ext/uriparser/src/UriParseBase.c ext/uriparser/src/UriQuery.c ext/uriparser/src/UriRecompose.c ext/uriparser/src/UriResolve.c ext/uriparser/src/UriShorten.c ext/yajl/src/yajl.c ext/yajl/src/yajl_alloc.c ext/yajl/src/yajl_buf.c ext/yajl/src/yajl_encode.c ext/yajl/src/yajl_gen.c ext/yajl/src/yajl_lex.c ext/yajl/src/yajl_parser.c ext/yajl/src/yajl_tree.c ext/sqlite/sqlite3.c ext/msgpack-c/src/objectc.c ext/msgpack-c/src/vrefbuffer.c ext/msgpack-c/src/zone.c ext/msgpack-c/src/unpack.c include/nodeoze/doctest.h include/nodeoze/naddress.h include/nodeoze/nalgorithm.h include/nodeoze/nany.h include/nodeoze/napplication.h include/nodeoze/narp.h include/nodeoze/nasync_repeater.h include/nodeoze/nbarrier.h include/nodeoze/nbase64.h include/nodeoze/nbuffer.h include/nodeoze/ncompat.h include/nodeoze/nconcurrent.h include/nodeoze/nconnection.h include/nodeoze/ndatabase.h include/nodeoze/ndeque.h include/nodeoze/nencrypt.h include/nodeoze/nendian.h include/nodeoze/nendpoint.h include/nodeoze/nenum.h include/nodeoze/nevent.h include/nodeoze/nexpected.h include/nodeoze/nfs.h include/nodeoze/nhttp.h include/nodeoze/njson.h include/nodeoze/nlimiter.h include/nodeoze/nlocation.h include/nodeoze/nlog.h include/nodeoze/nmac.h include/nodeoze/nmachine.h include/nodeoze/nmacros.h include/nodeoze/nmarkers.h include/nodeoze/nmime.h include/nodeoze/nmsgpack.h include/nodeoze/nnotification.h include/nodeoze/nodeoze.h include/nodeoze/noid.h include/nodeoze/npath.h include/nodeoze/nprintf.h include/nodeoze/nprocess.h include/nodeoze/npromise.h include/nodeoze/nproxy.h include/nodeoze/nrandom.h include/nodeoze/nrpc.h include/nodeoze/nrunloop.h include/nodeoze/nscoped_operation.h include/nodeoze/nsema.h include/nodeoze/nsha1.h include/nodeoze/nshell.h include/nodeoze/nsingleton.h include/nodeoze/nsocket.h include/nodeoze/nstackwalk.h include/nodeoze/nstate_machine.h include/nodeoze/nstream.h include/nodeoze/nstring.h include/nodeoze/ntest.h include/nodeoze/nthread.h include/nodeoze/ntimer.h include/nodeoze/ntime.h include/nodeoze/ntls.h include/nodeoze/ntypes.h include/nodeoze/ntypestring.h include/nodeoze/nunicode.h include/nodeoze/nuri.h include/nodeoze/nusername.h include/nodeoze/nuuid.h include/nodeoze/nws.h include/nodeoze/nzip.h src/naddress.cpp src/nany.cpp src/napplication.cpp src/nasync_repeater.cpp src/nbarrier.cpp src/nbase64.cpp src/nbuffer.cpp src/nconnection.cpp src/ndatabase.cpp src/nencrypt.cpp src/nendpoint.cpp src/nfs.cpp src/nhttp.cpp src/njson.cpp src/njson.cpp src/nlimiter.cpp src/nlocation.cpp src/nlog.cpp src/nmachine.cpp src/nmarkers.cpp src/nmime.cpp src/nnotification.cpp src/npromise.cpp src/nproxy.cpp src/nsha1.cpp src/nsocket.cpp src/nstream.cpp src/ntime.cpp src/nunicode.cpp src/nuri.cpp src/nusername.cpp src/nuuid.cpp src/nws.cpp src/nrpc.cpp src/nmac.cpp src/nmsgpack.cpp src/nprocess.cpp src/nstate_machine.cpp src/nzip.cpp src/android/nfs_android.h src/android/nmachine_android.h src/apple/narp_apple.h src/apple/nfs_apple.h src/apple/nmachine_apple.h src/libuv/nendpoint_libuv.h src/libuv/nsocket_libuv.h src/linux/narp_linux.h src/linux/nfs_linux.h src/linux/nmachine_linux.h src/win32/crc32.h src/win32/event_log.h src/win32/narp_win32.h src/win32/nfs_win32.h src/win32/nlog_win32.h src/win32/nmachine_win32.h src/nevent.cpp )
+set(NODEOZE_SRCS 
+	${CMAKE_CURRENT_BINARY_DIR}/botan_all.h 
+	${CMAKE_CURRENT_BINARY_DIR}/botan_all_internal.h 
+	${CMAKE_CURRENT_BINARY_DIR}/botan_all.cpp 
+	ext/http-parser/http_parser.c 
+	ext/uriparser/src/UriCommon.c 
+	ext/uriparser/src/UriCompare.c 
+	ext/uriparser/src/UriEscape.c 
+	ext/uriparser/src/UriFile.c 
+	ext/uriparser/src/UriIp4.c 
+	ext/uriparser/src/UriIp4Base.c 
+	ext/uriparser/src/UriNormalize.c 
+	ext/uriparser/src/UriNormalizeBase.c 
+	ext/uriparser/src/UriParse.c 
+	ext/uriparser/src/UriParseBase.c 
+	ext/uriparser/src/UriQuery.c 
+	ext/uriparser/src/UriRecompose.c 
+	ext/uriparser/src/UriResolve.c 
+	ext/uriparser/src/UriShorten.c 
+	ext/yajl/src/yajl.c 
+	ext/yajl/src/yajl_alloc.c 
+	ext/yajl/src/yajl_buf.c 
+	ext/yajl/src/yajl_encode.c 
+	ext/yajl/src/yajl_gen.c 
+	ext/yajl/src/yajl_lex.c 
+	ext/yajl/src/yajl_parser.c 
+	ext/yajl/src/yajl_tree.c 
+	ext/sqlite/sqlite3.c 
+	ext/msgpack-c/src/objectc.c 
+	ext/msgpack-c/src/vrefbuffer.c 
+	ext/msgpack-c/src/zone.c 
+	ext/msgpack-c/src/unpack.c 
+	include/nodeoze/doctest.h 
+	include/nodeoze/naddress.h 
+	include/nodeoze/nalgorithm.h 
+	include/nodeoze/nany.h 
+	include/nodeoze/napplication.h 
+	include/nodeoze/narp.h 
+	include/nodeoze/nasync_repeater.h 
+	include/nodeoze/nbarrier.h 
+	include/nodeoze/nbase64.h 
+	include/nodeoze/nbuffer.h 
+	include/nodeoze/ncompat.h 
+	include/nodeoze/nconcurrent.h 
+	include/nodeoze/nconnection.h 
+	include/nodeoze/ndatabase.h 
+	include/nodeoze/ndeque.h 
+	include/nodeoze/nencrypt.h 
+	include/nodeoze/nendian.h 
+	include/nodeoze/nendpoint.h 
+	include/nodeoze/nenum.h 
+	include/nodeoze/nevent.h 
+	include/nodeoze/nexpected.h 
+	include/nodeoze/nfs.h 
+	include/nodeoze/nhttp.h 
+	include/nodeoze/njson.h 
+	include/nodeoze/nlimiter.h 
+	include/nodeoze/nlocation.h 
+	include/nodeoze/nlog.h 
+	include/nodeoze/nmac.h 
+	include/nodeoze/nmachine.h 
+	include/nodeoze/nmacros.h 
+	include/nodeoze/nmarkers.h 
+	include/nodeoze/nmime.h 
+	include/nodeoze/nmsgpack.h 
+	include/nodeoze/nnotification.h 
+	include/nodeoze/nodeoze.h 
+	include/nodeoze/noid.h 
+	include/nodeoze/npath.h 
+	include/nodeoze/nprintf.h 
+	include/nodeoze/nprocess.h 
+	include/nodeoze/npromise.h 
+	include/nodeoze/nproxy.h 
+	include/nodeoze/nrandom.h 
+	include/nodeoze/nrpc.h 
+	include/nodeoze/nrunloop.h 
+	include/nodeoze/nscoped_operation.h 
+	include/nodeoze/nsema.h 
+	include/nodeoze/nsha1.h 
+	include/nodeoze/nshell.h 
+	include/nodeoze/nsingleton.h 
+	include/nodeoze/nsocket.h 
+	include/nodeoze/nstackwalk.h 
+	include/nodeoze/nstate_machine.h 
+	include/nodeoze/nstream.h 
+	include/nodeoze/nstring.h 
+	include/nodeoze/ntest.h 
+	include/nodeoze/nthread.h 
+	include/nodeoze/ntimer.h 
+	include/nodeoze/ntime.h 
+	include/nodeoze/ntls.h 
+	include/nodeoze/ntypes.h 
+	include/nodeoze/ntypestring.h 
+	include/nodeoze/nunicode.h 
+	include/nodeoze/nuri.h 
+	include/nodeoze/nusername.h 
+	include/nodeoze/nuuid.h 
+	include/nodeoze/nws.h 
+	include/nodeoze/nzip.h 
+	src/naddress.cpp 
+	src/nany.cpp 
+	src/napplication.cpp 
+	src/nasync_repeater.cpp 
+	src/nbarrier.cpp 
+	src/nbase64.cpp 
+	src/nbuffer.cpp 
+	src/nconnection.cpp 
+	src/ndatabase.cpp 
+	src/nencrypt.cpp 
+	src/nendpoint.cpp 
+	src/nfs.cpp 
+	src/nhttp.cpp 
+	src/njson.cpp 
+	src/njson.cpp 
+	src/nlimiter.cpp 
+	src/nlocation.cpp 
+	src/nlog.cpp 
+	src/nmachine.cpp 
+	src/nmarkers.cpp 
+	src/nmime.cpp 
+	src/nnotification.cpp 
+	src/npromise.cpp 
+	src/nproxy.cpp 
+	src/nsha1.cpp 
+	src/nsocket.cpp 
+	src/nstream.cpp 
+	src/ntime.cpp 
+	src/nunicode.cpp 
+	src/nuri.cpp 
+	src/nusername.cpp 
+	src/nuuid.cpp 
+	src/nws.cpp 
+	src/nrpc.cpp 
+	src/nmac.cpp 
+	src/nmsgpack.cpp 
+	src/nprocess.cpp 
+	src/nstate_machine.cpp 
+	src/nzip.cpp 
+	src/android/nfs_android.h 
+	src/android/nmachine_android.h 
+	src/apple/narp_apple.h 
+	src/apple/nfs_apple.h 
+	src/apple/nmachine_apple.h 
+	src/libuv/nendpoint_libuv.h 
+	src/libuv/nsocket_libuv.h 
+	src/linux/narp_linux.h 
+	src/linux/nfs_linux.h 
+	src/linux/nmachine_linux.h 
+	src/win32/crc32.h 
+	src/win32/event_log.h 
+	src/win32/narp_win32.h 
+	src/win32/nfs_win32.h 
+	src/win32/nlog_win32.h 
+	src/win32/nmachine_win32.h 
+	src/nevent.cpp 
+	include/nodeoze/bstream.h
+	include/nodeoze/bstream/base_classes.h
+	include/nodeoze/bstream/error.h
+	include/nodeoze/bstream/ibstream.h
+	include/nodeoze/bstream/macros.h
+	include/nodeoze/bstream/msgpack.h
+	include/nodeoze/bstream/obstream.h
+	include/nodeoze/bstream/typecode.h
+	include/nodeoze/bstream/utils/io_buffers.h
+	include/nodeoze/bstream/utils/preprocessor.h
+	include/nodeoze/bstream/utils/traits.h
+	include/nodeoze/bstream/utils/io_buffers/anon_block.h
+	include/nodeoze/bstream/utils/io_buffers/dump.h
+	include/nodeoze/bstream/utils/io_buffers/in_buffer.h
+	include/nodeoze/bstream/utils/io_buffers/memory_block.h
+	include/nodeoze/bstream/utils/io_buffers/nbuffer_block.h
+	include/nodeoze/bstream/utils/io_buffers/out_buffer.h
+	include/nodeoze/bstream/utils/io_buffers/vector_block.h
+	src/dump.cpp
+	src/ibstream.cpp
+	src/obstream.cpp
+	src/out_buffer.cpp)
     
 
-set(NODEOZE_TEST_SRCS src/test.cpp)
+set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test3.cpp)
 
-set( NODEOZE_SRCS ${NODEOZE_SRCS} ext/libuv/src/uv-common.c ext/libuv/src/fs-poll.c ext/libuv/src/inet.c ext/libuv/src/threadpool.c ext/libuv/src/version.c src/ntls.cpp src/libuv/nerror_libuv.h src/libuv/nerror_libuv.cpp src/libuv/nrunloop_libuv.cpp src/libuv/nprocess_libuv.cpp src/libuv/naddress_libuv.cpp)
+set( NODEOZE_SRCS ${NODEOZE_SRCS} 
+	ext/libuv/src/uv-common.c 
+	ext/libuv/src/fs-poll.c 
+	ext/libuv/src/inet.c 
+	ext/libuv/src/threadpool.c 
+	ext/libuv/src/version.c 
+	src/ntls.cpp 
+	src/libuv/nerror_libuv.h 
+	src/libuv/nerror_libuv.cpp 
+	src/libuv/nrunloop_libuv.cpp 
+	src/libuv/nprocess_libuv.cpp 
+	src/libuv/naddress_libuv.cpp)
 
 if ( APPLE )
 
@@ -71,20 +269,88 @@ endif()
 
 if ( WIN32 )
 
-	set(NODEOZE_SRCS ${NODEOZE_SRCS} ext/libuv/src/win/async.c ext/libuv/src/win/core.c ext/libuv/src/win/detect-wakeup.c ext/libuv/src/win/dl.c ext/libuv/src/win/error.c ext/libuv/src/win/fs.c ext/libuv/src/win/fs-event.c ext/libuv/src/win/getaddrinfo.c ext/libuv/src/win/handle.c ext/libuv/src/win/loop-watcher.c ext/libuv/src/win/pipe.c ext/libuv/src/win/poll.c ext/libuv/src/win/process.c ext/libuv/src/win/process-stdio.c ext/libuv/src/win/req.c ext/libuv/src/win/signal.c ext/libuv/src/win/stream.c ext/libuv/src/win/util.c ext/libuv/src/win/winapi.c ext/libuv/src/win/winsock.c ext/libuv/src/win/tcp.c ext/libuv/src/win/thread.c ext/libuv/src/win/timer.c ext/libuv/src/win/tty.c ext/libuv/src/win/udp.c src/win32/narp_win32.cpp src/win32/nfs_win32.cpp src/win32/nlog_win32.cpp src/win32/nmachine_win32.cpp src/win32/npath_win32.cpp src/win32/nprocess_win32.cpp src/win32/nuser.cpp src/win32/crc32.cpp)
+	set(NODEOZE_SRCS ${NODEOZE_SRCS} 
+	ext/libuv/src/win/async.c 
+	ext/libuv/src/win/core.c 
+	ext/libuv/src/win/detect-wakeup.c 
+	ext/libuv/src/win/dl.c 
+	ext/libuv/src/win/error.c 
+	ext/libuv/src/win/fs.c 
+	ext/libuv/src/win/fs-event.c 
+	ext/libuv/src/win/getaddrinfo.c 
+	ext/libuv/src/win/handle.c 
+	ext/libuv/src/win/loop-watcher.c 
+	ext/libuv/src/win/pipe.c 
+	ext/libuv/src/win/poll.c 
+	ext/libuv/src/win/process.c 
+	ext/libuv/src/win/process-stdio.c 
+	ext/libuv/src/win/req.c 
+	ext/libuv/src/win/signal.c 
+	ext/libuv/src/win/stream.c 
+	ext/libuv/src/win/util.c 
+	ext/libuv/src/win/winapi.c 
+	ext/libuv/src/win/winsock.c 
+	ext/libuv/src/win/tcp.c 
+	ext/libuv/src/win/thread.c 
+	ext/libuv/src/win/timer.c 
+	ext/libuv/src/win/tty.c 
+	ext/libuv/src/win/udp.c 
+	src/win32/narp_win32.cpp 
+	src/win32/nfs_win32.cpp 
+	src/win32/nlog_win32.cpp 
+	src/win32/nmachine_win32.cpp 
+	src/win32/npath_win32.cpp 
+	src/win32/nprocess_win32.cpp 
+	src/win32/nuser.cpp 
+	src/win32/crc32.cpp)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOTAN_DLL=")
 
 else()
 
-	set(NODEOZE_SRCS ${NODEOZE_SRCS} ext/libuv/src/unix/async.c ext/libuv/src/unix/core.c ext/libuv/src/unix/fs.c ext/libuv/src/unix/getaddrinfo.c ext/libuv/src/unix/loop-watcher.c ext/libuv/src/unix/loop.c ext/libuv/src/unix/pipe.c ext/libuv/src/unix/poll.c ext/libuv/src/unix/process.c ext/libuv/src/unix/proctitle.c ext/libuv/src/unix/signal.c ext/libuv/src/unix/stream.c ext/libuv/src/unix/tcp.c ext/libuv/src/unix/thread.c ext/libuv/src/unix/timer.c ext/libuv/src/unix/udp.c)
+	set(NODEOZE_SRCS ${NODEOZE_SRCS} 
+	ext/libuv/src/unix/async.c 
+	ext/libuv/src/unix/core.c 
+	ext/libuv/src/unix/fs.c 
+	ext/libuv/src/unix/getaddrinfo.c 
+	ext/libuv/src/unix/loop-watcher.c 
+	ext/libuv/src/unix/loop.c 
+	ext/libuv/src/unix/pipe.c 
+	ext/libuv/src/unix/poll.c 
+	ext/libuv/src/unix/process.c 
+	ext/libuv/src/unix/proctitle.c 
+	ext/libuv/src/unix/signal.c 
+	ext/libuv/src/unix/stream.c 
+	ext/libuv/src/unix/tcp.c 
+	ext/libuv/src/unix/thread.c 
+	ext/libuv/src/unix/timer.c 
+	ext/libuv/src/unix/udp.c)
 
 	if ( APPLE )
 		
-		set(NODEOZE_SRCS ${NODEOZE_SRCS} ext/libuv/src/unix/darwin.c ext/libuv/src/unix/darwin-proctitle.c ext/libuv/src/unix/kqueue.c ext/libuv/src/unix/fsevents.c src/apple/narp_apple.cpp src/apple/nfs_apple.mm src/apple/nlog_apple.mm src/apple/nmachine_apple.mm src/apple/nprocess_apple.mm src/apple/npath_apple.mm)
+		set(NODEOZE_SRCS ${NODEOZE_SRCS} 
+			ext/libuv/src/unix/darwin.c 
+			ext/libuv/src/unix/darwin-proctitle.c 
+			ext/libuv/src/unix/kqueue.c 
+			ext/libuv/src/unix/fsevents.c 
+			src/apple/narp_apple.cpp 
+			src/apple/nfs_apple.mm 
+			src/apple/nlog_apple.mm 
+			src/apple/nmachine_apple.mm 
+			src/apple/nprocess_apple.mm 
+			src/apple/npath_apple.mm)
     
 	elseif (LINUX)
 		
-		set(NODEOZE_SRCS ${NODEOZE_SRCS} ext/libuv/src/unix/linux-core.c ext/libuv/src/unix/linux-inotify.c ext/libuv/src/unix/linux-syscalls.c src/linux/narp_linux.cpp src/linux/nfs_linux.cpp src/linux/nlog_linux.cpp src/linux/nmachine_linux.cpp src/linux/npath_linux.cpp src/linux/nprocess_linux.cpp)
+		set(NODEOZE_SRCS ${NODEOZE_SRCS} 
+			ext/libuv/src/unix/linux-core.c 
+			ext/libuv/src/unix/linux-inotify.c 
+			ext/libuv/src/unix/linux-syscalls.c 
+			src/linux/narp_linux.cpp 
+			src/linux/nfs_linux.cpp 
+			src/linux/nlog_linux.cpp 
+			src/linux/nmachine_linux.cpp 
+			src/linux/npath_linux.cpp 
+			src/linux/nprocess_linux.cpp)
 		
 	endif()
 		

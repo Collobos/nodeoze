@@ -281,13 +281,11 @@ public:
 		append( rhs.data(), rhs.size() );
 	}
 
-	inline void
-	append( const void* data, sizetype size )
+	inline void accommodate( sizetype size )
 	{
 		if ( size > 0 )
 		{
 			sizetype ns = m_size + size;
-
 			if ( m_capacity < ns )
 			{
 				auto next_capacity = (sizetype)(m_capacity * 1.5);
@@ -300,10 +298,15 @@ public:
 					capacity( ns );
 				}
 			}
-
-			std::memcpy( m_data + m_size, data, size );
-			m_size = ns;
 		}
+	}
+	
+	inline void
+	append( const void* data, sizetype size )
+	{
+		accommodate( size );
+		std::memcpy( m_data + m_size, data, size );
+		m_size += size;
 	}
 	
 	
