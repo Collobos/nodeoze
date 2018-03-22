@@ -582,8 +582,11 @@ ip::tcp::socket::recv( buffer &in_buf )
 			{
 				if ( it.size() > 0 )
 				{
-					mlog( marker::socket_tcp_recv, log::level_t::info, "invoking handler with % bytes", it.size() );
-					m_recv_reply( std::error_code(), it );
+					if ( m_recv_reply )
+					{
+						mlog( marker::socket_tcp_recv, log::level_t::info, "invoking handler with % bytes", it.size() );
+						m_recv_reply( std::error_code(), it );
+					}
 				}
 			}
 		}

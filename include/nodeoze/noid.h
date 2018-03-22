@@ -33,38 +33,38 @@
 namespace nodeoze {
 
 template <typename T>
-oid_t
+std::uint64_t
 make_oid( T &t )
 {
-	return reinterpret_cast< oid_t >( &t );
+	return reinterpret_cast< std::uint64_t >( &t );
 }
 
 template <typename T>
-oid_t
+std::uint64_t
 make_oid( T *t )
 {
-	return reinterpret_cast< oid_t >( t );
+	return reinterpret_cast< std::uint64_t >( t );
 }
 
 template <typename T>
-oid_t
+std::uint64_t
 make_oid( std::unique_ptr< T > &t )
 {
-	return reinterpret_cast< oid_t >( t.get() );
+	return reinterpret_cast< std::uint64_t >( t.get() );
 }
 
 template <typename T>
-oid_t
+std::uint64_t
 make_oid( std::shared_ptr< T > &t )
 {
-	return reinterpret_cast< oid_t >( t.get() );
+	return reinterpret_cast< std::uint64_t >( t.get() );
 }
 
 template <typename T>
-oid_t
+std::uint64_t
 make_oid( const std::shared_ptr< T > &t )
 {
-	return reinterpret_cast< oid_t >( t.get() );
+	return reinterpret_cast< std::uint64_t >( t.get() );
 }
 
 }

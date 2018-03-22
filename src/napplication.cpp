@@ -232,8 +232,6 @@ TEST_CASE( "nodeoze/smoke/application" )
 			ntext( "nodeoze" ),
 			ntext( "--log-level" ),
 			ntext( "10" ),
-			ntext( "--log-throttle" ),
-			ntext( "0" ),
 			ntext( "--test" ),
 			ntext( "--dt-version" )
 		};
@@ -246,8 +244,6 @@ TEST_CASE( "nodeoze/smoke/application" )
 		CHECK( application::unset_log_markers_option().string_at_index( 0 ) == "nodeoze" );
 		CHECK( application::log_level_option().is_set() );
 		CHECK( application::log_level_option().int_at_index( 0 ) == 10 );
-		CHECK( application::log_throttle_option().is_set() );
-		CHECK( application::log_throttle_option().int_at_index( 0 ) == 0 );
 		CHECK( application::test_option().is_set() );
 	}
 

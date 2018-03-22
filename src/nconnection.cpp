@@ -32,6 +32,7 @@
 #include <nodeoze/nmarkers.h>
 #include <nodeoze/nlog.h>
 #include <nodeoze/nmachine.h>
+#include <nodeoze/ntest.h>
 
 using namespace nodeoze;
 
@@ -404,6 +405,8 @@ connection::recv()
 	m_socket.recv( [=]( auto err, buffer &buf )
 	{
 		auto hold( shared_from_this() );
+
+		maybe_reset_idle_timer();
 		
 		mlog( marker::connection, log::level_t::info, "err % (%), buf size: %", err, err.message(), buf.size() );
 		
@@ -433,6 +436,13 @@ connection::recv()
 }
 
 
+bool
+connection::is_colocated()
+{
+	return false;
+}
+	
+
 void
 connection::close()
 {
@@ -443,6 +453,12 @@ connection::close()
 		m_connected = false;
 		m_socket.close();
 	}
+
+	if ( m_idle_timer )
+	{
+		runloop::shared().cancel( m_idle_timer );
+		m_idle_timer = nullptr;
+	}
 }
 
 
@@ -452,9 +468,89 @@ connection::unref()
 }
 
 
+void
+connection::set_idle_timer( std::chrono::milliseconds timeout, idle_timer_handler_f handler )
+{
+	if ( m_idle_timer )
+	{
+		runloop::shared().cancel( m_idle_timer );
+		m_idle_timer = nullptr;
+	}
+
+	m_idle_timer			= runloop::shared().create( timeout );
+	m_idle_timer_handler	= handler;
+
+	maybe_reset_idle_timer();
+}
+
+
+void
+connection::maybe_reset_idle_timer()
+{
+	if ( m_idle_timer )
+	{
+		runloop::shared().suspend( m_idle_timer );
+
+		runloop::shared().schedule( m_idle_timer, [=]( auto event ) mutable
+		{
+			nunused( event );
+
+			runloop::shared().cancel( m_idle_timer );
+			m_idle_timer = nullptr;
+
+			m_idle_timer_handler();
+		} );
+	}
+}
+	
+
 nodeoze::uri
 connection::destination() const
 {
 	return m_resource;
 }
 
+
+class __test_connection : public connection
+{
+public:
+
+	__test_connection()
+	{
+	}
+
+	virtual std::error_code
+	process( const buffer &buf )
+	{
+		nunused( buf );
+
+		return std::error_code();
+	}
+};
+
+
+
+
+TEST_CASE( "nodeoze/smoke/connection" )
+{
+	SUBCASE( "idle timer" )
+	{
+		auto done	= false;
+		auto begin	= std::chrono::system_clock::now();
+		auto conn	= std::make_shared< __test_connection >();
+
+		conn->set_idle_timer( std::chrono::milliseconds( 150 ), [&]() mutable
+		{
+			done = true;
+		} );
+
+		while ( !done )
+		{
+			runloop::shared().run( runloop::mode_t::once );
+		}
+
+		auto delta = std::chrono::system_clock::now() - begin;
+
+		CHECK( delta < std::chrono::milliseconds( 200 ) );
+	}
+}

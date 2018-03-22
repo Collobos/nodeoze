@@ -521,7 +521,7 @@ static connection::factory factory( { "jsonrpc+ws", "jsonrpc+wss" }, []( const u
 	mlog( marker::json, log::level_t::info, "secure: %", secure );
 	
 	connection = std::make_shared< json::rpc::connection >( resource );
-	oid_t oid = make_oid( connection );
+	auto oid = make_oid( connection );
 	
 	if ( !proxy::manager::shared().bypass( resource ) )
 	{
@@ -583,7 +583,7 @@ static connection::factory factory( { "jsonrpc+ws", "jsonrpc+wss" }, []( const u
 	mlog( marker::json, log::level_t::info, "secure: %", secure );
 	
 	connection = std::make_shared< json::rpc::connection >( std::move( socket ) );
-	oid_t oid = make_oid( connection );
+	auto oid = make_oid( connection );
 	
 	if ( !proxy::manager::shared().bypass( resource ) )
 	{

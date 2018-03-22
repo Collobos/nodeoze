@@ -31,8 +31,6 @@
 
 namespace nodeoze {
 
-using oid_t = std::uint64_t;
-
 enum class role_t
 {
 	client,

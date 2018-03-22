@@ -1737,6 +1737,13 @@ http::loopback::send( buffer buf )
 }
 
 
+bool
+http::loopback::is_colocated()
+{
+	return true;
+}
+	
+
 std::error_code
 http::loopback::process( const buffer &buf )
 {

@@ -237,6 +237,84 @@ public:
 	}
 
 	inline void
+	post_if( state_type s, event_type e )
+	{
+		if ( state().value() == s )
+		{
+			post( e );
+		}
+	}
+
+	inline void
+	post_if( state_type s, event_type e, nodeoze::any data )
+	{
+		if ( state().value() == s )
+		{
+			post( e, std::move( data ) );
+		}
+	}
+
+	inline void
+	post_if( state_type s, event_type e, std::error_code err )
+	{
+		if ( state().value() == s )
+		{
+			post( e, err );
+		}
+	}
+
+	inline promise< void >
+	post_if( state_type s, event_type e, std::vector< state_type > good, std::vector< state_type > bad )
+	{
+		auto ret = promise< void >();
+
+		if ( state().value() == s )
+		{
+			ret = post( e, std::move( good ), std::move( bad ) );
+		}
+		else
+		{
+			ret.reject( std::errc::state_not_recoverable, reject_context );
+		}
+
+		return ret;
+	}
+			
+	inline promise< void >
+	post_if( state_type s, event_type e, nodeoze::any data, std::vector< state_type > good, std::vector< state_type > bad )
+	{
+		auto ret = promise< void >();
+
+		if ( state().value() == s )
+		{
+			ret = post( e, std::move( data ), std::move( good ), std::move( bad ) );
+		}
+		else
+		{
+			ret.reject( std::errc::state_not_recoverable, reject_context );
+		}
+
+		return ret;
+	}
+
+	inline promise< void >
+	post_if( state_type s, event_type e, std::error_code err, std::vector< state_type > good, std::vector< state_type > bad )
+	{
+		auto ret = promise< void >();
+
+		if ( state().value() == s )
+		{
+			ret = post( e, err, std::move( good ), std::move( bad ) );
+		}
+		else
+		{
+			ret.reject( std::errc::state_not_recoverable, reject_context );
+		}
+
+		return ret;
+	}
+
+	inline void
 	on_transition( state_type state, event_type event, state_type next, action_f action )
 	{
 		m_machine.emplace( std::piecewise_construct, std::forward_as_tuple( std::make_pair( state, event ) ), std::forward_as_tuple( std::make_pair( next, action ) ) );

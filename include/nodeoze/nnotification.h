@@ -66,10 +66,10 @@ public:
 	~notification();
 
 	void
-	subscribe( const uri &uri, oid_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply = nullptr );
+	subscribe( const uri &uri, std::uint64_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply = nullptr );
 	
 	void
-	publish( const uri &uri, oid_t subscription_oid, oid_t source_oid, const std::string &event, any info = any::null() );
+	publish( const uri &uri, std::uint64_t subscription_oid, std::uint64_t source_oid, const std::string &event, any info = any::null() );
 	
 protected:
 
@@ -80,7 +80,7 @@ protected:
 		typedef std::shared_ptr< local_subscriber >	ptr;
 		typedef std::vector< ptr >					list;
 		
-		local_subscriber( oid_t source_oid, const std::string &event, handler_f handler )
+		local_subscriber( std::uint64_t source_oid, const std::string &event, handler_f handler )
 		:
 			m_source_oid( source_oid ),
 			m_event( event ),
@@ -89,7 +89,7 @@ protected:
 		}
 	
 		uri				m_resource;
-		oid_t	m_source_oid;
+		std::uint64_t	m_source_oid;
 		std::string		m_event;
 		handler_f		m_handler;
 		bool			m_extant	= true;
@@ -99,7 +99,7 @@ protected:
 	{
 		typedef std::shared_ptr< remote_subscriber > ptr;
 		
-		remote_subscriber( const uri &resource, std::shared_ptr< rpc::connection > server, oid_t source_oid, const std::string &event, handler_f handler )
+		remote_subscriber( const uri &resource, std::shared_ptr< rpc::connection > server, std::uint64_t source_oid, const std::string &event, handler_f handler )
 		:
 			m_resource( resource ),
 			m_server( server ),
@@ -113,7 +113,7 @@ protected:
 		uri									m_resource;
 		std::shared_ptr< rpc::connection >	m_server;
 		std::string							m_oid;
-		oid_t								m_source_oid;
+		std::uint64_t						m_source_oid;
 		std::string							m_event;
 		handler_f							m_handler;
 	};
@@ -141,22 +141,22 @@ protected:
 	}
 	
 	void
-	subscribe_local( oid_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply );
+	subscribe_local( std::uint64_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply );
 
 	void
-	subscribe_remote( const uri &resource, oid_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply );
+	subscribe_remote( const uri &resource, std::uint64_t source_oid, const std::string &event, handler_f handler, subscribe_reply_f reply );
 	
 	void
-	subscribe_proxy( std::shared_ptr< http::connection > client, const std::string &remote_oid, oid_t source_oid, const std::string &event );
+	subscribe_proxy( std::shared_ptr< http::connection > client, const std::string &remote_oid, std::uint64_t source_oid, const std::string &event );
 	
 	void
 	unsubscribe_proxy( const std::string &remote_oid );
 	
 	void
-	publish_local( oid_t subscription_oid, oid_t source_oid, const std::string &event, const any &info );
+	publish_local( std::uint64_t subscription_oid, std::uint64_t source_oid, const std::string &event, const any &info );
 	
 	void
-	publish_remote( const uri &resource, oid_t subscription_oid, oid_t source_oid, const std::string &event, const any &info );
+	publish_remote( const uri &resource, std::uint64_t subscription_oid, std::uint64_t source_oid, const std::string &event, const any &info );
 	
 	void
 	notify( const std::string &subscription_oid, const std::string &event, const any &info );

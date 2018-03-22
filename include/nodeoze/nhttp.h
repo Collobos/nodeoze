@@ -769,6 +769,9 @@ public:
 	virtual promise< void >
 	send( buffer buf );
 
+	virtual bool
+	is_colocated();
+
 private:
 
 	virtual std::error_code
