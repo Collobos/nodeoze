@@ -237,7 +237,7 @@ namespace bstream
 		{}
 		
 		inline obstream_cntxt(obstream_cntxt&& other)
-		: obstream{std::move(other)}, shared_pointers_{std::move(other.shared_pointers_)}
+		: obstream{std::move(other)}, m_shared_pointers{std::move(other.m_shared_pointers)}
 		{}
 		
 		inline
@@ -248,7 +248,7 @@ namespace bstream
 		virtual obstream_cntxt& clear() noexcept override
 		{
 			obstream::clear();
-			shared_pointers_.clear();
+			m_shared_pointers.clear();
 			return *this;
 		}
 		
@@ -257,7 +257,7 @@ namespace bstream
 		virtual bool maybe_write_shared_ptr(void *ptr) override;
 		
 	private:
-		std::unordered_map<void*,std::size_t> shared_pointers_;
+		std::unordered_map<void*,std::size_t> m_shared_pointers;
 	};
 	
 	namespace detail

@@ -56,17 +56,17 @@ bstream::ibstream::get_saved_ptr(std::size_t)
 
 void bstream::ibstream_cntxt::save_ptr(std::shared_ptr<void> ptr)
 {
-	shared_pointers_.push_back(ptr);
+	m_shared_pointers.push_back(ptr);
 }
 
 std::shared_ptr<void> 
 bstream::ibstream_cntxt::get_saved_ptr(std::size_t index)
 {
-	if (index >= shared_pointers_.size())
+	if (index >= m_shared_pointers.size())
 	{
 		throw std::out_of_range("invalid shared pointer index in stream");
 	}
-	return shared_pointers_[index];
+	return m_shared_pointers[index];
 }
 
 #if 0

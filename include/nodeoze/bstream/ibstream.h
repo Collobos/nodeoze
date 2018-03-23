@@ -909,7 +909,7 @@ namespace bstream
 		virtual void rewind() noexcept override
 		{
 			ibstream::rewind();
-			shared_pointers_.clear();
+			m_shared_pointers.clear();
 		}
 	protected:		
 		virtual void 
@@ -918,7 +918,7 @@ namespace bstream
 		virtual std::shared_ptr<void> 
 		get_saved_ptr(std::size_t index) override;
 
-		std::vector<std::shared_ptr<void>> shared_pointers_;
+		std::vector<std::shared_ptr<void>> m_shared_pointers;
 	};
         
     template<class T>

@@ -54,11 +54,11 @@ namespace utils
 	public:
 
 		inline out_buffer() 
-		: block_{nullptr}, data_{nullptr}, capacity_{0ul}, pos_{0ul} 
+		: m_block{nullptr}, m_data{nullptr}, m_capacity{0ul}, m_pos{0ul} 
 		{}
 
 		out_buffer(memory_block::ptr&& block) 
-		: block_{std::move(block)}, data_{block_->data()}, capacity_{block_->capacity()}, pos_{block_->size()}
+		: m_block{std::move(block)}, m_data{m_block->data()}, m_capacity{m_block->capacity()}, m_pos{m_block->size()}
 		{}
 
 		out_buffer(out_buffer&& other)
@@ -76,41 +76,41 @@ namespace utils
 	
 		inline void capture(memory_block::ptr&& block)
 		{
-			block_ = std::move(block);
-			data_ = block_->data();
-			capacity_ = block_->capacity();
-			pos_ = block_->size();
+			m_block = std::move(block);
+			m_data = m_block->data();
+			m_capacity = m_block->capacity();
+			m_pos = m_block->size();
 		}
 
 		inline memory_block::ptr release()
 		{
-			block_->set_size(pos_);
-			data_ = nullptr;
-			capacity_ = 0ul;
-			pos_ = 0ul;
-			auto p = std::move(block_);
-			block_ = nullptr;
+			m_block->set_size(m_pos);
+			m_data = nullptr;
+			m_capacity = 0ul;
+			m_pos = 0ul;
+			auto p = std::move(m_block);
+			m_block = nullptr;
 			return p;
 		}
 		
 		std::uint8_t* block_data()
 		{
-			return block_->data();
+			return m_block->data();
 		}
 		
 		std::size_t block_capacity()
 		{
-			return block_->capacity();
+			return m_block->capacity();
 		}
 
 		std::size_t block_size()
 		{
-			return block_->size();
+			return m_block->size();
 		}
 		
 		void* block_addr()
 		{
-			return block_.get();
+			return m_block.get();
 		}
 	
 		void hijack(in_buffer&& ibuf);
@@ -128,20 +128,20 @@ namespace utils
 
 		virtual out_buffer& clear() noexcept
 		{
-			pos_ = 0ul;
+			m_pos = 0ul;
 			return *this;
 		}
 
 		inline std::size_t remaining() const noexcept
 		{
 #if TRACE_IOBUFS
-			std::cout << "in remaining(), capacity_ is " << capacity_ << ", pos_ is " << pos_ << std::endl;
+			std::cout << "in remaining(), m_capacity is " << m_capacity << ", m_pos is " << m_pos << std::endl;
 #endif
 			std::size_t result = 0;
-			if (capacity_ > 0)
+			if (m_capacity > 0)
 			{
-				assert(pos_ <= capacity_);
-				result = capacity_ - pos_;
+				assert(m_pos <= m_capacity);
+				result = m_capacity - m_pos;
 			}
 			return result;
 		}
@@ -155,14 +155,14 @@ namespace utils
 		{
 #if TRACE_IOBUFS
 			std::cout << "in out_buffer::put, byte is " 
-					<< static_cast<int>(byte) << ", data_ is " 
-					<< (void*) data_ << ", pos_ is " << pos_ << std::endl;
+					<< static_cast<int>(byte) << ", m_data is " 
+					<< (void*) m_data << ", m_pos is " << m_pos << std::endl;
 #endif
 			accommodate_put(1);
 #if TRACE_IOBUFS
 			std::cout << "in out_buffer::put, after accommodate_put(1)" << std::endl;
 #endif
-			data_[pos_++] = byte;
+			m_data[m_pos++] = byte;
 #if TRACE_IOBUFS
 			std::cout << "in out_buffer::put, after assignent to vector element" << std::endl;
 #endif
@@ -172,15 +172,15 @@ namespace utils
 		inline out_buffer& put(const out_buffer& source)
 		{
 			std::size_t nbytes = source.size();
-			return put(source.data_, nbytes);
+			return put(source.m_data, nbytes);
 		}
 
 		inline out_buffer& put(const void* src, std::size_t nbytes)
 		{
 			accommodate_put(nbytes);
-			void* dst = data_ + pos_;
+			void* dst = m_data + m_pos;
 			std::memcpy(dst, src, nbytes);
-			pos_ += nbytes;
+			m_pos += nbytes;
 			return *this;                
 		}
 
@@ -189,8 +189,8 @@ namespace utils
 		put_arithmetic(U value)
 		{
 			accommodate_put(sizeof(U));
-			data_[pos_] = reinterpret_cast<std::uint8_t const&>(value);
-			++pos_;
+			m_data[m_pos] = reinterpret_cast<std::uint8_t const&>(value);
+			++m_pos;
 			return *this;
 		}
 		
@@ -212,15 +212,15 @@ namespace utils
 			val.canonical_value = reinterpret_cast<canonical_type const&>(value);
 			if (reverse_order)
 			{
-				data_[pos_] = val.bytes[1];
-				data_[pos_+1] = val.bytes[0];
+				m_data[m_pos] = val.bytes[1];
+				m_data[m_pos+1] = val.bytes[0];
 			}
 			else
 			{
-				data_[pos_] = val.bytes[0];
-				data_[pos_+1] = val.bytes[1];
+				m_data[m_pos] = val.bytes[0];
+				m_data[m_pos+1] = val.bytes[1];
 			}
-			pos_ += usize;
+			m_pos += usize;
 			return *this;
 		}
 		
@@ -242,19 +242,19 @@ namespace utils
 			val.canonical_value = reinterpret_cast<canonical_type const&>(value);
 			if (reverse_order)
 			{
-				data_[pos_] = val.bytes[3];
-				data_[pos_+1] = val.bytes[2];
-				data_[pos_+2] = val.bytes[1];
-				data_[pos_+3] = val.bytes[0];
+				m_data[m_pos] = val.bytes[3];
+				m_data[m_pos+1] = val.bytes[2];
+				m_data[m_pos+2] = val.bytes[1];
+				m_data[m_pos+3] = val.bytes[0];
 			}
 			else
 			{
-				data_[pos_] = val.bytes[0];
-				data_[pos_+1] = val.bytes[1];
-				data_[pos_+2] = val.bytes[2];
-				data_[pos_+3] = val.bytes[3];
+				m_data[m_pos] = val.bytes[0];
+				m_data[m_pos+1] = val.bytes[1];
+				m_data[m_pos+2] = val.bytes[2];
+				m_data[m_pos+3] = val.bytes[3];
 			}
-			pos_ += usize;
+			m_pos += usize;
 			return *this;
 		}
 		
@@ -276,27 +276,27 @@ namespace utils
 			val.canonical_value = reinterpret_cast<canonical_type const&>(value);
 			if (reverse_order)
 			{
-				data_[pos_] = val.bytes[7];
-				data_[pos_+1] = val.bytes[6];
-				data_[pos_+2] = val.bytes[5];
-				data_[pos_+3] = val.bytes[4];
-				data_[pos_+4] = val.bytes[3];
-				data_[pos_+5] = val.bytes[2];
-				data_[pos_+6] = val.bytes[1];
-				data_[pos_+7] = val.bytes[0];
+				m_data[m_pos] = val.bytes[7];
+				m_data[m_pos+1] = val.bytes[6];
+				m_data[m_pos+2] = val.bytes[5];
+				m_data[m_pos+3] = val.bytes[4];
+				m_data[m_pos+4] = val.bytes[3];
+				m_data[m_pos+5] = val.bytes[2];
+				m_data[m_pos+6] = val.bytes[1];
+				m_data[m_pos+7] = val.bytes[0];
 			}
 			else
 			{
-				data_[pos_] = val.bytes[0];
-				data_[pos_+1] = val.bytes[1];
-				data_[pos_+2] = val.bytes[2];
-				data_[pos_+3] = val.bytes[3];
-				data_[pos_+4] = val.bytes[4];
-				data_[pos_+5] = val.bytes[5];
-				data_[pos_+6] = val.bytes[6];
-				data_[pos_+7] = val.bytes[7];
+				m_data[m_pos] = val.bytes[0];
+				m_data[m_pos+1] = val.bytes[1];
+				m_data[m_pos+2] = val.bytes[2];
+				m_data[m_pos+3] = val.bytes[3];
+				m_data[m_pos+4] = val.bytes[4];
+				m_data[m_pos+5] = val.bytes[5];
+				m_data[m_pos+6] = val.bytes[6];
+				m_data[m_pos+7] = val.bytes[7];
 			}
-			pos_ += usize;
+			m_pos += usize;
 			return *this;
 		}
 		
@@ -311,33 +311,33 @@ namespace utils
 		inline std::size_t
 		size() const noexcept
 		{
-			return pos_;
+			return m_pos;
 		}
 
 		inline const std::uint8_t* 
 		data() const noexcept
 		{
-			return data_;
+			return m_data;
 		}
 
 		inline std::size_t
 		capacity() const noexcept
 		{
-			return capacity_;
+			return m_capacity;
 		}
 
 		inline std::size_t
 		position() const noexcept
 		{
-			return pos_;
+			return m_pos;
 		}
 
 		inline void
 		position(std::size_t pos)
 		{
-			if (pos < capacity_)
+			if (pos < m_capacity)
 			{
-				pos_ = pos;
+				m_pos = pos;
 			}
 			else
 			{
@@ -347,7 +347,7 @@ namespace utils
 
 		inline void dump( std::ostream& os, std::size_t offset, std::size_t nbytes) const
 		{
-			utils::dump(os, &(data_[offset]), nbytes);
+			utils::dump(os, &(m_data[offset]), nbytes);
 		}
 		
 		inline std::string strdump(std::size_t offset, std::size_t nbytes) const
@@ -359,7 +359,7 @@ namespace utils
 
 		inline void dump(std::ostream& os) const
 		{
-			dump(os, 0, pos_);
+			dump(os, 0, m_pos);
 		}
 		
 		inline std::string strdump() const
@@ -376,33 +376,33 @@ namespace utils
 		{
 #if TRACE_IOBUFS
 			std::cout << "entered accommodate_put, nbytes is " << nbytes << ", remaining is " << remaining()
-					<< ", block_ is " << (void*) block_.get() << std::endl;
+					<< ", m_block is " << (void*) m_block.get() << std::endl;
 #endif
 			if (!has_remaining(nbytes))
 			{
-				assert(!(!block_));
-				if (!block_->is_expandable())
+				assert(!(!m_block));
+				if (!m_block->is_expandable())
 				{
 					throw std::out_of_range{"overflow on non-expandable buffer"};
 				}
 #if TRACE_IOBUFS
-				std::cout << "expanding block, old data_ is " << (void*) data_ << ", old capacity_ is "
-						<< capacity_ << std::endl;
+				std::cout << "expanding block, old m_data is " << (void*) m_data << ", old m_capacity is "
+						<< m_capacity << std::endl;
 #endif
-				block_->expand(pos_ + nbytes);
-				data_ = block_->data();
-				capacity_ = block_->capacity();
+				m_block->expand(m_pos + nbytes);
+				m_data = m_block->data();
+				m_capacity = m_block->capacity();
 #if TRACE_IOBUFS
-				std::cout << "expanded block, new data_ is " << (void*) data_ << ", new capacity_ is "
-						<< capacity_ << std::endl;
+				std::cout << "expanded block, new m_data is " << (void*) m_data << ", new m_capacity is "
+						<< m_capacity << std::endl;
 #endif
 			}
 		}
 
-		memory_block::ptr block_;
-		std::uint8_t *data_;
-		std::size_t capacity_;
-		std::size_t pos_;
+		memory_block::ptr m_block;
+		std::uint8_t *m_data;
+		std::size_t m_capacity;
+		std::size_t m_pos;
 	};
 
 } // namespace utils

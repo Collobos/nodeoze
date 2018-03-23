@@ -46,66 +46,66 @@ namespace utils
 	{
 	public:
 		inline vector_block(std::size_t capacity)
-		: vec_(capacity, static_cast<std::uint8_t>(0)), pos_{0ul}
+		: m_vec(capacity, static_cast<std::uint8_t>(0)), m_pos{0ul}
 		{}
 		
 		inline vector_block(std::uint8_t* data, std::size_t size)
-		: vec_{}, pos_{size}
+		: m_vec{}, m_pos{size}
 		{
-			vec_.reserve(size);
+			m_vec.reserve(size);
 			for (auto i = 0ul; i < size; ++i)
 			{
-				vec_.push_back(data[i]);
+				m_vec.push_back(data[i]);
 			}
 		}
 		
 		inline vector_block(std::vector<std::uint8_t>&& vec)
-		: vec_{std::move(vec)}, pos_{vec_.size()}
+		: m_vec{std::move(vec)}, m_pos{m_vec.size()}
 		{}
 
 		inline vector_block(std::vector<std::uint8_t>&& vec, std::size_t pos)
-		: vec_{std::move(vec)}, pos_{pos}
+		: m_vec{std::move(vec)}, m_pos{pos}
 		{}
 /*
 		inline vector_block(std::vector<std::uint8_t> const& vec)
-		: vec_{vec}, pos_{vec_.size()}
+		: m_vec{vec}, m_pos{m_vec.size()}
 		{
 		}
 */
 		virtual std::uint8_t *data() noexcept override
 		{
-			return vec_.data();
+			return m_vec.data();
 		}
 		
 		virtual const std::uint8_t *cdata() const noexcept override
 		{
-			return vec_.data();
+			return m_vec.data();
 		}
 		
 		virtual std::size_t capacity() const noexcept override
 		{
-			return vec_.size();
+			return m_vec.size();
 		}
 
 		virtual std::size_t size() const noexcept override
 		{
-			return pos_;
+			return m_pos;
 		}
 
 		virtual void set_size(std::size_t pos) override
 		{
-			if (pos_ >= capacity())
+			if (m_pos >= capacity())
 			{
 				throw std::out_of_range{"position exceeds vector size/capacity"};
 			}
-			pos_ = pos;
+			m_pos = pos;
 		}
 		
 		virtual memory_block::ptr make_mutable() override
 		{
-			memory_block::ptr p = std::unique_ptr<vector_block>(new vector_block(std::move(vec_)));
-			p->set_size(pos_);
-			pos_ = 0ul;
+			memory_block::ptr p = std::unique_ptr<vector_block>(new vector_block(std::move(m_vec)));
+			p->set_size(m_pos);
+			m_pos = 0ul;
 //			memory_block::ptr p = std::unique_ptr<vector_block>(this); // ?? would this work?
 			return p;
 		}
@@ -114,11 +114,11 @@ namespace utils
 
 		virtual void resize(std::size_t new_size) override
 		{
-			vec_.resize(new_size, static_cast<std::uint8_t>(0));
+			m_vec.resize(new_size, static_cast<std::uint8_t>(0));
 		}
 
-		std::vector<std::uint8_t> vec_;
-		std::size_t pos_;
+		std::vector<std::uint8_t> m_vec;
+		std::size_t m_pos;
 	};
 
 } // namespace utils

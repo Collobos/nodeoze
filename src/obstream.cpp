@@ -35,15 +35,15 @@ bool bstream::obstream::maybe_write_shared_ptr(void *)
 bool bstream::obstream_cntxt::maybe_write_shared_ptr(void *ptr)
 {
 	write_array_header(1);
-	auto it = shared_pointers_.find(ptr);
-	if (it != shared_pointers_.end())
+	auto it = m_shared_pointers.find(ptr);
+	if (it != m_shared_pointers.end())
 	{
 		put_arithmetic(it->second);
 		return true;
 	}
 	else
 	{
-		shared_pointers_.emplace(ptr, shared_pointers_.size());
+		m_shared_pointers.emplace(ptr, m_shared_pointers.size());
 		return false;
 	}
 }

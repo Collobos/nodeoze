@@ -56,62 +56,24 @@ namespace utils
 		 *	\param capacity	size of the memory block in bytes
 		 */
 		const_anon_block(const void* data, std::size_t size)
-		: data_{reinterpret_cast<const std::uint8_t*>(data)}, size_{size} 
+		: m_data{reinterpret_cast<const std::uint8_t*>(data)}, m_size{size} 
 		{}
 		
 		virtual const std::uint8_t* cdata() const noexcept override
 		{
-			return data_;
+			return m_data;
 		}
 		
 		virtual std::size_t size() const noexcept override
 		{
-			return size_;
+			return m_size;
 		}
 				
 	private:
-		const std::uint8_t *data_;
-		std::size_t size_;
+		const std::uint8_t *m_data;
+		std::size_t m_size;
 	};
 	
-	/*!	\class anon_block
-	 *	\brief Unmanaged block of mutable memory
-	 * 
-	 *	The memory is not managed by anon_block; it is the responsibility of
-	 *	the caller to ensure that the pointer provided to the constructor
-	 *	remains valid for the extent of constructed instance.
-	 */
-
-#if 0
-	class anon_block : public memory_block
-	{
-	public:
-		
-		/*!	\brief Constructs an instance of anon_block
-		 *	\param data pointer to the beginning of contiguous memory block
-		 *	\param capacity	size of the memory block in bytes
-		 */
-		anon_block(const void* data, std::size_t capacity)
-		: data_{reinterpret_cast<const std::uint8_t*>(data)}, capacity_{capacity} 
-		{}
-		
-		virtual const std::uint8_t* data() const noexcept override
-		{
-			return data_;
-		}
-		
-		virtual std::size_t capacity() const noexcept override
-		{
-			return capacity_;
-		}
-				
-	private:
-		const std::uint8_t *data_;
-		std::size_t capacity_;
-	};
-	
-#endif
-
 } // namespace utils
 } // namespace bstream
 } // namespace nodeoze

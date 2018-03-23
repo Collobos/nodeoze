@@ -52,34 +52,34 @@ namespace utils
         using max_signed = std::int64_t;
 
         inline in_buffer()
-        : block_{nullptr}, data_{nullptr}, pos_{0ul}, size_{0UL}
+        : m_block{nullptr}, m_data{nullptr}, m_pos{0ul}, m_size{0UL}
 		{}
 		
 		in_buffer(const_memory_block::ptr&& block, std::size_t size) 
-		: block_{std::move(block)}, data_{block_->cdata()}, pos_{0ul}, size_{size}
+		: m_block{std::move(block)}, m_data{m_block->cdata()}, m_pos{0ul}, m_size{size}
 		{}
 		
 		in_buffer(const_memory_block::ptr&& block) 
-		: block_{std::move(block)}, data_{block_->cdata()}, pos_{0ul}, size_{block_->size()}
+		: m_block{std::move(block)}, m_data{m_block->cdata()}, m_pos{0ul}, m_size{m_block->size()}
 		{}
 
 		virtual ~in_buffer() {}
 
 		memory_block::ptr release_mutable()
 		{
-			size_ = 0ul;
-			data_ = nullptr;
-			auto p = block_->make_mutable();
-			block_ = nullptr;
+			m_size = 0ul;
+			m_data = nullptr;
+			auto p = m_block->make_mutable();
+			m_block = nullptr;
 			return p;
 		}
 
 		const_memory_block::ptr release()
 		{
- 			size_ = 0ul;
-			data_ = nullptr;
-			auto p = block_->make_mutable();
-			block_ = nullptr;
+ 			m_size = 0ul;
+			m_data = nullptr;
+			auto p = m_block->make_mutable();
+			m_block = nullptr;
 			return p;
 		}
 
@@ -90,18 +90,18 @@ namespace utils
 		
 		void capture(const_memory_block::ptr&& block, std::size_t size)
 		{
-			block_ = std::move(block);
-			data_ = block_->cdata();
-			size_ = size;
-			pos_ = 0ul;
+			m_block = std::move(block);
+			m_data = m_block->cdata();
+			m_size = size;
+			m_pos = 0ul;
 		}
 		
 		void capture(const_memory_block::ptr&& block)
 		{
-			block_ = std::move(block);
-			data_ = block_->cdata();
-			size_ = block_->size();
-			pos_ = 0ul;
+			m_block = std::move(block);
+			m_data = m_block->cdata();
+			m_size = m_block->size();
+			m_pos = 0ul;
 		}
 		
 		void hijack(out_buffer&& obuf)
@@ -115,7 +115,7 @@ namespace utils
 		
         inline std::size_t remaining() const noexcept
         {
-            return size_ - pos_;
+            return m_size - m_pos;
         }
 
         inline bool has_remaining(std::size_t nbytes = 1) const noexcept
@@ -125,31 +125,31 @@ namespace utils
         
         inline std::size_t position() const noexcept
         {
-            return pos_;
+            return m_pos;
         }
         
         inline void position(std::size_t pos)
         {
-            if (pos > size_)
+            if (pos > m_size)
             {
 				throw std::invalid_argument("position out of range for buffer");
             }
-            pos_ = pos;
+            m_pos = pos;
         }
         
         inline size_t size() const noexcept
         {
-            return size_;
+            return m_size;
         }
 
         inline const std::uint8_t* data() const noexcept
         {
-            return data_;
+            return m_data;
         }
         
         virtual void rewind() noexcept
         {
-            pos_ = 0;
+            m_pos = 0;
         }
 		
         inline std::uint8_t 
@@ -159,7 +159,7 @@ namespace utils
             {
                 throw std::out_of_range("get() past end of buffer");
             }
-            return data_[pos_++];
+            return m_data[m_pos++];
         }
 
         inline std::uint8_t 
@@ -169,7 +169,7 @@ namespace utils
             {
                 throw std::out_of_range("peek() past end of buffer");
             }
-            return data_[pos_];
+            return m_data[m_pos];
         }
 		
 		union bytes_2
@@ -201,7 +201,7 @@ namespace utils
 				throw std::out_of_range("get_arithmetic_as() past end of buffer");
 			}
 			
-			return reinterpret_cast<const U&>(data_[pos_++]);
+			return reinterpret_cast<const U&>(m_data[m_pos++]);
 		}
 		
 		template<class U>
@@ -219,15 +219,15 @@ namespace utils
 			bytes_2 b;
 			if (reverse_order)
 			{
-				b.bytes[1] = data_[pos_];
-				b.bytes[0] = data_[pos_+1];
+				b.bytes[1] = m_data[m_pos];
+				b.bytes[0] = m_data[m_pos+1];
 			}
 			else
 			{
-				b.bytes[0] = data_[pos_];
-				b.bytes[1] = data_[pos_+2];
+				b.bytes[0] = m_data[m_pos];
+				b.bytes[1] = m_data[m_pos+2];
 			}
-			pos_+= usize;
+			m_pos+= usize;
 			return reinterpret_cast<const U&>(b.u16);
 		}
 		
@@ -246,19 +246,19 @@ namespace utils
 			bytes_4 b;
 			if (reverse_order)
 			{
-				b.bytes[3] = data_[pos_];
-				b.bytes[2] = data_[pos_+1];
-				b.bytes[1] = data_[pos_+2];
-				b.bytes[0] = data_[pos_+3];
+				b.bytes[3] = m_data[m_pos];
+				b.bytes[2] = m_data[m_pos+1];
+				b.bytes[1] = m_data[m_pos+2];
+				b.bytes[0] = m_data[m_pos+3];
 			}
 			else
 			{
-				b.bytes[0] = data_[pos_];
-				b.bytes[1] = data_[pos_+1];
-				b.bytes[2] = data_[pos_+2];
-				b.bytes[3] = data_[pos_+3];
+				b.bytes[0] = m_data[m_pos];
+				b.bytes[1] = m_data[m_pos+1];
+				b.bytes[2] = m_data[m_pos+2];
+				b.bytes[3] = m_data[m_pos+3];
 			}
-			pos_+= usize;
+			m_pos+= usize;
 			return reinterpret_cast<const U&>(b.u32);
 		}
 		
@@ -277,27 +277,27 @@ namespace utils
 			bytes_8 b;
 			if (reverse_order)
 			{
-				b.bytes[7] = data_[pos_];
-				b.bytes[6] = data_[pos_+1];
-				b.bytes[5] = data_[pos_+2];
-				b.bytes[4] = data_[pos_+3];
-				b.bytes[3] = data_[pos_+4];
-				b.bytes[2] = data_[pos_+5];
-				b.bytes[1] = data_[pos_+6];
-				b.bytes[0] = data_[pos_+7];
+				b.bytes[7] = m_data[m_pos];
+				b.bytes[6] = m_data[m_pos+1];
+				b.bytes[5] = m_data[m_pos+2];
+				b.bytes[4] = m_data[m_pos+3];
+				b.bytes[3] = m_data[m_pos+4];
+				b.bytes[2] = m_data[m_pos+5];
+				b.bytes[1] = m_data[m_pos+6];
+				b.bytes[0] = m_data[m_pos+7];
 			}
 			else
 			{
-				b.bytes[0] = data_[pos_];
-				b.bytes[1] = data_[pos_+1];
-				b.bytes[2] = data_[pos_+2];
-				b.bytes[3] = data_[pos_+3];
-				b.bytes[4] = data_[pos_+4];
-				b.bytes[5] = data_[pos_+5];
-				b.bytes[6] = data_[pos_+6];
-				b.bytes[7] = data_[pos_+7];
+				b.bytes[0] = m_data[m_pos];
+				b.bytes[1] = m_data[m_pos+1];
+				b.bytes[2] = m_data[m_pos+2];
+				b.bytes[3] = m_data[m_pos+3];
+				b.bytes[4] = m_data[m_pos+4];
+				b.bytes[5] = m_data[m_pos+5];
+				b.bytes[6] = m_data[m_pos+6];
+				b.bytes[7] = m_data[m_pos+7];
 			}
-			pos_+= usize;
+			m_pos+= usize;
 			return reinterpret_cast<const U&>(b.u64);
 		}
 		
@@ -318,38 +318,38 @@ namespace utils
             {
                 case 1:
                 {
-                    return reinterpret_cast<const U&>(data_[pos_++]);
+                    return reinterpret_cast<const U&>(m_data[m_pos++]);
                 }
                 case 2:
                 {
                     std::uint16_t value = 
-                            (static_cast<std::uint16_t>(data_[pos_]) << 8) 
-                            | (static_cast<std::uint16_t>(data_[pos_ + 1]));
-                    pos_ += usize;
+                            (static_cast<std::uint16_t>(m_data[m_pos]) << 8) 
+                            | (static_cast<std::uint16_t>(m_data[m_pos + 1]));
+                    m_pos += usize;
                     return reinterpret_cast<U&>(value);
                 }
                 case 4:
                 {
                     std::uint32_t value = 
-                            (static_cast<std::uint32_t>(data_[pos_]) << 24) 
-                            | (static_cast<std::uint32_t>(data_[pos_ + 1]) << 16) 
-                            | (static_cast<std::uint32_t>(data_[pos_ + 2]) << 8) 
-                            | (static_cast<std::uint32_t>(data_[pos_ + 3]));
-                    pos_ += usize;
+                            (static_cast<std::uint32_t>(m_data[m_pos]) << 24) 
+                            | (static_cast<std::uint32_t>(m_data[m_pos + 1]) << 16) 
+                            | (static_cast<std::uint32_t>(m_data[m_pos + 2]) << 8) 
+                            | (static_cast<std::uint32_t>(m_data[m_pos + 3]));
+                    m_pos += usize;
                     return reinterpret_cast<U&>(value);
                 }
                 case 8:
                 {
                     std::uint64_t value = 
-                            (static_cast<std::uint64_t>(data_[pos_]) << 56) 
-                            | (static_cast<std::uint64_t>(data_[pos_ + 1]) << 48) 
-                            | (static_cast<std::uint64_t>(data_[pos_ + 2]) << 40) 
-                            | (static_cast<std::uint64_t>(data_[pos_ + 3]) << 32)
-                            | (static_cast<std::uint64_t>(data_[pos_ + 4]) << 24) 
-                            | (static_cast<std::uint64_t>(data_[pos_ + 5]) << 16) 
-                            | (static_cast<std::uint64_t>(data_[pos_ + 6]) << 8) 
-                            | (static_cast<std::uint64_t>(data_[pos_ + 7]));
-                    pos_ += usize;
+                            (static_cast<std::uint64_t>(m_data[m_pos]) << 56) 
+                            | (static_cast<std::uint64_t>(m_data[m_pos + 1]) << 48) 
+                            | (static_cast<std::uint64_t>(m_data[m_pos + 2]) << 40) 
+                            | (static_cast<std::uint64_t>(m_data[m_pos + 3]) << 32)
+                            | (static_cast<std::uint64_t>(m_data[m_pos + 4]) << 24) 
+                            | (static_cast<std::uint64_t>(m_data[m_pos + 5]) << 16) 
+                            | (static_cast<std::uint64_t>(m_data[m_pos + 6]) << 8) 
+                            | (static_cast<std::uint64_t>(m_data[m_pos + 7]));
+                    m_pos += usize;
                     return reinterpret_cast<U&>(value);
                 }
                 default:
@@ -368,20 +368,20 @@ namespace utils
             {
                 throw std::out_of_range("get_bytes() past end of buffer");
             }
-            auto p = &(data_[pos_]);
-            pos_ += nbytes;
+            auto p = &(m_data[m_pos]);
+            m_pos += nbytes;
             return p;
         }
 
 
         inline void dump( std::ostream& os, std::size_t offset, std::size_t nbytes) const
         {
-            utils::dump(os, &(data_[offset]), nbytes);
+            utils::dump(os, &(m_data[offset]), nbytes);
         }
 
         inline void dump(std::ostream& os) const
         {
-            dump(os, 0, size_);
+            dump(os, 0, m_size);
         }
 		
 		inline std::string strdump(std::size_t offset, std::size_t nbytes) const
@@ -393,14 +393,14 @@ namespace utils
 		
 		inline std::string strdump() const
 		{
-			return strdump(0, size_);
+			return strdump(0, m_size);
 		}
 		
 	protected:
-        const_memory_block::ptr block_;
-        const std::uint8_t *data_;
-        std::size_t pos_ = 0UL;
-		std::size_t size_ = 0UL;
+        const_memory_block::ptr m_block;
+        const std::uint8_t *m_data;
+        std::size_t m_pos = 0UL;
+		std::size_t m_size = 0UL;
     };
 
 } // namespace utils
