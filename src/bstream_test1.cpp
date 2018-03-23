@@ -10,7 +10,7 @@ public:
 	far() {}
 	far(const std::string& name, int num) : name_{name}, number_{num} {}
 	
-	BSTRM_MAP_CLASS(far, , (name_, number_));
+	BSTRM_MAP_CLASS(far, , (name_, number_))
 	
     const std::string& name() const
     {
@@ -31,10 +31,10 @@ private:
 class foo : BSTRM_BASE(foo)
 {
 public:
-	BSTRM_FRIEND_BASE(foo);
-	BSTRM_CTOR(foo, , (name_, number_));
-	BSTRM_ITEM_COUNT( , (name_, number_));
-	BSTRM_SERIALIZE(foo, , (name_, number_));
+	BSTRM_FRIEND_BASE(foo)
+	BSTRM_CTOR(foo, , (name_, number_))
+	BSTRM_ITEM_COUNT( , (name_, number_))
+	BSTRM_SERIALIZE(foo, , (name_, number_))
 	
 	foo(std::string const& name, int number) : name_{name}, number_{number} {}
 	
@@ -62,7 +62,7 @@ private:
 };
 
 
-TEST_CASE("nodeoze/smoke/bstream_array_base_macro")
+TEST_CASE("nodeoze/smoke/bstream/array_base_macro")
 {
 	bstream::obstream os{1024};
 	foo f0("france is bacon", 27);
@@ -75,7 +75,7 @@ TEST_CASE("nodeoze/smoke/bstream_array_base_macro")
 	CHECK(f1.number() == f0.number());
 }
 
-TEST_CASE("nodeoze/smoke/bstream_map_base_macro")
+TEST_CASE("nodeoze/smoke/bstream/map_base_macro")
 {
 	bstream::obstream os{1024};
 	far f0("france is bacon", 27);

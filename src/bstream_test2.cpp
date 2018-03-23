@@ -132,14 +132,15 @@ struct convert<fum>
 BSTRM_HAS_MSGPACK_CVT_ADAPTOR(fum);
 BSTRM_HAS_MSGPACK_PACK_ADAPTOR(fum);
 BSTRM_HAS_MSGPACK_PACK_ADAPTOR(foe);
+BSTRM_HAS_MSGPACK_AS_ADAPTOR(foe);
 
 
-TEST_CASE("test bstream msgpack integration")
+TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 {
 	CHECK(bstream::is_msgpack_object_constructible<fee>::value);
 	CHECK(bstream::has_msgpack_unpack_method<fee>::value);
 	CHECK(bstream::has_msgpack_pack_method<fee>::value);
-	CHECK(!msgpack::has_as<fee>::value);
+	CHECK(!bstream::has_msgpack_as_adaptor<fee>::value);
 	
 	CHECK(bstream::has_value_deserializer<fee>::value);
 	CHECK(bstream::has_ref_deserializer<fee>::value);
@@ -147,21 +148,21 @@ TEST_CASE("test bstream msgpack integration")
 	CHECK(!bstream::is_msgpack_object_constructible<fie>::value);
 	CHECK(bstream::has_msgpack_unpack_method<fie>::value);
 	CHECK(bstream::has_msgpack_pack_method<fie>::value);
-	CHECK(!msgpack::has_as<fie>::value);
+	CHECK(!bstream::has_msgpack_as_adaptor<fie>::value);
 
 	CHECK(!bstream::is_msgpack_object_constructible<foe>::value);
 	CHECK(!bstream::has_msgpack_unpack_method<foe>::value);
 	CHECK(!bstream::has_msgpack_pack_method<foe>::value);
 	CHECK(!bstream::has_msgpack_cvt_adaptor<foe>::value);
 	CHECK(bstream::has_msgpack_pack_adaptor<foe>::value);
-	CHECK(msgpack::has_as<foe>::value);
+	CHECK(bstream::has_msgpack_as_adaptor<foe>::value);
 	
 	CHECK(!bstream::is_msgpack_object_constructible<fum>::value);
 	CHECK(!bstream::has_msgpack_unpack_method<fum>::value);
 	CHECK(!bstream::has_msgpack_pack_method<fum>::value);
 	CHECK(bstream::has_msgpack_cvt_adaptor<fum>::value);
 	CHECK(bstream::has_msgpack_pack_adaptor<fum>::value);
-	CHECK(!msgpack::has_as<fum>::value);
+	CHECK(!bstream::has_msgpack_as_adaptor<fum>::value);
 
 	{	
 		bstream::obstream os{1024};

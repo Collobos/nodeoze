@@ -17,6 +17,11 @@
 	template<>																			\
 	struct nodeoze::bstream::has_msgpack_cvt_adaptor<type_name> : public std::true_type {}	\
 /**/
+
+#define BSTRM_HAS_MSGPACK_AS_ADAPTOR(type_name)										\
+	template<>																			\
+	struct nodeoze::bstream::has_msgpack_as_adaptor<type_name> : public std::true_type {}	\
+/**/
 	
 #define BSTRM_HAS_MSGPACK_PACK_ADAPTOR(type_name)										\
 	template<>																			\
@@ -29,7 +34,10 @@ namespace bstream
 {
 	template<class T>
 	struct has_msgpack_cvt_adaptor : public std::false_type {};
-	
+
+	template<class T>
+	struct has_msgpack_as_adaptor : public std::false_type {};
+
 	template<class T>
 	struct has_msgpack_pack_adaptor : public std::false_type {};
 
@@ -89,7 +97,6 @@ namespace bstream
 	{
         static inline T get(ibstream& is)
 		{
-			std::cout << "in msgpack constructible value deserializer" << std::endl;
 			msgpack::object_handle handle;
 			std::size_t buf_position = is.position();
 			msgpack::unpack(handle, reinterpret_cast<const char*>(is.data()), is.size(), buf_position);
@@ -103,11 +110,10 @@ namespace bstream
 			typename std::enable_if_t<
 			(std::is_copy_constructible<T>::value || std::is_move_constructible<T>::value) &&
 			!is_msgpack_object_constructible<T>::value &&
-			msgpack::has_as<T>::value>>
+			has_msgpack_as_adaptor<T>::value>>
 	{
         static inline T get(ibstream& is)
 		{
-			std::cout << "in has_as value deserializer" << std::endl;
 			msgpack::object_handle handle;
 			std::size_t buf_position = is.position();
 			msgpack::unpack(handle, reinterpret_cast<const char*>(is.data()), is.size(), buf_position);
@@ -119,13 +125,12 @@ namespace bstream
 	template<class T>
 	struct ref_deserializer<T, 
 			typename std::enable_if_t<
-				!msgpack::has_as<T>::value &&
+				!has_msgpack_as_adaptor<T>::value &&
 				has_msgpack_unpack_method<T>::value>>
 	{
 		static inline ibstream&
 		get(ibstream& is, T& obj)
 		{
-			std::cout << "in msgpack unpack method ref deserializer" << std::endl;
 			msgpack::object_handle handle;
 			std::size_t buf_position = is.position();
 			msgpack::unpack(handle, reinterpret_cast<const char*>(is.data()), is.size(), buf_position);
@@ -148,7 +153,6 @@ namespace bstream
 		static inline ibstream&
 		get(ibstream& is, T& obj)
 		{
-			std::cout << "in msgpack cvt adaptor ref deserializer" << std::endl;
 			msgpack::object_handle handle;
 			std::size_t buf_position = is.position();
 			msgpack::unpack(handle, reinterpret_cast<const char*>(is.data()), is.size(), buf_position);

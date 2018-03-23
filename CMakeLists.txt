@@ -37,9 +37,11 @@ message( "nodeoze library is already defined" )
 
 else()
 
-add_custom_command(	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/botan_all.h ${CMAKE_CURRENT_BINARY_DIR}/botan_all_internal.h ${CMAKE_CURRENT_BINARY_DIR}/botan_all.cpp
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/botan)
+
+add_custom_command(	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all.h ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all_internal.h ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all.cpp
 					COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/ext/botan/configure.py --minimized-build --enable-modules=md5,sha1,sha2_64,tls --single-amalgamation-file --amalgamation --disable-shared
-					WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
+					WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/botan )
 
 include_directories( include src/win32 
 	ext/libuv/include 
@@ -58,9 +60,9 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_OMIT_LOAD_EXT
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_OMIT_LOAD_EXTENSION=1 -DSQLITE_ENABLE_SESSION -DSQLITE_ENABLE_PREUPDATE_HOOK -DSQLITE_ENABLE_JSON1")
 
 set(NODEOZE_SRCS 
-	${CMAKE_CURRENT_BINARY_DIR}/botan_all.h 
-	${CMAKE_CURRENT_BINARY_DIR}/botan_all_internal.h 
-	${CMAKE_CURRENT_BINARY_DIR}/botan_all.cpp 
+	${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all.h 
+	${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all_internal.h 
+	${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all.cpp 
 	ext/http-parser/http_parser.c 
 	ext/uriparser/src/UriCommon.c 
 	ext/uriparser/src/UriCompare.c 
@@ -236,7 +238,8 @@ set(NODEOZE_SRCS
 	src/out_buffer.cpp)
     
 
-set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test3.cpp)
+# set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test3.cpp)
+set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test2.cpp src/bstream_test3.cpp)
 
 set( NODEOZE_SRCS ${NODEOZE_SRCS} 
 	ext/libuv/src/uv-common.c 

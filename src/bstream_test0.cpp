@@ -282,7 +282,7 @@ namespace test_types
 		foo(fee const& a, fie const& b, foe const& c, fum const& d, std::string const& l) :
 		fee{a}, fie{b}, foe{c}, fum{d}, label{l} {}
 
-		BSTRM_MAP_CLASS(foo, (fee, fie, foe, fum) , (label));
+		BSTRM_MAP_CLASS(foo, (fee, fie, foe, fum) , (label))
 
 		bool operator==(foo const& other) const
 		{
@@ -629,7 +629,7 @@ namespace test_types
 }												\
 /**/
 
-TEST_CASE("nodeoze/smoke/numeric_representation")
+TEST_CASE("nodeoze/smoke/bstream/numeric_representation")
 {
 	bstream::obstream os{1024};
 	
@@ -842,7 +842,7 @@ TEST_CASE("nodeoze/smoke/numeric_representation")
 }												\
 /**/
 
-TEST_CASE("nodeoze/smoke/numeric_write_read")
+TEST_CASE("nodeoze/smoke/bstream/numeric_write_read")
 {
 	WRITE_READ_TEST(std::int8_t, 0);
 	WRITE_READ_TEST(std::uint8_t, 0);
@@ -1012,7 +1012,7 @@ bool same_contents(std::unordered_map<K, V> const& a, std::unordered_map<K, V> c
 	return true;
 }
 
-TEST_CASE("nodeoze/smoke/bstream_unordered_map")
+TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 {
 	{
 		std::unordered_map<test_types::fee, test_types::fee> map0;
@@ -1222,7 +1222,7 @@ bool same_contents(std::map<K, V> const& a, std::map<K, V> const& b)
 	return true;
 }
 
-TEST_CASE("nodeoze/smoke/bstream_map")
+TEST_CASE("nodeoze/smoke/bstream/map")
 {
 	{
 		std::map<test_types::fee, test_types::fee> map0;
@@ -1411,7 +1411,7 @@ TEST_CASE("nodeoze/smoke/bstream_map")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bstream_vector")
+TEST_CASE("nodeoze/smoke/bstream/vector")
 {
 	{
 		std::vector<test_types::fee> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
@@ -1463,7 +1463,7 @@ TEST_CASE("nodeoze/smoke/bstream_vector")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bstream_deque")
+TEST_CASE("nodeoze/smoke/bstream/deque")
 {
 	{
 		std::deque<test_types::fee> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
@@ -1515,7 +1515,7 @@ TEST_CASE("nodeoze/smoke/bstream_deque")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bsgtream_forward_list")
+TEST_CASE("nodeoze/smoke/bstream/forward_list")
 {
 	{
 		std::forward_list<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
@@ -1567,7 +1567,7 @@ TEST_CASE("nodeoze/smoke/bsgtream_forward_list")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bstream_list")
+TEST_CASE("nodeoze/smoke/bstream/list")
 {
 	{
 		std::list<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
@@ -1619,7 +1619,7 @@ TEST_CASE("nodeoze/smoke/bstream_list")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bstream_set")
+TEST_CASE("nodeoze/smoke/bstream/set")
 {
 	{
 		std::set<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
@@ -1671,7 +1671,7 @@ TEST_CASE("nodeoze/smoke/bstream_set")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bstream_unordered_set")
+TEST_CASE("nodeoze/smoke/bstream/unordered_set")
 {
 	{
 		std::unordered_set<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
@@ -1723,7 +1723,7 @@ TEST_CASE("nodeoze/smoke/bstream_unordered_set")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bstream_tuple")
+TEST_CASE("nodeoze/smoke/bstream/tuple")
 {
 	{
 		using tup_type = std::tuple<test_types::fee, test_types::fie, test_types::foe, test_types::fum>;
@@ -1747,7 +1747,7 @@ TEST_CASE("nodeoze/smoke/bstream_tuple")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/class_write_read")
+TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 {
 	{
 		CHECK(!bstream::is_ibstream_constructible<test_types::fee>::value);
@@ -1849,7 +1849,7 @@ TEST_CASE("nodeoze/smoke/class_write_read")
 				test_types::foe{"ding", 2}, test_types::fum{"dong", 3}, "ooo mau mau" }; 
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::dump_json(std::cout, os);
+//		bstream::dump_json(std::cout, os);
 		bstream::ibstream is{std::move(os)};
 		test_types::foo obj1;
 		is >> obj1;
@@ -2039,7 +2039,7 @@ struct bstream::ref_deserializer<test_types::fox>
 	}
 };
 
-TEST_CASE("nodeoze/smoke/ptr")
+TEST_CASE("nodeoze/smoke/bstream/ptr")
 {
 	{
 		bstream::obstream os{1024};
@@ -2151,7 +2151,7 @@ TEST_CASE("nodeoze/smoke/ptr")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/initializer")
+TEST_CASE("nodeoze/smoke/bstream/initializer")
 {
 	{
 		/*
@@ -2189,7 +2189,7 @@ TEST_CASE("nodeoze/smoke/initializer")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bstream_pair")
+TEST_CASE("nodeoze/smoke/bstream/pair")
 {
 	{
 		bstream::obstream os{1024};
