@@ -98,6 +98,18 @@ namespace bstream
 			return is_positive_int(code) || (code >= negative_fixint_min && code <= negative_fixint_max) || 
 					code == int_8 || code == int_16 || code == int_64;
 		}
+
+		static inline bool
+		is_floating(std::uint8_t code)
+		{
+			return code == float_32 || code == float_64;
+		}
+
+		static inline bool
+		is_nil(std::uint8_t code)
+		{
+			return code == nil;
+		}
 			
 		static inline bool
 		is_array(std::uint8_t code)

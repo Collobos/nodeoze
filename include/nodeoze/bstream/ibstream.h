@@ -806,6 +806,16 @@ namespace bstream
 			return read_blob_body(nbytes);
 		}
 
+		void
+		read_nil()
+		{
+			auto tcode = base::get();
+			if (tcode != typecode::nil)
+			{
+				throw type_error("expected nil typecode");
+			}
+		}
+
 	protected:
 		
 		template<class T>

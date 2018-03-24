@@ -33,6 +33,7 @@
 #include <nodeoze/ntimer.h>
 #include <nodeoze/njson.h>
 #include <nodeoze/ntest.h>
+#include <nodeoze/bstream/msgpack.h>
 #include "nany_tests.h"
 #include <cassert>
 #include <sstream>
@@ -163,6 +164,141 @@ any::any( std::initializer_list< any > init, bool type_deduction, type_t manual_
 			m_data.m_array.emplace_back( element );
 		} );
 	}
+}
+
+any::any(bstream::ibstream& is)
+{
+	using namespace bstream;
+
+	auto code = is.peek();
+	if (typecode::is_int(code))
+	{
+		m_type = type_t::integer;
+		m_data.m_integer = static_cast< std::uint64_t >(is.read_as<std::int64_t>());
+	}
+	else if (typecode::is_floating(code))
+	{
+		m_type = type_t::real;
+		m_data.m_real = is.read_as<double>();
+	}
+	else if (typecode::is_string(code))
+	{
+		m_type = type_t::string;
+		new ( &m_data.m_string ) string_type(is.read_as<std::string>());
+	}
+	else if (typecode::is_bool(code))
+	{
+		m_type = type_t::boolean;
+		m_data.m_bool = is.read_as<bool>();
+	}
+	else if (typecode::is_blob(code))
+	{
+		m_type = type_t::blob;
+		auto blob_size = is.read_blob_header();
+		new ( &m_data.m_blob ) blob_type(is.get_bytes(blob_size), blob_size);
+	}
+	else if (typecode::is_array(code))
+	{
+		m_type = type_t::array;
+		auto array_size = is.read_array_header();
+		new ( &m_data.m_array ) array_type();
+		for(auto i = 0ul; i < array_size; ++i)
+		{
+			 m_data.m_array.emplace_back(is);
+		}
+	}
+	else if (typecode::is_map(code))
+	{
+		m_type = type_t::object;
+		auto map_size = is.read_map_header();
+		new ( &m_data.m_object ) object_type();
+		for (auto i = 0ul; i < map_size; ++i)
+		{
+			std::string key = is.read_as<std::string>();
+			m_data.m_object.emplace( std::move(key), is);
+		}
+		
+	}
+	else if (typecode::is_nil(code))
+	{
+		m_type = type_t::null;
+	}
+	else
+	{
+		assert(false);
+	}
+
+}
+
+bstream::obstream& any::put(bstream::obstream& os) const
+{
+	switch ( m_type )
+	{
+		case type_t::null:
+		{
+			os.write_nil();
+		}
+		break;
+		
+		case type_t::boolean:
+		{
+			os << m_data.m_bool;
+		}
+		break;
+		
+		case type_t::integer:
+		{
+			os << m_data.m_integer;
+		}
+		break;
+
+		case type_t::real:
+		{
+			os << m_data.m_real;
+		}
+		break;
+		
+		case type_t::string:
+		{
+			os << m_data.m_string;
+		}
+		break;
+		
+		case type_t::blob:
+		{
+			os.write_blob_header(m_data.m_blob.size());
+			os.write_blob_body(m_data.m_blob.data(), m_data.m_blob.size());
+		}
+		break;
+
+		case type_t::array:
+		{
+			os.write_array_header(m_data.m_array.size());
+			for (auto it = m_data.m_array.cbegin(); it != m_data.m_array.cend(); ++it)
+			{
+				it->put(os);
+			}
+		}
+		break;
+
+		case type_t::object:
+		{
+			os.write_map_header(m_data.m_object.size());
+			for (auto it = m_data.m_object.cbegin(); it != m_data.m_object.cend(); ++it)
+			{
+				os << it->first;
+				it->second.put(os);
+			}
+		}
+		break;
+		
+		default:
+		{
+			assert(false);
+		}
+		break;
+	}
+	return os;
 }
 
 
@@ -873,7 +1009,40 @@ any::operator>=(const any &rhs) const
 	return *this > rhs || *this == rhs;
 }
 #endif
+TEST_CASE( "nodeoze/smoke/any/bstream_blob" )
+{
+	buffer a_blob("some very stringy blob contents");
+	any root(a_blob);
+	REQUIRE(root.is_blob());
+	bstream::obstream os{1024};
+	os << root;
+	bstream::ibstream is{std::move(os)};
+	any copy(is);
+	REQUIRE(copy.type() == any::type_t::blob);
+	REQUIRE(root == copy);
+}
 
+TEST_CASE( "nodeoze/smoke/any/bstream_write_read" )
+{
+	buffer a_blob("some stringy contents for a blob");
+	any root = any::build(
+	{
+		{"a", 27 },
+		{"b", 1.2345 },
+		{"c", "stringy" },
+		{"d", true },
+		{"e", { 1, 2, 3.0, "more stringy" } },
+		{"f", { { "nested", { {"x", "ecks"}, {"y", "why"}, {"z", "zee"} } } } },
+		{"g", { 4, 5, 6, { "seven", "eight", 9 } } }
+	});
+	root["h"] = a_blob;
+	REQUIRE(root["h"].is_blob());
+	bstream::obstream os{1024};
+	os << root;
+	bstream::ibstream is{std::move(os)};
+	any other(is);
+	REQUIRE(other == root);
+}	
 
 TEST_CASE( "nodeoze/smoke/any")
 {

@@ -164,6 +164,13 @@ namespace bstream
 			return *this;
 		}
 
+		inline obstream&
+		write_nil()
+		{
+			put(typecode::nil);
+			return *this;
+		}
+
 		template<class T>
 		inline obstream&
 		write_shared_ptr(std::shared_ptr<T> ptr)

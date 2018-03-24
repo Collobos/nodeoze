@@ -34,6 +34,8 @@
 #include <nodeoze/nbase64.h>
 #include <nodeoze/nmacros.h>
 #include <nodeoze/unordered_map.h>
+#include <nodeoze/bstream/ibstream.h>
+#include <nodeoze/bstream/obstream.h>
 #include <nodeoze/nlog.h>
 #include <streambuf>
 #include <iostream>
@@ -274,6 +276,14 @@ public:
 
 	any( std::initializer_list< any > list, bool type_deduction = true, type_t manual_type = type_t::array );
 	
+	any(bstream::ibstream& is);
+
+	inline bstream::obstream& 
+	serialize(bstream::obstream& os) const
+	{
+		return put(os);
+	}
+
 	inline
 	~any()
 	{
@@ -1387,6 +1397,9 @@ public:
 	patch( const any& patches );
 	
 private:
+
+
+	bstream::obstream& put(bstream::obstream& os) const;
 
 	typedef std::vector< std::string >::iterator token_iterator_t;
 
