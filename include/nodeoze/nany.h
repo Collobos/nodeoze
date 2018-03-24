@@ -157,7 +157,7 @@ public:
 	:
 		m_type( type_t::integer )
 	{
-		m_data.m_integer = static_cast< std::uint64_t >( val );
+		m_data.m_integer = static_cast< std::int64_t >( val );
 	}
 
 	template< typename T >
@@ -165,14 +165,14 @@ public:
 	:
 		m_type( type_t::integer )
 	{
-		m_data.m_integer = static_cast< std::uint64_t >( val );
+		m_data.m_integer = static_cast< std::int64_t >( val );
 	}
 
 	inline any( std::chrono::system_clock::time_point val )
 	:
 		m_type( type_t::integer )
 	{
-		m_data.m_integer = static_cast< std::uint64_t >( std::chrono::system_clock::to_time_t( val ) );
+		m_data.m_integer = static_cast< std::int64_t >( std::chrono::system_clock::to_time_t( val ) );
 	}
 	
 	inline any( float val )
@@ -316,7 +316,7 @@ public:
 			m_type = type_t::integer;
 		}
 
-		m_data.m_integer = static_cast<std::uint64_t>( val );
+		m_data.m_integer = static_cast<std::int64_t>( val );
 		return *this;
 	}
 	
@@ -330,7 +330,7 @@ public:
 			m_type = type_t::integer;
 		}
 
-		m_data.m_integer = static_cast<std::uint64_t>( val );
+		m_data.m_integer = static_cast<std::int64_t>( val );
 		return *this;
 	}
 	
@@ -369,7 +369,7 @@ public:
 			m_type = type_t::integer;
 		}
 		
-		m_data.m_integer = static_cast< std::uint64_t >( std::chrono::system_clock::to_time_t( rhs ) );
+		m_data.m_integer = static_cast< std::int64_t >( std::chrono::system_clock::to_time_t( rhs ) );
 		return *this;
 	}
 	
@@ -878,7 +878,7 @@ public:
 				std::int64_t bignum = std::stoll( m_data.m_string );
 				mutable_this->clear();
 				mutable_this->m_type = type_t::integer;
-				mutable_this->m_data.m_integer = static_cast< std::uint64_t >( bignum );
+				mutable_this->m_data.m_integer = static_cast< std::int64_t >( bignum );
 				return bignum;
 			}
 			catch( const std::exception & /*unused*/ )
