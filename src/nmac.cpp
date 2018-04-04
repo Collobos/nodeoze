@@ -47,6 +47,16 @@ exit:
 	return;
 }
 
+mac::address::address( const nodeoze::buffer_view &bytes )
+{
+	memset( m_bytes, 0, sizeof( m_bytes ) );
+	ncheck_error( bytes.size() == 6, exit, "can only construct mac::address with 48 bit values" );
+	memcpy( m_bytes, bytes.data(), sizeof( m_bytes ) );
+
+exit:
+
+	return;
+}
 
 mac::address::address( const nodeoze::buffer &bytes )
 {
@@ -58,7 +68,6 @@ exit:
 
 	return;
 }
-
 
 mac::address::address( const std::string &s )
 {

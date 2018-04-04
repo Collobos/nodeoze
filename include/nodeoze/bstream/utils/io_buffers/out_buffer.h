@@ -33,13 +33,11 @@
 #define UTILS_OUT_BUFFER_H
 
 #include <type_traits>
-#include <nodeoze/bstream/utils/io_buffers/memory_block.h>
 #include <nodeoze/bstream/utils/io_buffers/dump.h>
+#include <nodeoze/nbuffer.h>
 #include <sstream>
 #include <boost/endian/conversion.hpp>
 #include <assert.h>
-
-#define TRACE_IOBUFS 0
 
 namespace nodeoze
 {
@@ -54,76 +52,51 @@ namespace utils
 	public:
 
 		inline out_buffer() 
-		: m_block{nullptr}, m_data{nullptr}, m_capacity{0ul}, m_pos{0ul} 
+		: m_buf{nullptr}, m_data{nullptr}, m_capacity{0ul}, m_pos{0ul} 
 		{}
 
-		out_buffer(memory_block::ptr&& block) 
-		: m_block{std::move(block)}, m_data{m_block->data()}, m_capacity{m_block->capacity()}, m_pos{m_block->size()}
+		out_buffer(buffer::uptr&& buf)
+		: m_buf{std::move(buf)}, m_data{m_buf->data()}, m_capacity{m_buf->capacity()}, m_pos{m_buf->size()}
 		{}
 
 		out_buffer(out_buffer&& other)
 		: out_buffer{other.release()}
 		{}
-		
-		out_buffer(in_buffer&& ibuf)
+
+		template<class... Args>
+		out_buffer(Args&&... args)
 		{
-			hijack(std::move(ibuf));
+			capture(std::make_unique<buffer>(std::forward<Args>(args)...));
 		}
 		
 		out_buffer(out_buffer const&) = delete;
 
 		virtual ~out_buffer() {}
 	
-		inline void capture(memory_block::ptr&& block)
+		inline void capture(buffer::uptr&& buf)
 		{
-			m_block = std::move(block);
-			m_data = m_block->data();
-			m_capacity = m_block->capacity();
-			m_pos = m_block->size();
+			m_buf = std::move(buf);
+			m_data = m_buf->data();
+			m_capacity = m_buf->capacity();
+			m_pos = m_buf->size();
 		}
 
-		inline memory_block::ptr release()
+		inline buffer::uptr release()
 		{
-			m_block->set_size(m_pos);
+			m_buf->size(m_pos);
 			m_data = nullptr;
 			m_capacity = 0ul;
 			m_pos = 0ul;
-			auto p = std::move(m_block);
-			m_block = nullptr;
+			auto p = std::move(m_buf);
+			m_buf = nullptr;
 			return p;
 		}
-		
-		std::uint8_t* block_data()
-		{
-			return m_block->data();
-		}
-		
-		std::size_t block_capacity()
-		{
-			return m_block->capacity();
-		}
 
-		std::size_t block_size()
-		{
-			return m_block->size();
-		}
-		
-		void* block_addr()
-		{
-			return m_block.get();
-		}
-	
-		void hijack(in_buffer&& ibuf);
-
-		template<class T>
-		out_buffer(T* blkp, typename std::enable_if_t<std::is_base_of<memory_block, T>::value,int> = 0)
-		: out_buffer{std::unique_ptr<T>(blkp)} {}
-		
-		template<class T, class... Args>
-		typename std::enable_if_t<std::is_base_of<memory_block, T>::value>
+		template<class... Args>
+		void
 		use(Args&&... args)
 		{
-			capture(std::make_unique<T>(std::forward<Args>(args)...));
+			capture(std::make_unique<buffer>(std::forward<Args>(args)...));
 		}
 
 		virtual out_buffer& clear() noexcept
@@ -134,9 +107,6 @@ namespace utils
 
 		inline std::size_t remaining() const noexcept
 		{
-#if TRACE_IOBUFS
-			std::cout << "in remaining(), m_capacity is " << m_capacity << ", m_pos is " << m_pos << std::endl;
-#endif
 			std::size_t result = 0;
 			if (m_capacity > 0)
 			{
@@ -153,19 +123,8 @@ namespace utils
 
 		inline out_buffer& put(std::uint8_t byte)
 		{
-#if TRACE_IOBUFS
-			std::cout << "in out_buffer::put, byte is " 
-					<< static_cast<int>(byte) << ", m_data is " 
-					<< (void*) m_data << ", m_pos is " << m_pos << std::endl;
-#endif
 			accommodate_put(1);
-#if TRACE_IOBUFS
-			std::cout << "in out_buffer::put, after accommodate_put(1)" << std::endl;
-#endif
 			m_data[m_pos++] = byte;
-#if TRACE_IOBUFS
-			std::cout << "in out_buffer::put, after assignent to vector element" << std::endl;
-#endif
 			return *this;                
 		}
 
@@ -370,36 +329,20 @@ namespace utils
 		}
 
 	protected:
-		
+
 		inline void
 		accommodate_put(std::size_t nbytes)
 		{
-#if TRACE_IOBUFS
-			std::cout << "entered accommodate_put, nbytes is " << nbytes << ", remaining is " << remaining()
-					<< ", m_block is " << (void*) m_block.get() << std::endl;
-#endif
 			if (!has_remaining(nbytes))
 			{
-				assert(!(!m_block));
-				if (!m_block->is_expandable())
-				{
-					throw std::out_of_range{"overflow on non-expandable buffer"};
-				}
-#if TRACE_IOBUFS
-				std::cout << "expanding block, old m_data is " << (void*) m_data << ", old m_capacity is "
-						<< m_capacity << std::endl;
-#endif
-				m_block->expand(m_pos + nbytes);
-				m_data = m_block->data();
-				m_capacity = m_block->capacity();
-#if TRACE_IOBUFS
-				std::cout << "expanded block, new m_data is " << (void*) m_data << ", new m_capacity is "
-						<< m_capacity << std::endl;
-#endif
+				assert(!(!m_buf));
+				m_buf->accommodate(nbytes);
+				m_data = m_buf->data();
+				m_capacity = m_buf->capacity();
 			}
 		}
 
-		memory_block::ptr m_block;
+		buffer::uptr m_buf;
 		std::uint8_t *m_data;
 		std::size_t m_capacity;
 		std::size_t m_pos;

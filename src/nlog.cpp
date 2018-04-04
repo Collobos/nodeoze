@@ -161,7 +161,7 @@ log::update_marker_states(const any& array)
 			{
 				if (node.is_member("name"))
 				{
-					auto path = node["name"].to_string();
+					std::string path{ node["name"].to_string() };
 					if (node.is_member("enabled"))
 					{
 						auto is_enabled = node["enabled"].to_bool();

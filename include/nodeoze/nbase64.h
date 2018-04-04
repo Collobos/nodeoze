@@ -31,6 +31,7 @@
 
 namespace nodeoze {
 
+class buffer_view;
 class buffer;
 
 namespace codec {
@@ -40,7 +41,7 @@ class base64
 public:
 
 	static std::string
-	encode( const buffer &buf );
+	encode( const buffer_view &buf );
 	
 	static buffer
 	decode( const std::string &s );

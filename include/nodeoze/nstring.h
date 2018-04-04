@@ -160,7 +160,7 @@ find_and_replace( const std::string& subject, const std::string& search, const s
 
 template< class T = std::vector< std::string > >
 inline T
-split( const std::string &s, const char delimiter = '/' )
+split( const std::string_view &s, const char delimiter = '/' )
 {
 	std::string		tmp( s );
 	std::size_t		pos = 0;

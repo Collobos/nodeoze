@@ -60,20 +60,47 @@
 #	define NODEOZE_ULONGLONG_IS_UNIQUE_TYPE
 #endif
 
+/*!
+ *	\file nany.h
+ *	\author Scott Herscher (with contributions by David Curtis)
+ */
+
 namespace nodeoze {
 
+/*! \class any
+ *
+ *	\brief A variant, discriminated value type.
+ */
 class any
 {
 public:
 
+	/*!	\brief The type used internally to represent string values.
+	 */
 	typedef std::string							string_type;
+
+	/*!	\brief The type used internally to represent blob values.
+	 */
 	typedef nodeoze::buffer						blob_type;
+
+	/*!	\brief The type used internally to represent array values.
+	 */
 	typedef deque< any >						array_type;
+
+	/*!	\brief The type used internally to represent object values.
+	 */
 	typedef unordered_map< std::string, any >	object_type;
+
 	typedef std::vector<std::string>			keys;
+
+	using buf_ptr = std::shared_ptr<const nodeoze::buffer>;
 	
 	struct find_t;
 
+	/*! \enum type_t
+	 *
+	 *	\brief Discriminant type for any values
+	 */
 	enum class type_t
 	{
 		null,
@@ -85,7 +112,7 @@ public:
 		array,
 		object
 	};
-	
+
 	template< class T >
 	static inline any
 	replace( const std::string &path, T val )
@@ -124,27 +151,52 @@ public:
 		return tmp;
 	}
 
+	/*!	\brief Returns a reference to a const null-valued any.
+	 *
+	 *	\return reference to a const null-valued any.
+	 */
 	static const any&
 	null();
 	
+
+	/*!	\brief Returns an empty array type any value.
+	 *
+	 *	\return an empty array type any value.
+	 */
 	static any
 	array();
 	
+	/*!	\brief Returns an empty object type any value.
+	 *
+	 *	\return any empty object type any value.
+	 */
 	static any
 	object();
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline static any
 	build( std::initializer_list< any > list, bool type_deduction = true, type_t manual_type = type_t::array )
 	{
 		return any( list, type_deduction, manual_type );
 	}
 	
+	/*!	\brief Constructs an any instance of type null.
+	 *
+	 *
+	 */
 	inline any()
 	:
 		m_type( type_t::null )
 	{
 	}
 	
+	/*!	\brief Constructs an any instance of type bool with the specified value/
+	 *	\param val boolean value assigned to constructed instance.
+	 *
+	 */
 	inline any( bool val )
 	:
 		m_type( type_t::boolean )
@@ -152,6 +204,12 @@ public:
 		m_data.m_bool = val;
 	}
 
+	/*!	\brief Constructs an any instance of type integer from the specified enum value.
+	 *	\param val value of an enum type
+	 *
+	 *	Converts the enum value of parameter val to an integer of the underlying type,
+	 *	and assigns to the constructed any instance.
+	 */
 	template< typename T >
 	inline any( T val, typename std::enable_if< std::is_enum< T >::value >::type* = 0 )
 	:
@@ -160,6 +218,10 @@ public:
 		m_data.m_integer = static_cast< std::int64_t >( val );
 	}
 
+	/*!	\brief Constructs an any instance of type integer with the specified value.
+	 *	\param val integer (signed or unsigned) value assigned to the constructed instance.
+	 *
+	 */
 	template< typename T >
 	inline any( T val, typename std::enable_if< std::is_integral< T >::value >::type* = 0 )
 	:
@@ -168,6 +230,12 @@ public:
 		m_data.m_integer = static_cast< std::int64_t >( val );
 	}
 
+	/*!	\brief Constructs an any instance of type integer with a value converted from the specifed time_point.
+	 *	\param val a time_point value
+	 *
+	 *	Converts the time_point value of parameter val to a time_t value, and assigns it to the constructed any instance
+	 * 	as an integer.
+	 */
 	inline any( std::chrono::system_clock::time_point val )
 	:
 		m_type( type_t::integer )
@@ -175,6 +243,10 @@ public:
 		m_data.m_integer = static_cast< std::int64_t >( std::chrono::system_clock::to_time_t( val ) );
 	}
 	
+	/*!	\brief Constructs an any instance of type real with the specified float value.
+	 *	\param val a float value assigned to the constructed any instance.
+	 *
+	 */
 	inline any( float val )
 	:
 		m_type( type_t::real )
@@ -182,6 +254,10 @@ public:
 		m_data.m_real = val;
 	}
 	
+	/*!	\brief Constructs an any instance of type real with the specified double value
+	 *	\param val a double value assigned to the constructed any instance.
+	 *
+	 */
 	inline any( double val )
 	:
 		m_type( type_t::real )
@@ -189,41 +265,76 @@ public:
 		m_data.m_real = val;
 	}
 	
+	/*!	\brief Constructs an any instance of type string from the specified C-style string.
+	 *	\param val A C-style, null-terminated character string.
+	 *
+	 */
 	inline any( char *val )
 	:
 		m_type( type_t::string )
 	{
-		new ( &m_data.m_string ) string_type( val );
+		new ( &m_data.m_string ) string_rep( std::string(val) );
 	}
 	
+	/*!	\brief Constructs an any instance of type string from the specified C-style string.
+	 *	\param val A C-style, null-terminated character string.
+	 *
+	 */
 	inline any( const char *val )
 	:
 		m_type( type_t::string )
 	{
-		new ( &m_data.m_string ) string_type( val );
+		new ( &m_data.m_string ) string_rep( std::string(val) );
 	}
 	
+	/*!	\brief Constructs an any instance of type string from specified C++ string value.
+	 *	\param val a value of type std::string, whose contents are copied to the constructed any instance.
+	 *
+	 */
 	inline any( const string_type &val )
 	:
 		m_type( type_t::string )
 	{
-		new ( &m_data.m_string ) string_type( val );
+		new ( &m_data.m_string ) string_rep( val );
+	}
+	
+	/*!	\brief Constructs an any instance of type string from the specified C++ string value.
+	 *	\param val a value of type std::string whose contents are moved to the constructed any instance.
+	 *
+	 */
+	inline any( string_type&& val )
+	:
+		m_type( type_t::string )
+	{
+		new ( &m_data.m_string ) string_rep( std::move( val ) );
 	}
 		
+	/*!	\brief Constructs an any instance of type blob (uninterpreted array of unsigned bytes) from the specified buffer.
+	 *	\param val a value of type nodeoze::buffer, whose contents are moved to the constructed any instance.
+	 *
+	 */
 	inline any( blob_type&& val )
 	:
 		m_type( type_t::blob )
 	{
-		new ( &m_data.m_blob ) blob_type( std::move( val ) );
+		new ( &m_data.m_blob ) blob_rep( std::move( val ) );
 	}
 	
+	/*!	\brief Constructs an any instance of type blob (uninterpreted array of unsigned bytes) from the specified buffer.
+	 *	\param val a value of type nodeoze::buffer, whose contents are copied to the constructed any instance.
+	 *
+	 */
 	inline any( const blob_type& val )
 	:
 		m_type( type_t::blob )
 	{
-		new ( &m_data.m_blob ) blob_type( val.data(), val.size() );
+		new ( &m_data.m_blob ) blob_rep( blob_type( val.data(), val.size() ) );
 	}
 	
+	/*!	\brief Constucts an any instance of type array from the specified deque of any values.
+	 *	\param val a value of type std::deque<any>, whose contents are copied to the constructed any instance.
+	 *
+	 */
 	inline any( const array_type &val )
 	:
 		m_type( type_t::array )
@@ -231,6 +342,10 @@ public:
 		new ( &m_data.m_array ) array_type( val );
 	}
 	
+	/*!	\brief Constructs an any instance of type array from the specified vector of any values.
+	 *	\param val a vector of any values, whose contents are copied to the constructed instance.
+	 *
+	 */
 	template< typename T >
 	inline any( const std::vector< T > &val )
 	:
@@ -244,6 +359,9 @@ public:
 		}
 	}
 
+	/*!	\brief Constructs an any of type object from the specified map value.
+	 *	\param val a value of type std::unordered_map<std::string, any>, whose contents are copied to the constructed instance.
+	 */
 	inline any( const object_type &val )
 	:
 		m_type( type_t::object )
@@ -251,6 +369,12 @@ public:
 		new ( &m_data.m_object ) object_type( val );
 	}
 	
+	/*!	\brief Constructs an any of the specified type, with the default value for that type.
+	 *	\param val the discriminant value specifying the type of the constructed instance.
+	 *
+	 *	Default values for numeric types are zero; for boolean, false; for string, blob, array and object,
+	 *	empty instances of the corresponding type.
+	 */ 
 	any( type_t val )
 	:
 		m_type( type_t::null )
@@ -258,6 +382,10 @@ public:
 		set_type( val );
 	}
 
+	/*!	\brief Copy constructed for type any.
+	 *	\param rhs an any whose contents are copied to the constucted instance.
+	 *
+	 */
 	inline
 	any( const any &rhs )
 	:
@@ -266,6 +394,10 @@ public:
 		copy( rhs );
 	}
 	
+	/*!	\brief Move constructor for type any.
+	 *	\param rhs an any whose contents are moved to the constructed instance.
+	 *
+	 */
 	inline
 	any( any &&rhs )
 	:
@@ -274,25 +406,52 @@ public:
 		move( rhs );
 	}
 
+	// TODO: this needs some thought
+	/*!	\brief
+	 *
+	 *
+	 */
 	any( std::initializer_list< any > list, bool type_deduction = true, type_t manual_type = type_t::array );
 	
+	/*!	\brief Constructs an any by deserializing a previously serialized any from specified binary stream.
+	 *	\param is a binary input stream containing a serialized any value
+	 *
+	 */
 	any(bstream::ibstream& is);
 
+	/*!	\brief Serializes this instance to the specified binary stream.
+	 *	\param os a binary out stream to which this instance's contents will be serialized.
+	 *	\return a reference to the the os parameter stream, after this instance is serialized.
+	 */
 	inline bstream::obstream& 
 	serialize(bstream::obstream& os) const
 	{
 		return put(os);
 	}
 
+	/*!	\brief Destructor for type any
+	 *
+	 *
+	 */
 	inline
 	~any()
 	{
 		clear();
 	}
 	
+	/*!	\brief Compares this instance with the specified value.
+	 *	\param rhs an any value to be compared with this instance.
+	 *	\return true if the value is equal to this instance, false otherwise.
+	 */
 	bool
 	equals( const any &rhs ) const;
 	
+	/*!	\brief Assigns a boolean value to this instance.
+	 *	\param rhs a boolean value to be assigned.
+	 *	\return a reference to this instance
+	 *
+	 *	The resulting type of this instance is type_t::bool.
+	 */
 	inline any&
 	operator=( bool rhs )
 	{
@@ -306,6 +465,14 @@ public:
 		return *this;
 	}
 
+	/*!	\brief Assigns an enum value to this instance, as type integer.
+	 *	\param val a value of an enum type to be assigned.
+	 *	\return a reference to this instance.
+	 *
+	 *	Converts the specified enum value to the underlying integer type, 
+	 * 	and assigns that value to this instance. The resulting type of 
+	 *	this instance is type_t::integer.
+	 */
 	template< typename T >
 	inline typename std::enable_if< std::is_enum< T >::value, any& >::type
 	operator=( T val )
@@ -320,9 +487,15 @@ public:
 		return *this;
 	}
 	
+	/*!	\brief Assigns an integral value to this instance.
+	 *	\param rhs an integer (signed or unsigned) value to be assigned.
+	 *	\return a reference to this instance.
+	 *
+	 *	The resulting type of this instance is type_t::integer.
+	 */
 	template< typename T >
 	inline typename std::enable_if< std::is_integral< T >::value, any& >::type
-	operator=( T val )
+	operator=( T rhs )
 	{
 		if ( !is_integer() )
 		{
@@ -330,10 +503,16 @@ public:
 			m_type = type_t::integer;
 		}
 
-		m_data.m_integer = static_cast<std::int64_t>( val );
+		m_data.m_integer = static_cast<std::int64_t>( rhs );
 		return *this;
 	}
 	
+	/*!	\brief Assings a float value to this instance.
+	 *	\param rhs a value of type float to be assigned.
+	 *	\return a reference to this instance.
+	 *
+	 *	The resulting type of this instance is type_t::real.
+	 */
 	inline any&
 	operator=( float rhs )
 	{
@@ -347,6 +526,12 @@ public:
 		return *this;
 	}
 	
+	/*!	\brief Assigns a double value to this instance.
+	 *	\param val a value of type double to be assigned.
+	 *	\return a reference to this instance.
+	 *
+	 *	The resulting type of this instance is type_t::real.
+	 */
 	inline any&
 	operator=( double rhs )
 	{
@@ -360,6 +545,14 @@ public:
 		return *this;
 	}
 	
+	/*!	\brief Assigns a time_point value to this instance, as type integer.
+	 *	\param rhs a time_point value.
+	 *	\return a reference to this instance.
+	 *
+	 *	The time_point specified by the rhs parameter is converted to type time_t, and
+	 * 	assigned to this instance. The resulting type of this instance is as type integer.
+	 *
+	 */
 	inline any&
 	operator=( std::chrono::system_clock::time_point rhs )
 	{
@@ -373,57 +566,95 @@ public:
 		return *this;
 	}
 	
+	/*!	\brief Assigns the value of the specified C-style string to this instance.
+	 *	\param rhs a C-style, null-terminated character string.
+	 *	\return a reference to this instance.
+	 */
 	inline any&
 	operator=( char *rhs )
 	{
 		clear();
 		m_type = type_t::string;
-		new ( &m_data.m_string ) string_type( rhs );
+		new ( &m_data.m_string ) string_rep( std::string( rhs ) );
 		
 		return *this;
 	}
 	
+	/*!	\brief Assigns the value of the specified C-style string to this instance.
+	 *	\param rhs a C-style, null-terminated character string.
+	 *	\return a reference to this instance.
+	 */
 	inline any&
 	operator=( const char *rhs )
 	{
 		clear();
 		m_type = type_t::string;
-		new ( &m_data.m_string ) string_type( rhs );
+		new ( &m_data.m_string ) string_rep( std::string( rhs ) );
 		
 		return *this;
 	}
 	
+	/*!	\brief Assigns the value of the specified string to this instance.
+	 *	\param rhs a value of type std::string, whose contents are copied to this instance.
+	 *	\return a reference to this instance.
+	 */
 	inline any&
 	operator=( const string_type &rhs )
 	{
 		clear();
 		m_type = type_t::string;
-		new ( &m_data.m_string ) string_type( rhs );
+		new ( &m_data.m_string ) string_rep ( rhs );
 		
 		return *this;
 	}
+
+	/*!	\brief Assigns the value of the specified string to this instance.
+	 *	\param rhs a value of type std::string whose cotents are moved to this instance.
+	 *	\return a reference to this instance.
+	 */
+	inline any&
+	operator=( string_type&& rhs )
+	{
+		clear();
+		m_type = type_t::string;
+		new ( &m_data.m_string ) string_rep ( std::move( rhs ) );
 	
+		return *this;
+	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
+	// TODO: should this exist?
 	inline any&
 	operator=( const blob_type& rhs )
 	{
 		clear();
 		m_type = type_t::blob;
-		new ( &m_data.m_blob ) blob_type( rhs.data(), rhs.size() );
+		new ( &m_data.m_blob ) blob_rep ( blob_type( rhs.data(), rhs.size() ) );
 		
 		return *this;
 	}
 	
+	/*!	\brief Assings (by move) the contents of the specified buffer to this instance, as type blob.
+	 *	\param rhs a value of type nodeoze::buffer, whose contents are moved to this instance.
+	 *	\return a reference to this instance.
+	 */
 	inline any&
 	operator=( blob_type&& rhs )
 	{
 		clear();
 		m_type = type_t::blob;
-		new ( &m_data.m_blob ) blob_type( std::move( rhs ) );
+		new ( &m_data.m_blob ) blob_rep( std::move( rhs ) );
 		
 		return *this;
 	}
 	
+	/*!	\brief Assigns (by copy) the contents of the specified array to this instance.
+	 *	\param rhs a value of type std::deque<any>, whose contents are copied to this instance.
+	 *	\return a reference to this instance.
+	 */
 	inline any&
 	operator=( const array_type &rhs )
 	{
@@ -434,6 +665,10 @@ public:
 		return *this;
 	}
 	
+	/*!	\brief Assigns (by copy) the contents of the specified object to this instance.
+	 *	\param rhs a value of type std::unordered_map<std::string, any>, whose contents are copied to this instance.
+	 *	\return a reference to this instance.
+	 */
 	inline any&
 	operator=( const object_type &rhs )
 	{
@@ -444,6 +679,10 @@ public:
 		return *this;
 	}
 	
+	/*!	\brief Assigns (by copy) the contents of the specified vector of strings to this instance, as type array.
+	 *	\
+	 *
+	 */
 	inline any&
 	operator=( const std::vector< std::string > &rhs )
 	{
@@ -459,6 +698,10 @@ public:
 		return *this;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator=( const any &rhs )
 	{
@@ -470,6 +713,10 @@ public:
 		return *this;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator=( any &&rhs )
 	{
@@ -481,18 +728,32 @@ public:
 		return *this;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	operator==( const any &rhs ) const
 	{
 		return equals( rhs );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	operator!=( const any &rhs ) const
 	{
 		return !equals( rhs );
 	}
 
+	// TODO: WTF?
+
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator<<( const any &rhs )
 	{
@@ -519,6 +780,10 @@ public:
 		return *this;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	at_index( std::size_t index )
 	{
@@ -540,6 +805,10 @@ public:
 		return m_data.m_array[ index ];
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	at_index( std::size_t index ) const
 	{
@@ -556,96 +825,160 @@ public:
 		return null();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::uint8_t index )
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::uint8_t index ) const
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::int8_t index )
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::int8_t index ) const
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::uint16_t index )
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::uint16_t index ) const
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::int16_t index )
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::int16_t index ) const
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::uint32_t index )
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::uint32_t index ) const
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::int32_t index )
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::int32_t index ) const
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::uint64_t index )
 	{
 		return at_index( static_cast< std::size_t >( index ) );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::uint64_t index ) const
 	{
 		return at_index( static_cast< std::size_t >( index ) );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::int64_t index )
 	{
 		return at_index( static_cast< std::size_t >( index ) );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::int64_t index ) const
 	{
@@ -653,12 +986,20 @@ public:
 	}
 	
 #if defined( NODEOZE_SIZE_T_IS_UNIQUE_TYPE )
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( std::size_t index )
 	{
 		return at_index( index );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( std::size_t index ) const
 	{
@@ -666,6 +1007,10 @@ public:
 	}
 #endif
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( const char *key )
 	{
@@ -673,6 +1018,10 @@ public:
 		return operator[]( s );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline any&
 	operator[]( const std::string &key )
 	{
@@ -697,12 +1046,20 @@ public:
 		}
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( const char *key ) const
 	{
 		return operator[]( std::string( key ) );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline const any&
 	operator[]( const std::string &key ) const
 	{
@@ -719,12 +1076,20 @@ public:
 		return null();
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline type_t
 	type() const
 	{
 		return m_type;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline void
 	set_type( type_t val )
 	{
@@ -754,7 +1119,7 @@ public:
 			
 			case type_t::string:
 			{
-				new ( &m_data.m_string ) string_type();
+				new ( &m_data.m_string ) string_rep();
 			}
 			break;
 			
@@ -769,6 +1134,12 @@ public:
 				new ( &m_data.m_object ) object_type();
 			}
             break;
+
+			case type_t::blob:
+			{
+				new ( &m_data.m_blob ) blob_rep();
+			}
+			break;
 			
 			default:
 			{
@@ -777,199 +1148,230 @@ public:
 		}
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_null() const
 	{
 		return ( m_type == type_t::null );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_bool() const
 	{
 		return ( m_type == type_t::boolean );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_integer() const
 	{
 		return ( m_type == type_t::integer );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_real() const
 	{
 		return ( m_type == type_t::real );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_string() const
 	{
 		return ( m_type == type_t::string );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_blob() const
 	{
 		return ( m_type == type_t::blob );
 	}
 		
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_array() const
 	{
 		return ( m_type == type_t::array );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_object() const
 	{
 		return ( m_type == type_t::object );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	to_bool() const
 	{
 		return is_bool() ? m_data.m_bool : false;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::uint8_t
 	to_uint8() const
 	{
 		return is_integer() ? static_cast< std::uint8_t >( m_data.m_integer ) : 0;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::int8_t
 	to_int8() const
 	{
 		return is_integer() ? static_cast< std::int8_t >( m_data.m_integer ) : 0;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::uint16_t
 	to_uint16() const
 	{
 		return is_integer() ? static_cast< std::uint16_t >( m_data.m_integer ) : 0;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::int16_t
 	to_int16() const
 	{
 		return is_integer() ? static_cast< std::int16_t >( m_data.m_integer ) : 0;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::uint32_t
 	to_uint32() const
 	{
 		return is_integer() ? static_cast< std::uint32_t >( m_data.m_integer ) : 0;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::int32_t
 	to_int32() const
 	{
 		return is_integer() ? static_cast< std::int32_t >( m_data.m_integer ) : 0;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::int64_t
 	to_int64() const
 	{
-		if ( is_string() )
-		{
-			try
-			{
-				auto mutable_this = const_cast< any* >( this );
-				std::int64_t bignum = std::stoll( m_data.m_string );
-				mutable_this->clear();
-				mutable_this->m_type = type_t::integer;
-				mutable_this->m_data.m_integer = static_cast< std::int64_t >( bignum );
-				return bignum;
-			}
-			catch( const std::exception & /*unused*/ )
-			{
-				return 0LL;
-			}
-		}
-		else
-		{
-			return is_integer() ? static_cast< std::int64_t >( m_data.m_integer ) : 0;
-		}
+		return is_integer() ? m_data.m_integer : 0;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::uint64_t
 	to_uint64() const
 	{
-		if ( is_string() )
-		{
-			try
-			{
-				auto mutable_this = const_cast< any* >( this );
-				std::uint64_t bignum = std::stoull( m_data.m_string );
-				mutable_this->clear();
-				mutable_this->m_type = type_t::integer;
-				mutable_this->m_data.m_integer = bignum;
-				return bignum;
-			}
-			catch( const std::exception & /*unused*/ )
-			{
-				return 0ULL;
-			}
-		}
-		else
-		{
-			return is_integer() ? static_cast< std::uint64_t >( m_data.m_integer ) : 0;
-		}
+		return ( is_integer() && m_data.m_integer >= 0 ) ? static_cast< std::uint64_t >( m_data.m_integer ) : 0;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline auto
 	to_oid() const
 	{
 		return to_int64();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	std::chrono::system_clock::time_point
 	to_time() const
 	{
 		return std::chrono::system_clock::from_time_t( static_cast< std::time_t >( is_integer() ? m_data.m_integer : 0 ) );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	log::level_t
 	to_log_level() const
 	{
 		return is_integer() ? static_cast< log::level_t >( m_data.m_integer ) : log::level_t::info;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	double
 	to_real() const
 	{
 		return is_real() ? m_data.m_real : 0;
 	}
 	
-	string_type
+	/*!	\brief
+	 *
+	 *
+	 */
+	std::string_view const&
 	to_string() const
 	{
-		std::string ret;
-		
-		if ( is_string() )
-		{
-			ret = m_data.m_string;
-		}
-		else if ( is_bool() )
-		{
-			ret = ( m_data.m_bool ) ? "true" : "false";
-		}
-		else if ( is_integer() )
-		{
-			ret = std::to_string( m_data.m_integer );
-		}
-		else if ( is_real() )
-		{
-			ret = std::to_string( m_data.m_real );
-		}
-		else if ( is_blob() )
-		{
-			ret = codec::base64::encode( m_data.m_blob );
-		}
-		
-		return ret;
+		return is_string() ? m_data.m_string.view() : m_empty_string_view;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	std::vector< std::string >
 	to_strings() const
 	{
@@ -986,121 +1388,181 @@ public:
 		return ret;
 	}
 	
-	blob_type
+	/*!	\brief
+	 *
+	 *
+	 */
+	nodeoze::buffer_view const&
 	to_blob() const
 	{
-		if ( is_blob() )
-		{
-			return blob_type( ( void* ) m_data.m_blob.data(), m_data.m_blob.size(), m_data.m_blob.size(), blob_type::do_not_delete_data );
-		}
-		else if ( is_string() )
-		{
-			any *self = const_cast< any* >( this );
-			*self = codec::base64::decode( m_data.m_string );
-			return blob_type( ( void* ) m_data.m_blob.data(), m_data.m_blob.size(), m_data.m_blob.size(), blob_type::do_not_delete_data );
-		}
-		else
-		{
-			return blob_type();
-		}
+		return is_blob() ? m_data.m_blob.view() : m_empty_buffer_view;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	array_type&
 	to_array()
 	{
 		return is_array() ? m_data.m_array : m_empty_array;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	const array_type&
 	to_array() const
 	{
 		return is_array() ? m_data.m_array : m_empty_array;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	object_type&
 	to_object()
 	{
 		return is_object() ? m_data.m_object : m_empty_object;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	const object_type&
 	to_object() const
 	{
 		return is_object() ? m_data.m_object : m_empty_object;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline object_type::iterator
 	object_begin()
 	{
 		return is_object() ? m_data.m_object.begin() : m_empty_object.begin();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline object_type::const_iterator
 	object_begin() const
 	{
 		return is_object() ? m_data.m_object.begin() : m_empty_object.begin();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline object_type::const_iterator
 	object_cbegin() const
 	{
 		return is_object() ? m_data.m_object.cbegin() : m_empty_object.cbegin();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline object_type::iterator
 	object_end()
 	{
 		return is_object() ? m_data.m_object.end() : m_empty_object.end();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline object_type::const_iterator
 	object_end() const
 	{
 		return is_object() ? m_data.m_object.end() : m_empty_object.end();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline object_type::const_iterator
 	object_cend() const
 	{
 		return is_object() ? m_data.m_object.cend() : m_empty_object.cend();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline array_type::iterator
 	begin()
 	{
 		return is_array() ? m_data.m_array.begin() : m_empty_array.begin();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline array_type::const_iterator
 	begin() const
 	{
 		return is_array() ? m_data.m_array.begin() : m_empty_array.begin();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline array_type::const_iterator
 	cbegin() const
 	{
 		return is_array() ? m_data.m_array.cbegin() : m_empty_array.cbegin();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline array_type::iterator
 	end()
 	{
 		return is_array() ? m_data.m_array.end() : m_empty_array.end();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline array_type::const_iterator
 	end() const
 	{
 		return is_array() ? m_data.m_array.end() : m_empty_array.end();
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline array_type::const_iterator
 	cend() const
 	{
 		return is_array() ? m_data.m_array.cend() : m_empty_array.cend();
 	}
 		
+	// TODO: duh
+	/*!	\brief
+	 *
+	 *
+	 */
 	template < class Visitor >
 	inline void
 	visit( Visitor visitor ) const
@@ -1121,6 +1583,10 @@ public:
 		}
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	is_member( const std::string &key ) const
 	{
@@ -1135,6 +1601,10 @@ public:
 		return ok;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	keys
 	all_keys() const
 	{
@@ -1151,6 +1621,10 @@ public:
 		return ret;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	template < class T >
 	inline void
 	push_back( T val )
@@ -1165,6 +1639,10 @@ public:
 		m_data.m_array.push_back( val );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline void
 	push_back( const any &val )
 	{
@@ -1178,6 +1656,10 @@ public:
 		m_data.m_array.push_back( val );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline void
 	emplace_back( any &&val )
 	{
@@ -1191,6 +1673,10 @@ public:
 		m_data.m_array.emplace_back( std::move( val ) );
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	std::pair< object_type::iterator, bool >
 	emplace( const std::string &key, any &&val )
 	{
@@ -1204,6 +1690,10 @@ public:
 		return m_data.m_object.emplace( key, std::move( val ) );
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	std::error_code
 	erase( std::size_t index )
 	{
@@ -1218,6 +1708,10 @@ public:
 		return ret;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	void
 	erase( const std::string &key )
 	{
@@ -1233,6 +1727,10 @@ public:
 		return;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	empty() const
 	{
@@ -1273,6 +1771,10 @@ public:
 		return ret;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline std::size_t
 	size() const
 	{
@@ -1313,9 +1815,17 @@ public:
 		return ret;
 	}
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	find_t
-	find( const std::string &pointer ) const;
+	find( const std::string_view &pointer ) const;
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	inline bool
 	matches( const any& pattern ) const
 	{
@@ -1340,7 +1850,11 @@ public:
 		return match;
 	}
 	
-	bool
+	/*!	\brief
+	 *
+	 *
+	 */
+	bool // TODO: figure out what's going on here
 	equals_ignoring( const any& value, const std::set< std::string >& exclusions ) const
 	{
 		bool match = true;
@@ -1390,14 +1904,338 @@ public:
 		return match;
 	}
 
+	/*!	\brief
+	 *
+	 *
+	 */
 	void
 	sanitize();
 	
+	/*!	\brief
+	 *
+	 *
+	 */
 	std::error_code
 	patch( const any& patches );
-	
+
 private:
 
+	struct string_value_rep
+	{
+		string_value_rep()
+		: m_value{}, m_view{}
+		{}
+		string_value_rep(std::string const& val) 
+		: m_value{val}, m_view{m_value} 
+		{}
+		string_value_rep(std::string&& val) 
+		: m_value{std::move(val)}, m_view{m_value} 
+		{}
+		string_value_rep(string_value_rep const& rhs)
+		: m_value{rhs.m_value}, m_view{m_value}
+		{}
+		string_value_rep(string_value_rep&& rhs)
+		: m_value{std::move(rhs.m_value)}, m_view{m_value}
+		{}
+		string_value_rep&
+		operator=(string_value_rep const& rhs)
+		{
+			m_value = rhs.m_value;
+			m_view = m_value;
+			return *this;
+		}
+		string_value_rep&
+		operator=(string_value_rep&& rhs)
+		{
+			m_value = std::move(rhs.m_value);
+			m_view = m_value;
+			return *this;
+		}
+		std::string m_value;
+		std::string_view m_view;
+	};
+
+	struct string_view_rep
+	{
+		string_view_rep()
+		: m_buf_ptr{nullptr}, m_view{}
+		{}
+		string_view_rep(buf_ptr bufp, std::size_t pos, std::size_t size)
+		: m_buf_ptr{bufp}, m_view{reinterpret_cast<const char*>(&(bufp->data()[pos])), size}
+		{}
+		string_view_rep(string_view_rep const& rhs)
+		: m_buf_ptr{rhs.m_buf_ptr}, m_view{rhs.m_view}
+		{}
+		string_view_rep&
+		operator=(string_view_rep const& rhs)
+		{
+			m_buf_ptr = rhs.m_buf_ptr;
+			m_view = rhs.m_view;
+			return *this;
+		}
+		buf_ptr m_buf_ptr;
+		std::string_view m_view;
+	};
+
+	struct string_rep
+	{
+		string_rep()
+		{
+			m_is_view_rep = false;
+			new ( &m_value_rep ) string_value_rep{};
+		}
+		string_rep(std::string const& val)
+		{
+			m_is_view_rep = false;
+			new ( &m_value_rep ) string_value_rep{val};
+		}
+		string_rep(std::string&& val)
+		{
+			m_is_view_rep = false;
+			new ( &m_value_rep ) string_value_rep{std::move(val)};
+		}
+		string_rep(buf_ptr bufp, std::size_t pos, std::size_t size)
+		{
+			m_is_view_rep = true;
+			new ( &m_view_rep ) string_view_rep{bufp, pos, size};
+		}
+		string_rep(string_rep const& rhs)
+		{
+			if (rhs.m_is_view_rep)
+			{
+				m_is_view_rep = true;
+				new ( &m_view_rep ) string_view_rep{rhs.m_view_rep};
+			}
+			else
+			{
+				m_is_view_rep = false;
+				new ( &m_value_rep ) string_value_rep{rhs.m_value_rep};
+			}
+		}
+		string_rep(string_rep&& rhs)
+		{
+			if (rhs.m_is_view_rep)
+			{
+				m_is_view_rep = true;
+				new ( &m_view_rep ) string_view_rep{rhs.m_view_rep};
+			}
+			else
+			{
+				m_is_view_rep = false;
+				new ( &m_value_rep ) string_value_rep{std::move(rhs.m_value_rep)};
+			}
+		}
+		std::string_view const& view() const
+		{
+			if (m_is_view_rep)
+			{
+				return m_view_rep.m_view;
+			}
+			else
+			{
+				return m_value_rep.m_view;
+			}
+		}
+		std::string value() const
+		{
+			return std::string(view());
+		}
+		string_rep
+		copy() const
+		{
+			return string_rep{value()};
+		}
+		bool
+		empty() const
+		{
+			return size() == 0;
+		}
+		std::size_t
+		size() const
+		{
+			return view().size();
+		}
+		~string_rep()
+		{
+			clear();
+		}
+		void
+		clear()
+		{
+			if (m_is_view_rep)
+			{
+				m_view_rep.~string_view_rep();
+			}
+			else
+			{
+				m_value_rep.~string_value_rep();
+			}
+		}
+		bool m_is_view_rep;
+		union
+		{
+			string_value_rep m_value_rep;
+			string_view_rep m_view_rep;
+		};
+	};
+
+	struct blob_value_rep
+	{
+		blob_value_rep()
+		: m_value{}, m_view{m_value}
+		{}
+		blob_value_rep(nodeoze::buffer&& rhs)
+		: m_value{std::move(rhs)}, m_view{m_value}
+		{}
+		blob_value_rep(const void* data, std::size_t size)
+		: m_value{data, size}, m_view{m_value}
+		{}
+		blob_value_rep(nodeoze::buffer_view const& buf_view)
+		: m_value{buf_view.data(), buf_view.size()}, m_view{m_value}
+		{}
+		blob_value_rep(blob_value_rep const& rhs)
+		: m_value{rhs.m_value.data(), rhs.m_value.size()}, m_view{m_value}
+		{}
+		blob_value_rep(blob_value_rep&& rhs)
+		: m_value{std::move(rhs.m_value)}, m_view{m_value}
+		{}
+		blob_value_rep&
+		operator=(blob_value_rep const& rhs)
+		{
+			m_value = rhs.m_value.copy();
+			m_view = m_value;
+			return *this;	
+		}
+		blob_value_rep&
+		operator=(blob_value_rep&& rhs)
+		{
+			m_value = std::move(rhs.m_value);
+			m_view = m_value;
+			return *this;
+		}
+		nodeoze::buffer			m_value;
+		nodeoze::buffer_view	m_view;
+	};
+
+	struct blob_view_rep
+	{
+		blob_view_rep()
+		: m_buf_ptr{nullptr}, m_view{}
+		{}
+		blob_view_rep(buf_ptr bufp, std::size_t pos, std::size_t size)
+		: m_buf_ptr{bufp}, m_view{&(bufp->data()[pos]), size}
+		{}
+		blob_view_rep(blob_view_rep const& rhs)
+		: m_buf_ptr{rhs.m_buf_ptr}, m_view{rhs.m_view}
+		{}
+		blob_view_rep&
+		operator=(blob_view_rep const& rhs)
+		{
+			m_buf_ptr = rhs.m_buf_ptr;
+			m_view = rhs.m_view;
+			return *this;
+		}
+		buf_ptr						m_buf_ptr;
+		nodeoze::buffer_view		m_view;
+	};
+
+	struct blob_rep
+	{
+		blob_rep() {}
+		blob_rep(nodeoze::buffer&& buf)
+		{
+			m_is_view_rep = false;
+			new ( &m_value_rep ) blob_value_rep{std::move(buf)};
+		}
+		blob_rep(buf_ptr bufp, std::size_t pos, std::size_t size)
+		{
+			m_is_view_rep = true;
+			new ( &m_view_rep ) blob_view_rep{bufp, pos, size};
+		}
+		blob_rep(blob_rep const& rhs)
+		{
+			if (rhs.m_is_view_rep)
+			{
+				m_is_view_rep = true;
+				new ( &m_view_rep ) blob_view_rep{rhs.m_view_rep};
+			}
+			else
+			{
+				m_is_view_rep = false;
+				new ( &m_value_rep ) blob_value_rep{rhs.m_value_rep};
+			}
+		}
+		blob_rep(blob_rep&& rhs)
+		{
+			if (rhs.m_is_view_rep)
+			{
+				m_is_view_rep = true;
+				new ( &m_view_rep ) blob_view_rep{rhs.m_view_rep};
+			}
+			else
+			{
+				m_is_view_rep = false;
+				new ( &m_value_rep ) blob_value_rep{std::move(rhs.m_value_rep)};
+			}
+		}
+		nodeoze::buffer
+		value() const
+		{
+			return nodeoze::buffer{view().data(), view().size()};
+		}
+		blob_rep
+		copy() const
+		{
+			return blob_rep{value()};
+		}
+		nodeoze::buffer_view const& view() const
+		{
+			if (m_is_view_rep)
+			{
+				return m_view_rep.m_view;
+			}
+			else
+			{
+				return m_value_rep.m_view;
+			}
+		}
+		bool empty() const
+		{
+			return view().size() == 0;
+		}
+		std::size_t
+		size() const
+		{
+			return view().size();
+		}
+		const std::uint8_t*
+		data() const
+		{
+			return view().data();
+		}
+		void
+		clear()
+		{
+			if (m_is_view_rep)
+			{
+				m_view_rep.~blob_view_rep();
+			}
+			else
+			{
+				m_value_rep.~blob_value_rep();
+			}
+		}
+		~blob_rep()
+		{
+			clear();
+		}
+		bool m_is_view_rep;
+		union
+		{
+			blob_value_rep	m_value_rep;
+			blob_view_rep	m_view_rep;
+		};
+	};
 
 	bstream::obstream& put(bstream::obstream& os) const;
 
@@ -1434,8 +2272,8 @@ private:
 		bool			m_bool;
 		std::int64_t	m_integer;
 		double			m_real;
-		string_type		m_string;
-		blob_type		m_blob;
+		string_rep		m_string;
+		blob_rep		m_blob;
 		array_type		m_array;
 		object_type		m_object;
 	};
@@ -1488,7 +2326,7 @@ private:
 		
 		if ( obj.is_string() )
 		{
-			std::string lower = obj.to_string();
+			std::string lower{obj.to_string()};
 			std::transform( lower.begin(), lower.end(), lower.begin(), []( char c ) { return std::tolower( c ); } );
 			
 			if ( lower == "add" )
@@ -1550,16 +2388,17 @@ private:
 				m_data.m_real = rhs.m_data.m_real;
 			}
 			break;
-			
+		
+			// TODO: should copy() copy the view or the value?	
 			case type_t::string:
 			{
-				new ( &m_data.m_string ) string_type( rhs.m_data.m_string );
+				new ( &m_data.m_string ) string_rep( rhs.m_data.m_string.value() );
 			}
 			break;
 			
 			case type_t::blob:
 			{
-				new ( &m_data.m_blob ) blob_type( rhs.m_data.m_blob.data(), rhs.m_data.m_blob.size() );
+				new ( &m_data.m_blob ) blob_rep( rhs.m_data.m_blob.value() );
 			}
 			break;
 			
@@ -1612,15 +2451,17 @@ private:
 			}
 			break;
 			
+			// TODO: figure out what to do on move
 			case type_t::string:
 			{
-				new ( &m_data.m_string ) string_type( std::move( rhs.m_data.m_string ) );
+				new ( &m_data.m_string ) string_rep( std::move( rhs.m_data.m_string ) );
 			}
 			break;
 			
+			// TODO: figure out what to do on move
 			case type_t::blob:
 			{
-				new ( &m_data.m_blob ) blob_type( std::move( rhs.m_data.m_blob ) );
+				new ( &m_data.m_blob ) blob_rep( std::move( rhs.m_data.m_blob ) );
 			}
 			break;
 			
@@ -1650,13 +2491,13 @@ private:
 		{
 			case type_t::string:
 			{
-				m_data.m_string.~string_type();
+				m_data.m_string.~string_rep();
 			}
 			break;
 			
 			case type_t::blob:
 			{
-				m_data.m_blob.~blob_type();
+				m_data.m_blob.~blob_rep();
 			}
 			break;
 			
@@ -1681,10 +2522,12 @@ private:
 		m_type = type_t::null;
 	}
 
-	static array_type	m_empty_array;
-	static object_type	m_empty_object;
-	type_t				m_type;
-	data				m_data;
+	static array_type			m_empty_array;
+	static object_type			m_empty_object;
+	static std::string_view 	m_empty_string_view;
+	static nodeoze::buffer_view	m_empty_buffer_view;
+	type_t						m_type;
+	data						m_data;
 };
 
 struct any::find_t

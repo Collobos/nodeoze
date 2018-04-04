@@ -225,7 +225,7 @@ proxy::manager::is_socks() const
 void
 proxy::manager::encode_authorization( const std::string &username, const std::string &password )
 {
-	m_authorization = codec::base64::encode( username + ":" + password );
+	m_authorization = codec::base64::encode( nodeoze::buffer{ username + ":" + password } );
 }
 
 

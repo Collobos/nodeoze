@@ -83,7 +83,7 @@ public:
 		{
 			for ( auto &val : root[ "groups" ] )
 			{
-				m_groups.push_back( val.to_string() );
+				m_groups.push_back( std::string{ val.to_string() } );
 			}
 		}
 

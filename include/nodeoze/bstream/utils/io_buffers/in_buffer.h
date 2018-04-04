@@ -47,75 +47,99 @@ namespace utils
     class in_buffer
     {
     public:
+
+		using buf_ptr = std::shared_ptr<const nodeoze::buffer>;
         
         using max_unsigned = std::uint64_t;
         using max_signed = std::int64_t;
 
         inline in_buffer()
-        : m_block{nullptr}, m_data{nullptr}, m_pos{0ul}, m_size{0UL}
+        : m_buf{nullptr}, m_view{}
 		{}
-		
-		in_buffer(const_memory_block::ptr&& block, std::size_t size) 
-		: m_block{std::move(block)}, m_data{m_block->cdata()}, m_pos{0ul}, m_size{size}
+	
+		in_buffer(nodeoze::buffer&& buf)
+		: m_buf{std::make_shared<const nodeoze::buffer>(std::move(buf))}, m_view{*m_buf}, m_pos{0ul}
+		{}	
+
+		in_buffer(buffer::uptr&& buf) 
+		: m_buf{std::move(buf)}, m_view{*m_buf}, m_pos{0ul}
 		{}
-		
-		in_buffer(const_memory_block::ptr&& block) 
-		: m_block{std::move(block)}, m_data{m_block->cdata()}, m_pos{0ul}, m_size{m_block->size()}
+
+		in_buffer(const void* data, std::size_t size)
+		: m_buf{nullptr}, m_view{data, size}, m_pos{0ul}
 		{}
 
 		virtual ~in_buffer() {}
-
-		memory_block::ptr release_mutable()
+/*
+		buffer::uptr release()
 		{
-			m_size = 0ul;
-			m_data = nullptr;
-			auto p = m_block->make_mutable();
-			m_block = nullptr;
+			m_view.clear();
+			auto p = std::move(m_buf);
+			m_buf = nullptr;
 			return p;
 		}
-
-		const_memory_block::ptr release()
-		{
- 			m_size = 0ul;
-			m_data = nullptr;
-			auto p = m_block->make_mutable();
-			m_block = nullptr;
-			return p;
-		}
-
+*/
 		in_buffer(out_buffer&& obuf)
 		{
 			hijack(std::move(obuf));
 		}
 		
-		void capture(const_memory_block::ptr&& block, std::size_t size)
+		in_buffer(buffer_view const& view)
+		: m_buf{nullptr}, m_view{view}, m_pos{0ul}
+		{}
+
+		in_buffer(out_buffer const& obuf)
+		: m_buf{nullptr}, m_view{obuf.data(), obuf.size()}, m_pos{0ul}
+		{}
+
+		inline void
+		capture(nodeoze::buffer&& buf)
 		{
-			m_block = std::move(block);
-			m_data = m_block->cdata();
-			m_size = size;
+			m_buf = std::make_shared<const nodeoze::buffer>(std::move(buf));
+			m_view = buffer_view{*m_buf};
 			m_pos = 0ul;
 		}
-		
-		void capture(const_memory_block::ptr&& block)
+
+		inline void 
+		capture(buffer::uptr&& buf)
 		{
-			m_block = std::move(block);
-			m_data = m_block->cdata();
-			m_size = m_block->size();
+			m_buf = std::move(buf);
+			m_view = buffer_view{*m_buf};
 			m_pos = 0ul;
 		}
-		
-		void hijack(out_buffer&& obuf)
+
+		inline void
+		use(buffer_view const& buf_view)
+		{
+			m_buf = nullptr;
+			m_view = buf_view;
+			m_pos = 0ul;
+		}
+
+		inline void 
+		use(buf_ptr buf)
+		{
+			m_buf = buf;
+			m_view = buffer_view{*m_buf};
+			m_pos = 0ul;
+		}
+	
+		inline buf_ptr 
+		buffer() const
+		{
+			return m_buf;
+		}	
+
+		inline void 
+		hijack(out_buffer&& obuf)
 		{
 			capture(obuf.release());
 		}
 		
-		template<class T>
-		in_buffer(T* blkp, typename std::enable_if<std::is_base_of<memory_block, T>::value,int>::type = 0)
-		: in_buffer{std::unique_ptr<T>(blkp)} {}
-		
-        inline std::size_t remaining() const noexcept
+        inline std::size_t 
+		remaining() const noexcept
         {
-            return m_size - m_pos;
+            return m_view.size() - m_pos;
         }
 
         inline bool has_remaining(std::size_t nbytes = 1) const noexcept
@@ -130,7 +154,7 @@ namespace utils
         
         inline void position(std::size_t pos)
         {
-            if (pos > m_size)
+            if (pos > m_view.size())
             {
 				throw std::invalid_argument("position out of range for buffer");
             }
@@ -139,12 +163,12 @@ namespace utils
         
         inline size_t size() const noexcept
         {
-            return m_size;
+            return m_view.size();
         }
 
         inline const std::uint8_t* data() const noexcept
         {
-            return m_data;
+            return m_view.data();
         }
         
         virtual void rewind() noexcept
@@ -159,7 +183,7 @@ namespace utils
             {
                 throw std::out_of_range("get() past end of buffer");
             }
-            return m_data[m_pos++];
+            return m_view[m_pos++];
         }
 
         inline std::uint8_t 
@@ -169,7 +193,7 @@ namespace utils
             {
                 throw std::out_of_range("peek() past end of buffer");
             }
-            return m_data[m_pos];
+            return m_view[m_pos];
         }
 		
 		union bytes_2
@@ -201,7 +225,7 @@ namespace utils
 				throw std::out_of_range("get_arithmetic_as() past end of buffer");
 			}
 			
-			return reinterpret_cast<const U&>(m_data[m_pos++]);
+			return static_cast<U>(m_view[m_pos++]);
 		}
 		
 		template<class U>
@@ -219,13 +243,13 @@ namespace utils
 			bytes_2 b;
 			if (reverse_order)
 			{
-				b.bytes[1] = m_data[m_pos];
-				b.bytes[0] = m_data[m_pos+1];
+				b.bytes[1] = m_view[m_pos];
+				b.bytes[0] = m_view[m_pos+1];
 			}
 			else
 			{
-				b.bytes[0] = m_data[m_pos];
-				b.bytes[1] = m_data[m_pos+2];
+				b.bytes[0] = m_view[m_pos];
+				b.bytes[1] = m_view[m_pos+2];
 			}
 			m_pos+= usize;
 			return reinterpret_cast<const U&>(b.u16);
@@ -246,17 +270,17 @@ namespace utils
 			bytes_4 b;
 			if (reverse_order)
 			{
-				b.bytes[3] = m_data[m_pos];
-				b.bytes[2] = m_data[m_pos+1];
-				b.bytes[1] = m_data[m_pos+2];
-				b.bytes[0] = m_data[m_pos+3];
+				b.bytes[3] = m_view[m_pos];
+				b.bytes[2] = m_view[m_pos+1];
+				b.bytes[1] = m_view[m_pos+2];
+				b.bytes[0] = m_view[m_pos+3];
 			}
 			else
 			{
-				b.bytes[0] = m_data[m_pos];
-				b.bytes[1] = m_data[m_pos+1];
-				b.bytes[2] = m_data[m_pos+2];
-				b.bytes[3] = m_data[m_pos+3];
+				b.bytes[0] = m_view[m_pos];
+				b.bytes[1] = m_view[m_pos+1];
+				b.bytes[2] = m_view[m_pos+2];
+				b.bytes[3] = m_view[m_pos+3];
 			}
 			m_pos+= usize;
 			return reinterpret_cast<const U&>(b.u32);
@@ -277,25 +301,25 @@ namespace utils
 			bytes_8 b;
 			if (reverse_order)
 			{
-				b.bytes[7] = m_data[m_pos];
-				b.bytes[6] = m_data[m_pos+1];
-				b.bytes[5] = m_data[m_pos+2];
-				b.bytes[4] = m_data[m_pos+3];
-				b.bytes[3] = m_data[m_pos+4];
-				b.bytes[2] = m_data[m_pos+5];
-				b.bytes[1] = m_data[m_pos+6];
-				b.bytes[0] = m_data[m_pos+7];
+				b.bytes[7] = m_view[m_pos];
+				b.bytes[6] = m_view[m_pos+1];
+				b.bytes[5] = m_view[m_pos+2];
+				b.bytes[4] = m_view[m_pos+3];
+				b.bytes[3] = m_view[m_pos+4];
+				b.bytes[2] = m_view[m_pos+5];
+				b.bytes[1] = m_view[m_pos+6];
+				b.bytes[0] = m_view[m_pos+7];
 			}
 			else
 			{
-				b.bytes[0] = m_data[m_pos];
-				b.bytes[1] = m_data[m_pos+1];
-				b.bytes[2] = m_data[m_pos+2];
-				b.bytes[3] = m_data[m_pos+3];
-				b.bytes[4] = m_data[m_pos+4];
-				b.bytes[5] = m_data[m_pos+5];
-				b.bytes[6] = m_data[m_pos+6];
-				b.bytes[7] = m_data[m_pos+7];
+				b.bytes[0] = m_view[m_pos];
+				b.bytes[1] = m_view[m_pos+1];
+				b.bytes[2] = m_view[m_pos+2];
+				b.bytes[3] = m_view[m_pos+3];
+				b.bytes[4] = m_view[m_pos+4];
+				b.bytes[5] = m_view[m_pos+5];
+				b.bytes[6] = m_view[m_pos+6];
+				b.bytes[7] = m_view[m_pos+7];
 			}
 			m_pos+= usize;
 			return reinterpret_cast<const U&>(b.u64);
@@ -318,37 +342,37 @@ namespace utils
             {
                 case 1:
                 {
-                    return reinterpret_cast<const U&>(m_data[m_pos++]);
+                    return reinterpret_cast<const U&>(m_view[m_pos++]);
                 }
                 case 2:
                 {
                     std::uint16_t value = 
-                            (static_cast<std::uint16_t>(m_data[m_pos]) << 8) 
-                            | (static_cast<std::uint16_t>(m_data[m_pos + 1]));
+                            (static_cast<std::uint16_t>(m_view[m_pos]) << 8) 
+                            | (static_cast<std::uint16_t>(m_view[m_pos + 1]));
                     m_pos += usize;
                     return reinterpret_cast<U&>(value);
                 }
                 case 4:
                 {
                     std::uint32_t value = 
-                            (static_cast<std::uint32_t>(m_data[m_pos]) << 24) 
-                            | (static_cast<std::uint32_t>(m_data[m_pos + 1]) << 16) 
-                            | (static_cast<std::uint32_t>(m_data[m_pos + 2]) << 8) 
-                            | (static_cast<std::uint32_t>(m_data[m_pos + 3]));
+                            (static_cast<std::uint32_t>(m_view[m_pos]) << 24) 
+                            | (static_cast<std::uint32_t>(m_view[m_pos + 1]) << 16) 
+                            | (static_cast<std::uint32_t>(m_view[m_pos + 2]) << 8) 
+                            | (static_cast<std::uint32_t>(m_view[m_pos + 3]));
                     m_pos += usize;
                     return reinterpret_cast<U&>(value);
                 }
                 case 8:
                 {
                     std::uint64_t value = 
-                            (static_cast<std::uint64_t>(m_data[m_pos]) << 56) 
-                            | (static_cast<std::uint64_t>(m_data[m_pos + 1]) << 48) 
-                            | (static_cast<std::uint64_t>(m_data[m_pos + 2]) << 40) 
-                            | (static_cast<std::uint64_t>(m_data[m_pos + 3]) << 32)
-                            | (static_cast<std::uint64_t>(m_data[m_pos + 4]) << 24) 
-                            | (static_cast<std::uint64_t>(m_data[m_pos + 5]) << 16) 
-                            | (static_cast<std::uint64_t>(m_data[m_pos + 6]) << 8) 
-                            | (static_cast<std::uint64_t>(m_data[m_pos + 7]));
+                            (static_cast<std::uint64_t>(m_view[m_pos]) << 56) 
+                            | (static_cast<std::uint64_t>(m_view[m_pos + 1]) << 48) 
+                            | (static_cast<std::uint64_t>(m_view[m_pos + 2]) << 40) 
+                            | (static_cast<std::uint64_t>(m_view[m_pos + 3]) << 32)
+                            | (static_cast<std::uint64_t>(m_view[m_pos + 4]) << 24) 
+                            | (static_cast<std::uint64_t>(m_view[m_pos + 5]) << 16) 
+                            | (static_cast<std::uint64_t>(m_view[m_pos + 6]) << 8) 
+                            | (static_cast<std::uint64_t>(m_view[m_pos + 7]));
                     m_pos += usize;
                     return reinterpret_cast<U&>(value);
                 }
@@ -368,7 +392,7 @@ namespace utils
             {
                 throw std::out_of_range("get_bytes() past end of buffer");
             }
-            auto p = &(m_data[m_pos]);
+            auto p = &(m_view.data()[m_pos]);
             m_pos += nbytes;
             return p;
         }
@@ -376,12 +400,12 @@ namespace utils
 
         inline void dump( std::ostream& os, std::size_t offset, std::size_t nbytes) const
         {
-            utils::dump(os, &(m_data[offset]), nbytes);
+            utils::dump(os, &(m_view.data()[offset]), nbytes);
         }
 
         inline void dump(std::ostream& os) const
         {
-            dump(os, 0, m_size);
+            dump(os, 0, m_view.size());
         }
 		
 		inline std::string strdump(std::size_t offset, std::size_t nbytes) const
@@ -393,14 +417,13 @@ namespace utils
 		
 		inline std::string strdump() const
 		{
-			return strdump(0, m_size);
+			return strdump(0, m_view.size());
 		}
 		
 	protected:
-        const_memory_block::ptr m_block;
-        const std::uint8_t *m_data;
+        buf_ptr m_buf;
+		buffer_view	m_view;
         std::size_t m_pos = 0UL;
-		std::size_t m_size = 0UL;
     };
 
 } // namespace utils

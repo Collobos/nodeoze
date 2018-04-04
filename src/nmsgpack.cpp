@@ -168,7 +168,7 @@ deflate( const any &root, ::msgpack::packer< nodeoze::buffer > &packer )
 		
 		case any::type_t::string:
 		{
-			packer.pack( root.to_string() );
+			packer.pack( std::string{ root.to_string() } );
 		}
 		break;
 		

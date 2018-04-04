@@ -33,8 +33,7 @@
 	nunused( data );
  };
 
-void
-nodeoze::buffer::dump( std::ostream& os ) const
+void dump_impl(const std::uint8_t* data, std::size_t size, std::ostream& os)
 {
 	static const int bytes_per_line = 16;
 
@@ -42,7 +41,7 @@ nodeoze::buffer::dump( std::ostream& os ) const
 	sstate.copyfmt( os );
 	
 	os << std::endl;
-	auto remaining = size();
+	auto remaining = size;
 	auto line_index = 0;
 	while ( remaining > 0 )
 	{
@@ -53,14 +52,14 @@ nodeoze::buffer::dump( std::ostream& os ) const
 			os << std::setw(8) << line_index << ": ";
 			for ( auto i = 0; i < bytes_per_line; ++i )
 			{
-				auto byte = m_data[ line_index + i ];
+				auto byte = data[ line_index + i ];
 				os << std::setw(2) << (unsigned) byte << ' ';
 			}
 			os << "    ";
 			os.copyfmt( sstate );
 			for ( auto i = 0; i < bytes_per_line; ++i )
 			{
-				auto byte = m_data[ line_index + i ];
+				auto byte = data[ line_index + i ];
 				if ( isprint( byte ) )
 				{
 					os << (char)byte;
@@ -81,7 +80,7 @@ nodeoze::buffer::dump( std::ostream& os ) const
 			os << std::setw(8) << line_index << ": ";
 			for ( auto i = 0u; i < remaining; ++i )
 			{
-				auto byte = m_data[ line_index + i ];
+				auto byte = data[ line_index + i ];
 				os << std::setw(2) << (unsigned)byte << ' ';
 			}
 			for ( auto i = 0u; i < bytes_per_line - remaining; ++i )
@@ -92,7 +91,7 @@ nodeoze::buffer::dump( std::ostream& os ) const
 			os.copyfmt( sstate );
 			for ( auto i = 0u; i < remaining; ++i )
 			{
-				auto byte = m_data[ line_index + i ];
+				auto byte = data[ line_index + i ];
 				if ( isprint( byte ) )
 				{
 					os << (char) byte;
@@ -108,4 +107,16 @@ nodeoze::buffer::dump( std::ostream& os ) const
 	
 	}
 	os.copyfmt( sstate ); // just to make sure
+}
+
+void
+nodeoze::buffer_view::dump( std::ostream& os ) const
+{
+	dump_impl(m_data, m_size, os);
+}
+
+void
+nodeoze::buffer::dump( std::ostream& os ) const
+{
+	dump_impl(m_data, m_size, os);
 }

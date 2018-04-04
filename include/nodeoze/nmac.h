@@ -45,6 +45,8 @@ public:
 	address( const std::uint8_t *bytes, std::size_t size );
 
 	address( const nodeoze::buffer &bytes );
+
+	address( const nodeoze::buffer_view &bytes );
 	
 	address( const std::string &s );
 

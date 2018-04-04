@@ -34,7 +34,7 @@ bstream::ibstream::ibstream(obstream&& ostr)
 }
       
 bstream::ibstream::ibstream(obstream const& other)
-: utils::in_buffer{std::make_unique<utils::const_anon_block>(other.data(), other.size())}
+: utils::in_buffer{other.data(), other.size()}
 {}
 
 bstream::ibstream_cntxt::ibstream_cntxt(obstream_cntxt&& ostr) 
@@ -42,7 +42,7 @@ bstream::ibstream_cntxt::ibstream_cntxt(obstream_cntxt&& ostr)
 {}
 
 bstream::ibstream_cntxt::ibstream_cntxt(obstream_cntxt const& other)
-: ibstream{std::make_unique<utils::const_anon_block>(other.data(), other.size())}
+: ibstream{other.data(), other.size()}
 {}
 
 void bstream::ibstream::save_ptr(std::shared_ptr<void>)

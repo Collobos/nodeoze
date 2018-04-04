@@ -89,9 +89,9 @@ notification::notification()
 	
 	rpc::manager::shared().bind_request( "/notification/subscribe", 3, [=]( const any &params, rpc::manager::server_reply_f reply )
 	{
-		auto		remote_oid	= params[ 0 ].to_string();
+		std::string	remote_oid{ params[ 0 ].to_string() };
 		auto		source_oid	= params[ 1 ].to_uint64();
-		auto		event		= params[ 2 ].to_string();
+		std::string	event{ params[ 2 ].to_string() };
 		any result;
 		
 		subscribe_proxy( http::server::shared().active_connection(), remote_oid, source_oid, event );
@@ -101,7 +101,7 @@ notification::notification()
 	
 	rpc::manager::shared().bind_request( "/notification/unsubscribe", 1, [=]( const any &params, rpc::manager::server_reply_f reply )
 	{
-		auto		remote_oid = params[ 0 ].to_string();
+		std::string	remote_oid{ params[ 0 ].to_string() };
 		any result;
 		
 		unsubscribe_proxy( remote_oid );
@@ -113,7 +113,7 @@ notification::notification()
 	{
 		auto subscription_oid	= params[ 0 ].to_uint64();
 		auto source_oid			= params[ 1 ].to_uint64();
-		auto event				= params[ 2 ].to_string();
+		std::string event{ params[ 2 ].to_string() };
 		auto info				= params[ 3 ];
 		
 		publish_local( subscription_oid, source_oid, event, info );
@@ -121,8 +121,8 @@ notification::notification()
 	
 	rpc::manager::shared().bind_notification( "/notification/notify", 3, [=]( const any &params )
 	{
-		auto subscription_oid	= params[ 0 ].to_string();
-		auto event				= params[ 1 ].to_string();
+		std::string subscription_oid{ params[ 0 ].to_string() };
+		std::string event{ params[ 1 ].to_string() };
 		auto info				= params[ 2 ];
 		
 		notify( subscription_oid, event, info );

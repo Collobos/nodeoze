@@ -33,9 +33,7 @@
 #define UTILS_IO_BUFFERS_H
 
 #include <nodeoze/bstream/utils/io_buffers/in_buffer.h>
-#include <nodeoze/bstream/utils/io_buffers/anon_block.h>
-#include <nodeoze/bstream/utils/io_buffers/vector_block.h>
-#include <nodeoze/bstream/utils/io_buffers/nbuffer_block.h>
+#include <nodeoze/bstream/utils/io_buffers/out_buffer.h>
 
 #endif /* UTILS_IO_BUFFERS_H */
 

@@ -58,15 +58,13 @@ namespace bstream
 
 		inline obstream(obstream const&) = delete;	
 		
-		inline obstream(std::size_t capacity) : obstream{}
-		{
-			use<utils::vector_block>(capacity);
-		}
+		inline obstream(std::size_t capacity) : out_buffer{std::make_unique<buffer>(capacity)}
+		{}
 		
-		inline obstream(obstream&& other) : out_buffer{std::move(other)} {}
+		inline obstream(obstream&& other) : out_buffer{other.release()} {}
 		
 		inline
-		obstream(utils::memory_block::ptr&& block) : out_buffer{std::move(block)} {}
+		obstream(buffer::uptr&& buf) : out_buffer{std::move(buf)} {}
 		
         inline obstream&
         write_map_header(std::uint32_t size)
@@ -248,8 +246,8 @@ namespace bstream
 		{}
 		
 		inline
-		obstream_cntxt(utils::memory_block::ptr&& block) 
-		: obstream{std::move(block)}
+		obstream_cntxt(buffer::uptr&& buf) 
+		: obstream{std::move(buf)}
 		{}
 		
 		virtual obstream_cntxt& clear() noexcept override
@@ -470,6 +468,43 @@ namespace bstream
 			else
 			{
 				os.put(typecode::bool_false);
+			}
+			return os;
+		}
+	};
+
+	template<>
+	struct serializer<std::string_view>
+	{
+		static inline obstream& put(obstream& os, std::string_view const& value)
+		{
+			if (value.size() <= 31)
+			{
+				std::uint8_t code = 0xa0 | static_cast<std::uint8_t>(value.size());
+				os.put(code);
+				os.put(value.data(), value.size());
+			}
+			else if (value.size() <= std::numeric_limits<std::uint8_t>::max())
+			{
+				os.put(typecode::str_8);
+				os.put_arithmetic(static_cast<std::uint8_t>(value.size()));
+				os.put(value.data(), value.size());
+			}
+			else if (value.size() <= std::numeric_limits<std::uint16_t>::max())
+			{
+				os.put(typecode::str_16);
+				os.put_arithmetic(static_cast<std::uint16_t>(value.size()));
+				os.put(value.data(), value.size());
+			}
+			else if (value.size() <= std::numeric_limits<std::uint32_t>::max())
+			{
+				os.put(typecode::str_32);
+				os.put_arithmetic(static_cast<std::uint32_t>(value.size()));
+				os.put(value.data(), value.size());
+			}
+			else
+			{
+				throw type_error("string length exceeds limit");
 			}
 			return os;
 		}

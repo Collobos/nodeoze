@@ -24,11 +24,9 @@
 
 #include <nodeoze/bstream/utils/io_buffers/out_buffer.h>
 #include <nodeoze/bstream/utils/io_buffers/in_buffer.h>
-
+/*
 void nodeoze::bstream::utils::out_buffer::hijack(in_buffer&& ibuf)
 {
-//	auto p = ibuf.release_mutable();    
-//	memory_client::capture(std::move(p));
-	capture(ibuf.release_mutable());
+	capture(ibuf.release());
 }
-
+*/

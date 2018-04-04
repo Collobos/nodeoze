@@ -153,6 +153,13 @@ public:
 		m_buf->sputn( val, strlen( val ) );
 		return *this;
 	}
+
+	inline ostream&
+	operator<<( const std::string_view &val )
+	{
+		m_buf->sputn( val.data(), val.size() );
+		return *this;
+	}
 	
 	inline ostream&
 	operator<<( const std::string &val )

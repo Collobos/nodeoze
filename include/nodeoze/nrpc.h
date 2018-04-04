@@ -188,7 +188,7 @@ public:
 		{
 			if ( message.is_member( "method" ) )
 			{
-				auto method = message[ "method" ].to_string();
+				std::string method{ message[ "method" ].to_string() };
 			
 				if ( message.is_member( "id" ) )
 				{

@@ -45,6 +45,161 @@
 
 namespace nodeoze {
 
+
+class buffer_view
+{
+public:
+	typedef std::uint8_t					elemtype;
+	typedef std::size_t 					sizetype;
+	typedef std::shared_ptr< buffer_view>	ptr;
+	typedef std::unique_ptr< buffer_view>	uptr;
+
+	static const sizetype npos = static_cast< sizetype >( -1 );
+
+	inline buffer_view()
+	: m_data{ nullptr }, m_size{ 0ul }
+	{}
+
+	inline buffer_view( buffer_view const& rhs )
+	: m_data{ rhs.m_data }, m_size{ rhs.m_size }
+	{}
+
+	inline buffer_view( const void* data, sizetype size )
+	: m_data{ static_cast<const elemtype*>(data) }, m_size{ size }
+	{}
+
+	inline buffer_view& operator=( buffer_view const& rhs )
+	{
+		m_data = rhs.m_data;
+		m_size = rhs.m_size;
+		return *this;
+	}
+
+	inline bool
+	operator==( buffer_view const& rhs ) const
+	{
+		return ( ( m_size == rhs.m_size ) && ( std::memcmp( m_data, rhs.m_data, m_size ) == 0 ) ) ? true : false;
+	}
+
+	inline bool
+	operator!=( buffer_view const& rhs ) const
+	{
+		return !( *this == rhs );
+	}
+
+	inline sizetype
+	size() const
+	{
+		return m_size;
+	}
+
+	inline const elemtype*
+	data() const
+	{
+		return m_data;
+	}
+
+	inline bool
+	empty() const
+	{
+		return ( m_size == 0 );
+	}
+
+	inline void
+	clear()
+	{
+		m_data = nullptr;
+		m_size = 0;
+	}
+
+	inline elemtype
+	operator[]( sizetype index ) const
+	{
+		return m_data[ index ];
+	}
+
+	inline elemtype
+	at( sizetype index ) const
+	{
+		if ( index >= m_size )
+		{
+			throw std::out_of_range ("index out of range");
+		}
+		else
+		{
+			return m_data[ index ];
+		}
+	}
+
+	inline sizetype
+	find( elemtype c, sizetype pos = 0 ) const
+	{
+		if ( m_size == 0 || pos >= m_size )
+		{
+			return npos;
+		}
+
+		const elemtype* p (static_cast<const elemtype*>( std::memchr( m_data + pos, c, m_size - pos ) ) );
+		return p != 0 ? static_cast<sizetype>( p - m_data ) : npos;
+	}
+	
+	inline sizetype
+	find( const char *s, sizetype len, sizetype pos = 0 ) const
+	{
+		sizetype ret = npos;
+		
+		if ( ( pos + len ) < m_size )
+		{
+			auto p		= std::search( m_data + pos, m_data + m_size - pos, s, s + len );
+			auto index	= static_cast< sizetype >( p - m_data );
+			
+			if ( index < m_size )
+			{
+				ret = index;
+			}
+		}
+	
+		return ret;
+	}
+
+	inline sizetype
+	rfind( elemtype c, sizetype pos = npos ) const
+	{
+		if ( m_size != 0 )
+		{
+			sizetype n = m_size;
+
+			if ( --n > pos )
+			{
+				n = pos;
+			}
+
+			for ( ++n; n-- != 0; )
+			{
+				if ( m_data[ n ] == c )
+				{
+					return n;
+  				}
+			}
+		}
+
+		return npos;
+	}
+	
+	inline std::string
+	to_string() const
+	{
+		return std::string( reinterpret_cast< const char* >( m_data ), m_size );
+	}
+	
+	void
+	dump( std::ostream& os ) const;
+
+private:
+	const elemtype* 	m_data;
+	sizetype			m_size;
+};
+
 class buffer
 {
 public:
@@ -52,6 +207,7 @@ public:
 	typedef std::uint8_t				elemtype;
 	typedef std::size_t					sizetype;
 	typedef std::shared_ptr< buffer >	ptr;
+	typedef std::unique_ptr< buffer > 	uptr;
 	
 	static const sizetype npos = static_cast< sizetype >( -1 );
 	
@@ -98,6 +254,12 @@ public:
 			m_data = nullptr;
 		}
 	}
+
+	inline 
+	explicit buffer( buffer_view const& view )
+	: 
+		buffer ( view.data(), view.size() )
+	{}
 
 	inline
 	buffer( const void* data, sizetype size, sizetype capacity )
@@ -147,6 +309,12 @@ public:
 	inline ~buffer()
 	{
 		free();
+	}
+
+	inline
+	operator buffer_view() const noexcept
+	{
+		return buffer_view(m_data, m_size);
 	}
 
 	buffer&

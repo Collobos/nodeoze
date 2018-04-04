@@ -951,7 +951,7 @@ ws_filter_impl::accept_key( const std::string &key )
 		digest[i+2] = c;
 	}
 	
-	output = codec::base64::encode( std::string( digest, digest + 20 ) );
+	output = codec::base64::encode( nodeoze::buffer{ std::string( digest, digest + 20 ) } );
 	
 	return output;
 }

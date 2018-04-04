@@ -122,10 +122,10 @@ namespace bstream
 	
 	template<class T>
 	struct is_ref_deserializable<T, 
-			std::enable_if_t<
-				has_ref_deserializer<T>::value ||
-				(has_value_deserializer<T>::value && std::is_assignable<T&,T>::value) ||
-				(is_ibstream_constructible<T>::value && std::is_assignable<T&,T>::value)>>
+		std::enable_if_t<
+			has_ref_deserializer<T>::value ||
+			(has_value_deserializer<T>::value && std::is_assignable<T&,T>::value) ||
+			(is_ibstream_constructible<T>::value && std::is_assignable<T&,T>::value)>>
 	: public std::true_type {};
 	
 	template<class T, class Enable = void>
@@ -133,10 +133,10 @@ namespace bstream
 	
 	template<class T>
 	struct is_value_deserializable<T, 
-			std::enable_if_t<
-				is_ibstream_constructible<T>::value ||
-				has_value_deserializer<T>::value ||
-				(has_ref_deserializer<T>::value && std::is_default_constructible<T>::value)>>
+		std::enable_if_t<
+			is_ibstream_constructible<T>::value ||
+			has_value_deserializer<T>::value ||
+			(has_ref_deserializer<T>::value && std::is_default_constructible<T>::value)>>
 	: public std::true_type {};
 	
 	template<class T, class Enable = void>
@@ -144,11 +144,34 @@ namespace bstream
 	
 	template<class T>
 	struct is_ibstream_readable<T, 
-			std::enable_if_t<
-				is_value_deserializable<T>::value ||
-				is_ref_deserializable<T>::value>>
+		std::enable_if_t<
+			is_value_deserializable<T>::value ||
+			is_ref_deserializable<T>::value>>
 	: public std::true_type {};
 	
+
+	template<class T, class Enable = void>
+	struct use_value_deserializer : public std::false_type {};
+
+	template<class T>
+	struct use_value_deserializer<T,
+		std::enable_if_t<
+			!is_ibstream_constructible<T>::value && 
+			has_value_deserializer<T>::value>>
+	: public std::true_type {};
+
+	template<class T, class Enable = void>
+	struct use_ref_deserializer : public std::false_type {};
+
+	template<class T>
+	struct use_ref_deserializer<T,
+		std::enable_if_t<
+            !is_ibstream_constructible<T>::value &&
+            !has_value_deserializer<T>::value &&
+            std::is_default_constructible<T>::value &&
+            has_ref_deserializer<T>::value>>
+	: public std::true_type {};
+
 	template<class T>
     struct value_deserializer<T, 
         std::enable_if_t<
@@ -527,7 +550,7 @@ namespace bstream
                     }
                     default:
 						std::ostringstream msg;
-						msg << "invalid typecode value for string: " << std::hex << (int)tcode << std::dec;
+						msg << "2 - at pos " << is.position() << " - invalid typecode value for string: " << std::hex << (int)tcode << std::dec;
                         throw type_error(msg.str());
                 }
             }
@@ -572,7 +595,7 @@ namespace bstream
 		inline
 		ibstream(const void* data, std::size_t size)
 		{
-			utils::in_buffer::capture(std::make_unique<utils::const_anon_block>(data, size));
+			utils::in_buffer::use(nodeoze::buffer_view{data, size});
 		}
 		
 		/*! \brief constructor from moved obstream buffer
@@ -592,26 +615,14 @@ namespace bstream
 		ibstream(obstream const& ostr);
 
 		/*!	\brief constructor from moved const_memory_block
-		 *	\param block const_memory_block whose contents are moved to this ibstream
-		 *	\param limit offset from the beginning of block to the last meaningful byte in the buffer
+		 *	\param buf unique_ptr to buffer whose contents are moved to this ibstream
 		 *	
-		 *	The constructed instance of ibstream takes possession of \c block (by moving it). \c limit 
-		 *	is the number of meaningful bytes (that is, bytes corresponding to the originating obstream)
-		 *  in block's buffer, which may be less than \c block.size().
-		 */
-		ibstream(utils::const_memory_block::ptr&& block, std::size_t limit) 
-		: in_buffer{std::move(block), limit}
-		{}
-		
-		/*!	\brief constructor from moved const_memory_block
-		 *	\param block const_memory_block whose contents are moved to this ibstream
-		 *	
-		 *	The constructed instance of ibstream takes possession of \c block (by moving it). The
+		 *	The constructed instance of ibstream takes possession of \c buf (by moving it). The
 		 *	entire contents of the buffer are assumed to be meaningful (that is, corresponding to
 		 *	the originating obstream).
 		 */
-		ibstream(utils::const_memory_block::ptr&& block)
-		: in_buffer{std::move(block)}
+		ibstream(buffer::uptr&& buf)
+		: in_buffer{std::move(buf)}
 		{}
 		
         template<class T>
@@ -622,27 +633,59 @@ namespace bstream
         }
                 
         template<class T>
-        inline typename std::enable_if_t<
-			!is_ibstream_constructible<T>::value && 
-			has_value_deserializer<T>::value, 
-			T> 
+        inline typename std::enable_if_t<use_value_deserializer<T>::value, T>
         read_as()
         {
             return value_deserializer<T>::get(*this);
         }
 		
         template<class T>
-        inline typename std::enable_if_t<
-            !is_ibstream_constructible<T>::value &&
-            !has_value_deserializer<T>::value &&
-            std::is_default_constructible<T>::value &&
-            has_ref_deserializer<T>::value,
-            T>
+        inline typename std::enable_if_t<use_ref_deserializer<T>::value, T>
         read_as()
         {
             T obj;
             ref_deserializer<T>::get(*this, obj);
             return obj;
+        }
+
+		inline std::size_t
+		read_string_header()
+		{
+			std::size_t length = 0ul;
+            auto tcode = base::get();
+            if (tcode >= typecode::fixstr_min && tcode <= typecode::fixstr_max)
+            {
+                std::uint8_t mask = 0x1f;
+                length = tcode & mask;
+            }
+            else
+            {
+                switch(tcode)
+                {
+                    case typecode::str_8:
+                    {
+                        length = base::get_arithmetic_as<std::uint8_t>();
+                    }
+					break;
+                    case typecode::str_16:
+                    {
+                        length = base::get_arithmetic_as<std::uint16_t>();
+                    }
+					break;
+                    case typecode::str_32:
+                    {
+                        length = base::get_arithmetic_as<std::uint32_t>();
+                    }
+					break;
+                    default:
+					{
+						std::ostringstream msg;
+						msg << "1 - invalid typecode value for string: " << std::hex << (int)tcode << std::dec;
+                        throw type_error(msg.str());
+					}
+                }
+            }
+			return length;
         }
 
         inline std::size_t 
@@ -908,12 +951,8 @@ namespace bstream
 		
 		ibstream_cntxt(obstream_cntxt const& ostr);
 
-		ibstream_cntxt(utils::const_memory_block::ptr&& block, std::size_t limit) 
-		: ibstream{std::move(block), limit}
-		{}
-		
-		ibstream_cntxt(utils::const_memory_block::ptr&& block)
-		: ibstream{std::move(block)}
+		ibstream_cntxt(buffer::uptr&& buf)
+		: ibstream{std::move(buf)}
 		{}
 		
 		virtual void rewind() noexcept override

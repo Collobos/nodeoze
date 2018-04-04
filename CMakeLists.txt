@@ -225,13 +225,9 @@ set(NODEOZE_SRCS
 	include/nodeoze/bstream/utils/io_buffers.h
 	include/nodeoze/bstream/utils/preprocessor.h
 	include/nodeoze/bstream/utils/traits.h
-	include/nodeoze/bstream/utils/io_buffers/anon_block.h
 	include/nodeoze/bstream/utils/io_buffers/dump.h
 	include/nodeoze/bstream/utils/io_buffers/in_buffer.h
-	include/nodeoze/bstream/utils/io_buffers/memory_block.h
-	include/nodeoze/bstream/utils/io_buffers/nbuffer_block.h
 	include/nodeoze/bstream/utils/io_buffers/out_buffer.h
-	include/nodeoze/bstream/utils/io_buffers/vector_block.h
 	src/dump.cpp
 	src/ibstream.cpp
 	src/obstream.cpp
@@ -239,7 +235,7 @@ set(NODEOZE_SRCS
     
 
 # set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test3.cpp)
-set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test2.cpp src/bstream_test3.cpp)
+set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test2.cpp)
 
 set( NODEOZE_SRCS ${NODEOZE_SRCS} 
 	ext/libuv/src/uv-common.c 

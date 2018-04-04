@@ -801,7 +801,7 @@ http::message::prologue( std::ostream &os ) const
 void
 http::message::add_basic_authentication( const std::string &username, const std::string &password )
 {
-	add_header_field( "Authorization", "Basic " + codec::base64::encode( username + ":" + password ) );
+	add_header_field( "Authorization", "Basic " + codec::base64::encode( nodeoze::buffer{ username + ":" + password } ) );
 }
 
 

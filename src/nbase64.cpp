@@ -60,7 +60,7 @@
 using namespace nodeoze::codec;
 
 std::string
-base64::encode( const nodeoze::buffer &s )
+base64::encode( const nodeoze::buffer_view &s )
 {
 	std::string out;
     int val=0;
