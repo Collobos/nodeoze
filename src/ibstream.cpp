@@ -30,11 +30,11 @@ using namespace nodeoze;
 
 bstream::ibstream::ibstream(obstream&& ostr)
 {
-    utils::in_buffer::hijack(std::move(ostr));
+    in_byte_stream::hijack(std::move(ostr));
 }
       
 bstream::ibstream::ibstream(obstream const& other)
-: utils::in_buffer{other.data(), other.size()}
+: in_byte_stream{other.data(), other.size()}
 {}
 
 bstream::ibstream_cntxt::ibstream_cntxt(obstream_cntxt&& ostr) 

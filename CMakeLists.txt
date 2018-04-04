@@ -222,16 +222,14 @@ set(NODEOZE_SRCS
 	include/nodeoze/bstream/msgpack.h
 	include/nodeoze/bstream/obstream.h
 	include/nodeoze/bstream/typecode.h
-	include/nodeoze/bstream/utils/io_buffers.h
 	include/nodeoze/bstream/utils/preprocessor.h
 	include/nodeoze/bstream/utils/traits.h
-	include/nodeoze/bstream/utils/io_buffers/dump.h
-	include/nodeoze/bstream/utils/io_buffers/in_buffer.h
-	include/nodeoze/bstream/utils/io_buffers/out_buffer.h
+	include/nodeoze/bstream/utils/dump.h
+	include/nodeoze/bstream/in_byte_stream.h
+	include/nodeoze/bstream/out_byte_stream.h
 	src/dump.cpp
 	src/ibstream.cpp
-	src/obstream.cpp
-	src/out_buffer.cpp)
+	src/obstream.cpp)
     
 
 # set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test3.cpp)

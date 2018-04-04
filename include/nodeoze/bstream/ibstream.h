@@ -47,7 +47,7 @@
 #include <boost/endian/conversion.hpp>
 #include <nodeoze/bstream/error.h>
 #include <nodeoze/bstream/typecode.h>
-#include <nodeoze/bstream/utils/io_buffers.h>
+#include <nodeoze/bstream/in_byte_stream.h>
 #include <nodeoze/bstream/utils/traits.h>
 
 namespace nodeoze
@@ -179,7 +179,7 @@ namespace bstream
             std::numeric_limits<T>::is_signed && 
             sizeof(T) == 1>>
     {
-        inline static T get(utils::in_buffer& is)
+        inline static T get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -214,7 +214,7 @@ namespace bstream
             !std::numeric_limits<T>::is_signed && 
             sizeof(T) == 1>>
     {
-        inline static T get(utils::in_buffer& is)
+        inline static T get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -245,7 +245,7 @@ namespace bstream
             std::numeric_limits<T>::is_signed && 
             sizeof(T) == 2>>
     {
-        inline static T get(utils::in_buffer& is)
+        inline static T get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -296,7 +296,7 @@ namespace bstream
             !std::numeric_limits<T>::is_signed && 
             sizeof(T) == 2>>
     {
-        inline static T get(utils::in_buffer& is)
+        inline static T get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -329,7 +329,7 @@ namespace bstream
             std::numeric_limits<T>::is_signed && 
             sizeof(T) == 4>>
     {
-        inline static T get(utils::in_buffer& is)
+        inline static T get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -384,7 +384,7 @@ namespace bstream
             !std::numeric_limits<T>::is_signed && 
             sizeof(T) == 4>>
     {
-        inline static T get(utils::in_buffer& is)
+        inline static T get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -419,7 +419,7 @@ namespace bstream
             std::numeric_limits<T>::is_signed && 
             sizeof(T) == 8>>
     {
-        inline static T get(utils::in_buffer& is)
+        inline static T get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -478,7 +478,7 @@ namespace bstream
             !std::numeric_limits<T>::is_signed && 
             sizeof(T) == 8>>
     {
-        inline static T get(utils::in_buffer& is)
+        inline static T get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -511,12 +511,12 @@ namespace bstream
     template<>
     struct value_deserializer<std::string>
     {
-        inline std::string operator()(utils::in_buffer& is) const
+        inline std::string operator()(in_byte_stream& is) const
         {
             return get(is);
         }
 
-        inline static std::string get(utils::in_buffer& is)
+        inline static std::string get(in_byte_stream& is)
         {
             auto tcode = is.get();
             if (tcode >= typecode::fixstr_min && tcode <= typecode::fixstr_max)
@@ -571,10 +571,10 @@ namespace bstream
 	 *	\a a \a priori the contents of buffer as streamed by the sender (that is,
 	 *	the types, number, and order of the items).
 	 */
-    class ibstream : public utils::in_buffer
+    class ibstream : public in_byte_stream
     {
     public:
-        using base = utils::in_buffer;
+        using base = in_byte_stream;
 
 		template<class U, class E> friend struct value_deserializer;
 		
@@ -595,7 +595,7 @@ namespace bstream
 		inline
 		ibstream(const void* data, std::size_t size)
 		{
-			utils::in_buffer::use(nodeoze::buffer_view{data, size});
+			in_byte_stream::use(nodeoze::buffer_view{data, size});
 		}
 		
 		/*! \brief constructor from moved obstream buffer
@@ -622,7 +622,7 @@ namespace bstream
 		 *	the originating obstream).
 		 */
 		ibstream(buffer::uptr&& buf)
-		: in_buffer{std::move(buf)}
+		: in_byte_stream{std::move(buf)}
 		{}
 		
         template<class T>

@@ -29,8 +29,8 @@
  * Created on April 4, 2017, 4:16 PM
  */
 
-#ifndef UTILS_IO_BUFFERS_DUMP_H
-#define UTILS_IO_BUFFERS_DUMP_H
+#ifndef BSTREAM_UTILS_DUMP_H
+#define BSTREAM_UTILS_DUMP_H
 
 #include <iostream>
 #include <cstdint>
@@ -46,4 +46,4 @@ namespace utils
 } // bstream
 } // nodeoze
 
-#endif // UTILS_IO_BUFFERS_DUMP_H
+#endif // BSTREAM_UTILS_DUMP_H

@@ -29,11 +29,11 @@
  * Created on January 7, 2018, 11:30 AM
  */
 
-#ifndef UTILS_IN_BUFFER_H
-#define UTILS_IN_BUFFER_H
+#ifndef BSTREAM_IN_BYTE_STREAM_H
+#define BSTREAM_IN_BYTE_STREAM_H
 
-#include <nodeoze/bstream/utils/io_buffers/out_buffer.h>
-#include <nodeoze/bstream/utils/io_buffers/dump.h>
+#include <nodeoze/bstream/out_byte_stream.h>
+#include <nodeoze/bstream/utils/dump.h>
 #include <sstream>
 #include <boost/endian/conversion.hpp>
 
@@ -41,10 +41,7 @@ namespace nodeoze
 {
 namespace bstream
 {
-namespace utils
-{
-	
-    class in_buffer
+    class in_byte_stream
     {
     public:
 
@@ -53,23 +50,23 @@ namespace utils
         using max_unsigned = std::uint64_t;
         using max_signed = std::int64_t;
 
-        inline in_buffer()
+        inline in_byte_stream()
         : m_buf{nullptr}, m_view{}
 		{}
 	
-		in_buffer(nodeoze::buffer&& buf)
+		in_byte_stream(nodeoze::buffer&& buf)
 		: m_buf{std::make_shared<const nodeoze::buffer>(std::move(buf))}, m_view{*m_buf}, m_pos{0ul}
 		{}	
 
-		in_buffer(buffer::uptr&& buf) 
+		in_byte_stream(buffer::uptr&& buf) 
 		: m_buf{std::move(buf)}, m_view{*m_buf}, m_pos{0ul}
 		{}
 
-		in_buffer(const void* data, std::size_t size)
+		in_byte_stream(const void* data, std::size_t size)
 		: m_buf{nullptr}, m_view{data, size}, m_pos{0ul}
 		{}
 
-		virtual ~in_buffer() {}
+		virtual ~in_byte_stream() {}
 /*
 		buffer::uptr release()
 		{
@@ -79,16 +76,16 @@ namespace utils
 			return p;
 		}
 */
-		in_buffer(out_buffer&& obuf)
+		in_byte_stream(out_byte_stream&& obuf)
 		{
 			hijack(std::move(obuf));
 		}
 		
-		in_buffer(buffer_view const& view)
+		in_byte_stream(buffer_view const& view)
 		: m_buf{nullptr}, m_view{view}, m_pos{0ul}
 		{}
 
-		in_buffer(out_buffer const& obuf)
+		in_byte_stream(out_byte_stream const& obuf)
 		: m_buf{nullptr}, m_view{obuf.data(), obuf.size()}, m_pos{0ul}
 		{}
 
@@ -131,7 +128,7 @@ namespace utils
 		}	
 
 		inline void 
-		hijack(out_buffer&& obuf)
+		hijack(out_byte_stream&& obuf)
 		{
 			capture(obuf.release());
 		}
@@ -426,9 +423,8 @@ namespace utils
         std::size_t m_pos = 0UL;
     };
 
-} // namespace utils
 } // namespace bstream
 } // namespace nodeoze
 
-#endif /* UTILS_IN_BUFFER_H */
+#endif /* BSTREAM_IN_BYTE_STREAM_H */
 

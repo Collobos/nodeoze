@@ -34,7 +34,7 @@
 
 #include <cstdint>
 #include <vector>
-#include <nodeoze/bstream/utils/io_buffers.h>
+#include <nodeoze/bstream/in_byte_stream.h>
 #include <nodeoze/bstream/error.h>
 #include <nodeoze/bstream/typecode.h>
 #include <nodeoze/bstream/ibstream.h>
@@ -44,11 +44,11 @@ namespace nodeoze
 {
 namespace bstream
 {
-    class obstream : public utils::out_buffer
+    class obstream : public out_byte_stream
     {
     public:
 		
-        using buffer_type = utils::out_buffer;
+        using buffer_type = out_byte_stream;
 		
 	protected:
 		
@@ -58,13 +58,13 @@ namespace bstream
 
 		inline obstream(obstream const&) = delete;	
 		
-		inline obstream(std::size_t capacity) : out_buffer{std::make_unique<buffer>(capacity)}
+		inline obstream(std::size_t capacity) : out_byte_stream{std::make_unique<buffer>(capacity)}
 		{}
 		
-		inline obstream(obstream&& other) : out_buffer{other.release()} {}
+		inline obstream(obstream&& other) : out_byte_stream{other.release()} {}
 		
 		inline
-		obstream(buffer::uptr&& buf) : out_buffer{std::move(buf)} {}
+		obstream(buffer::uptr&& buf) : out_byte_stream{std::move(buf)} {}
 		
         inline obstream&
         write_map_header(std::uint32_t size)

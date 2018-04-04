@@ -1,4 +1,4 @@
-#include <nodeoze/bstream/utils/io_buffers/dump.h>
+#include <nodeoze/bstream/utils/dump.h>
 #include <string>
 #include <iomanip>
 #include <ctype.h>

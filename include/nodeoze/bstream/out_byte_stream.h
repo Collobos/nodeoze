@@ -29,11 +29,11 @@
  * Created on January 7, 2018, 11:22 AM
  */
 
-#ifndef UTILS_OUT_BUFFER_H
-#define UTILS_OUT_BUFFER_H
+#ifndef BSTREAM_OUT_BYTE_STREAM_H
+#define BSTREAM_OUT_BYTE_STREAM_H
 
 #include <type_traits>
-#include <nodeoze/bstream/utils/io_buffers/dump.h>
+#include <nodeoze/bstream/utils/dump.h>
 #include <nodeoze/nbuffer.h>
 #include <sstream>
 #include <boost/endian/conversion.hpp>
@@ -43,35 +43,33 @@ namespace nodeoze
 {
 namespace bstream
 {
-namespace utils
-{
-	class in_buffer;
+	class in_byte_stream;
 
-	class out_buffer
+	class out_byte_stream
 	{
 	public:
 
-		inline out_buffer() 
+		inline out_byte_stream() 
 		: m_buf{nullptr}, m_data{nullptr}, m_capacity{0ul}, m_pos{0ul} 
 		{}
 
-		out_buffer(buffer::uptr&& buf)
+		out_byte_stream(buffer::uptr&& buf)
 		: m_buf{std::move(buf)}, m_data{m_buf->data()}, m_capacity{m_buf->capacity()}, m_pos{m_buf->size()}
 		{}
 
-		out_buffer(out_buffer&& other)
-		: out_buffer{other.release()}
+		out_byte_stream(out_byte_stream&& other)
+		: out_byte_stream{other.release()}
 		{}
 
 		template<class... Args>
-		out_buffer(Args&&... args)
+		out_byte_stream(Args&&... args)
 		{
 			capture(std::make_unique<buffer>(std::forward<Args>(args)...));
 		}
 		
-		out_buffer(out_buffer const&) = delete;
+		out_byte_stream(out_byte_stream const&) = delete;
 
-		virtual ~out_buffer() {}
+		virtual ~out_byte_stream() {}
 	
 		inline void capture(buffer::uptr&& buf)
 		{
@@ -99,7 +97,7 @@ namespace utils
 			capture(std::make_unique<buffer>(std::forward<Args>(args)...));
 		}
 
-		virtual out_buffer& clear() noexcept
+		virtual out_byte_stream& clear() noexcept
 		{
 			m_pos = 0ul;
 			return *this;
@@ -121,20 +119,20 @@ namespace utils
 			return remaining() >= n ;
 		}
 
-		inline out_buffer& put(std::uint8_t byte)
+		inline out_byte_stream& put(std::uint8_t byte)
 		{
 			accommodate_put(1);
 			m_data[m_pos++] = byte;
 			return *this;                
 		}
 
-		inline out_buffer& put(const out_buffer& source)
+		inline out_byte_stream& put(const out_byte_stream& source)
 		{
 			std::size_t nbytes = source.size();
 			return put(source.m_data, nbytes);
 		}
 
-		inline out_buffer& put(const void* src, std::size_t nbytes)
+		inline out_byte_stream& put(const void* src, std::size_t nbytes)
 		{
 			accommodate_put(nbytes);
 			void* dst = m_data + m_pos;
@@ -144,7 +142,7 @@ namespace utils
 		}
 
 		template<class U>
-		inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof(U) == 1, out_buffer&>::type 
+		inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof(U) == 1, out_byte_stream&>::type 
 		put_arithmetic(U value)
 		{
 			accommodate_put(sizeof(U));
@@ -154,7 +152,7 @@ namespace utils
 		}
 		
 		template<class U>
-		inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof(U) == 2, out_buffer&>::type 
+		inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof(U) == 2, out_byte_stream&>::type 
 		put_arithmetic(U value, boost::endian::order buffer_order = boost::endian::order::big)
 		{
 			static const bool reverse_order = boost::endian::order::native != buffer_order;
@@ -184,7 +182,7 @@ namespace utils
 		}
 		
 		template<class U>
-		inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof(U) == 4, out_buffer&>::type 
+		inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof(U) == 4, out_byte_stream&>::type 
 		put_arithmetic(U value, boost::endian::order buffer_order = boost::endian::order::big)
 		{
 			static const bool reverse_order = boost::endian::order::native != buffer_order;
@@ -218,7 +216,7 @@ namespace utils
 		}
 		
 		template<class U>
-		inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof(U) == 8, out_buffer&>::type 
+		inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof(U) == 8, out_byte_stream&>::type 
 		put_arithmetic(U value, boost::endian::order buffer_order = boost::endian::order::big)
 		{
 			static const bool reverse_order = boost::endian::order::native != buffer_order;
@@ -348,9 +346,8 @@ namespace utils
 		std::size_t m_pos;
 	};
 
-} // namespace utils
 } // namespace bstream
 } // namespace nodeoze
 
-#endif /* UTILS_OUT_BUFFER_H */
+#endif /* BSTREAM_OUT_BYTE_STREAM_H */
 
