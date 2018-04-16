@@ -160,9 +160,9 @@ deflate( const any &root, ::msgpack::packer< nodeoze::buffer > &packer )
 		}
 		break;
 
-		case any::type_t::real:
+		case any::type_t::floating:
 		{
-			packer.pack( root.to_real() );
+			packer.pack( root.to_floating() );
 		}
 		break;
 		

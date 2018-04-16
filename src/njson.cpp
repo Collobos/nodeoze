@@ -313,9 +313,9 @@ deflate( T &writer, const any &root )
 		}
 		break;
 
-		case any::type_t::real:
+		case any::type_t::floating:
 		{
-			writer.Double( root.to_real() );
+			writer.Double( root.to_floating() );
 		}
 		break;
 		

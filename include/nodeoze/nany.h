@@ -70,28 +70,61 @@ namespace nodeoze {
 /*! \class any
  *
  *	\brief A variant, discriminated value type.
+ *
+ *	The any class corresponds closely to the abstract model underlying JSON data types. 
+ *	An any value contains a discriminant value of type \ref any::type_t, and a value
+ *	of the type indicated by the discriminant.
+ *	An instance of type any can hold a value of one of the following types:
+ *		- integer
+ *		- floating
+ *		- string
+ *		- boolean
+ *		- blob (an uninterpreted sequence of bytes)
+ *		- array (a vector of values of type any)
+ *		- object (an unordered set of string/value pairs, where the value is type any)
+ *		- null (no assigned value)
+ * 
+ *	The type of an any value can be accessed through the member function type(), 
+ *	or determined by invoking predicate member functions such as is_string(), or
+ *	is_int(). The variant value can be accessed through typed accessors such as
+ *	to_string(), or to_array(). Invoking an accessor for a type that does not
+ * 	match the current value will yield an empty (e.g., empty string, zero-length array)
+ *	or zero (in the case of numeric types) value. In general, the type of an any should
+ *	always be checked before invoking an accessor.
  */
 class any
 {
 public:
 
+	/*!	\brief The type used internally to represent integer values.
+	 */
+	using integer_type = 						std::int64_t;
+
+	/*!	\brief The type used internally to represent floating values.
+	 */
+	using floating_type = 						double;
+
+	/*!	\brief The type used internally to represent boolean values.
+	 */
+	using boolean_type = 						bool;
+
 	/*!	\brief The type used internally to represent string values.
 	 */
-	typedef std::string							string_type;
+	using string_type = 						std::string;
 
 	/*!	\brief The type used internally to represent blob values.
 	 */
-	typedef nodeoze::buffer						blob_type;
+	using blob_type = 							nodeoze::buffer;
 
 	/*!	\brief The type used internally to represent array values.
 	 */
-	typedef deque< any >						array_type;
+	using array_type = 							deque< any >;
 
 	/*!	\brief The type used internally to represent object values.
 	 */
-	typedef unordered_map< std::string, any >	object_type;
+	using object_type = 						unordered_map< std::string, any >;
 
-	typedef std::vector<std::string>			keys;
+	using keys = 								std::vector<std::string>;
 
 	using buf_ptr = std::shared_ptr<const nodeoze::buffer>;
 	
@@ -106,7 +139,7 @@ public:
 		null,
 		boolean,
 		integer,
-		real,
+		floating,
 		string,
 		blob,
 		array,
@@ -154,21 +187,22 @@ public:
 	/*!	\brief Returns a reference to a const null-valued any.
 	 *
 	 *	\return reference to a const null-valued any.
+	 *  
 	 */
 	static const any&
 	null();
 	
 
-	/*!	\brief Returns an empty array type any value.
+	/*!	\brief Returns an any containing an empty array.
 	 *
-	 *	\return an empty array type any value.
+	 *	\return an any containing an empty array.
 	 */
 	static any
 	array();
 	
-	/*!	\brief Returns an empty object type any value.
+	/*!	\brief Returns an any containing an empty object.
 	 *
-	 *	\return any empty object type any value.
+	 *	\return an any containing an empty object.
 	 */
 	static any
 	object();
@@ -183,7 +217,7 @@ public:
 		return any( list, type_deduction, manual_type );
 	}
 	
-	/*!	\brief Constructs an any instance of type null.
+	/*!	\brief Constructs an instance whose type is null.
 	 *
 	 *
 	 */
@@ -193,7 +227,7 @@ public:
 	{
 	}
 	
-	/*!	\brief Constructs an any instance of type bool with the specified value/
+	/*!	\brief Constructs an instance containing a boolean value.
 	 *	\param val boolean value assigned to constructed instance.
 	 *
 	 */
@@ -204,11 +238,11 @@ public:
 		m_data.m_bool = val;
 	}
 
-	/*!	\brief Constructs an any instance of type integer from the specified enum value.
+	/*!	\brief Constructs an instance containing an integer value from the specified enum value.
 	 *	\param val value of an enum type
 	 *
-	 *	Converts the enum value of parameter val to an integer of the underlying type,
-	 *	and assigns to the constructed any instance.
+	 *	Converts the enum value of parameter \c val to an integer of the enum's underlying type,
+	 *	and assigns it to the constructed instance.
 	 */
 	template< typename T >
 	inline any( T val, typename std::enable_if< std::is_enum< T >::value >::type* = 0 )
@@ -218,8 +252,8 @@ public:
 		m_data.m_integer = static_cast< std::int64_t >( val );
 	}
 
-	/*!	\brief Constructs an any instance of type integer with the specified value.
-	 *	\param val integer (signed or unsigned) value assigned to the constructed instance.
+	/*!	\brief Constructs an instance containing an integer value.
+	 *	\param val integer value assigned to the constructed instance.
 	 *
 	 */
 	template< typename T >
@@ -230,10 +264,10 @@ public:
 		m_data.m_integer = static_cast< std::int64_t >( val );
 	}
 
-	/*!	\brief Constructs an any instance of type integer with a value converted from the specifed time_point.
+	/*!	\brief Constructs an instance containing an integer value from the specifed time_point.
 	 *	\param val a time_point value
 	 *
-	 *	Converts the time_point value of parameter val to a time_t value, and assigns it to the constructed any instance
+	 *	Converts the time_point value of parameter \c val to a \c time_t value, and assigns it to the constructed instance
 	 * 	as an integer.
 	 */
 	inline any( std::chrono::system_clock::time_point val )
@@ -243,29 +277,29 @@ public:
 		m_data.m_integer = static_cast< std::int64_t >( std::chrono::system_clock::to_time_t( val ) );
 	}
 	
-	/*!	\brief Constructs an any instance of type real with the specified float value.
-	 *	\param val a float value assigned to the constructed any instance.
+	/*!	\brief Constructs an instance containing a floating value.
+	 *	\param val a float value assigned to the constructed instance.
 	 *
 	 */
 	inline any( float val )
 	:
-		m_type( type_t::real )
+		m_type( type_t::floating )
 	{
-		m_data.m_real = val;
+		m_data.m_floating = val;
 	}
 	
-	/*!	\brief Constructs an any instance of type real with the specified double value
-	 *	\param val a double value assigned to the constructed any instance.
+	/*!	\brief Constructs an instance containing a floating value.
+	 *	\param val a double value assigned to the constructed instance.
 	 *
 	 */
 	inline any( double val )
 	:
-		m_type( type_t::real )
+		m_type( type_t::floating )
 	{
-		m_data.m_real = val;
+		m_data.m_floating = val;
 	}
 	
-	/*!	\brief Constructs an any instance of type string from the specified C-style string.
+	/*!	\brief Constructs an instance containing a string value.
 	 *	\param val A C-style, null-terminated character string.
 	 *
 	 */
@@ -276,7 +310,7 @@ public:
 		new ( &m_data.m_string ) string_rep( std::string(val) );
 	}
 	
-	/*!	\brief Constructs an any instance of type string from the specified C-style string.
+	/*!	\brief Constructs an instance containing a string value.
 	 *	\param val A C-style, null-terminated character string.
 	 *
 	 */
@@ -287,8 +321,8 @@ public:
 		new ( &m_data.m_string ) string_rep( std::string(val) );
 	}
 	
-	/*!	\brief Constructs an any instance of type string from specified C++ string value.
-	 *	\param val a value of type std::string, whose contents are copied to the constructed any instance.
+	/*!	\brief Constructs an instance containing a string value.
+	 *	\param val a value of type std::string, whose contents are copied to the constructed instance.
 	 *
 	 */
 	inline any( const string_type &val )
@@ -298,8 +332,8 @@ public:
 		new ( &m_data.m_string ) string_rep( val );
 	}
 	
-	/*!	\brief Constructs an any instance of type string from the specified C++ string value.
-	 *	\param val a value of type std::string whose contents are moved to the constructed any instance.
+	/*!	\brief Constructs an instance containing a string value.
+	 *	\param val a value of type std::string whose contents are moved to the constructed instance.
 	 *
 	 */
 	inline any( string_type&& val )
@@ -309,8 +343,8 @@ public:
 		new ( &m_data.m_string ) string_rep( std::move( val ) );
 	}
 		
-	/*!	\brief Constructs an any instance of type blob (uninterpreted array of unsigned bytes) from the specified buffer.
-	 *	\param val a value of type nodeoze::buffer, whose contents are moved to the constructed any instance.
+	/*!	\brief Constructs an instance containing a blob value.
+	 *	\param val a value of type nodeoze::buffer, whose contents are moved to the constructed instance.
 	 *
 	 */
 	inline any( blob_type&& val )
@@ -320,8 +354,8 @@ public:
 		new ( &m_data.m_blob ) blob_rep( std::move( val ) );
 	}
 	
-	/*!	\brief Constructs an any instance of type blob (uninterpreted array of unsigned bytes) from the specified buffer.
-	 *	\param val a value of type nodeoze::buffer, whose contents are copied to the constructed any instance.
+	/*!	\brief Constructs an instance containing a blob value.
+	 *	\param val a value of type nodeoze::buffer, whose contents are copied to the constructed instance.
 	 *
 	 */
 	inline any( const blob_type& val )
@@ -331,8 +365,8 @@ public:
 		new ( &m_data.m_blob ) blob_rep( blob_type( val.data(), val.size() ) );
 	}
 	
-	/*!	\brief Constucts an any instance of type array from the specified deque of any values.
-	 *	\param val a value of type std::deque<any>, whose contents are copied to the constructed any instance.
+	/*!	\brief Constucts an instance containing an array value.
+	 *	\param val a value of type std::deque<any>, whose contents are copied to the constructed instance.
 	 *
 	 */
 	inline any( const array_type &val )
@@ -342,8 +376,8 @@ public:
 		new ( &m_data.m_array ) array_type( val );
 	}
 	
-	/*!	\brief Constructs an any instance of type array from the specified vector of any values.
-	 *	\param val a vector of any values, whose contents are copied to the constructed instance.
+	/*!	\brief Constructs an instance containing an array value.
+	 *	\param val a value of type std::vector<any>, whose contents are copied to the constructed instance.
 	 *
 	 */
 	template< typename T >
@@ -359,7 +393,7 @@ public:
 		}
 	}
 
-	/*!	\brief Constructs an any of type object from the specified map value.
+	/*!	\brief Constructs an instance containing an object value.
 	 *	\param val a value of type std::unordered_map<std::string, any>, whose contents are copied to the constructed instance.
 	 */
 	inline any( const object_type &val )
@@ -369,11 +403,11 @@ public:
 		new ( &m_data.m_object ) object_type( val );
 	}
 	
-	/*!	\brief Constructs an any of the specified type, with the default value for that type.
-	 *	\param val the discriminant value specifying the type of the constructed instance.
+	/*!	\brief Constructs an instance containing the default value for the specified type.
+	 *	\param val the discriminant value specifying the type contained by the constructed instance.
 	 *
 	 *	Default values for numeric types are zero; for boolean, false; for string, blob, array and object,
-	 *	empty instances of the corresponding type.
+	 *	empty instances of the corresponding type internal representation types.
 	 */ 
 	any( type_t val )
 	:
@@ -382,7 +416,7 @@ public:
 		set_type( val );
 	}
 
-	/*!	\brief Copy constructed for type any.
+	/*!	\brief Copy constructor.
 	 *	\param rhs an any whose contents are copied to the constucted instance.
 	 *
 	 */
@@ -394,8 +428,8 @@ public:
 		copy( rhs );
 	}
 	
-	/*!	\brief Move constructor for type any.
-	 *	\param rhs an any whose contents are moved to the constructed instance.
+	/*!	\brief Move constructor.
+	 *	\param rhs value whose contents are moved to the constructed instance.
 	 *
 	 */
 	inline
@@ -413,15 +447,15 @@ public:
 	 */
 	any( std::initializer_list< any > list, bool type_deduction = true, type_t manual_type = type_t::array );
 	
-	/*!	\brief Constructs an any by deserializing a previously serialized any from specified binary stream.
-	 *	\param is a binary input stream containing a serialized any value
+	/*!	\brief Constructs an instance by deserializing the value from specified binary stream.
+	 *	\param is a binary input stream containing a serialized value.
 	 *
 	 */
 	any(bstream::ibstream& is);
 
 	/*!	\brief Serializes this instance to the specified binary stream.
 	 *	\param os a binary out stream to which this instance's contents will be serialized.
-	 *	\return a reference to the the os parameter stream, after this instance is serialized.
+	 *	\return a reference to the stream passed as os parameter.
 	 */
 	inline bstream::obstream& 
 	serialize(bstream::obstream& os) const
@@ -429,7 +463,7 @@ public:
 		return put(os);
 	}
 
-	/*!	\brief Destructor for type any
+	/*!	\brief Destructor.
 	 *
 	 *
 	 */
@@ -440,17 +474,17 @@ public:
 	}
 	
 	/*!	\brief Compares this instance with the specified value.
-	 *	\param rhs an any value to be compared with this instance.
-	 *	\return true if the value is equal to this instance, false otherwise.
+	 *	\param rhs an value to be compared with this instance.
+	 *	\return true if the specified value is equal to this instance, false otherwise.
 	 */
 	bool
 	equals( const any &rhs ) const;
 	
 	/*!	\brief Assigns a boolean value to this instance.
-	 *	\param rhs a boolean value to be assigned.
+	 *	\param rhs a boolean value.
 	 *	\return a reference to this instance
 	 *
-	 *	The resulting type of this instance is type_t::bool.
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( bool rhs )
@@ -465,13 +499,13 @@ public:
 		return *this;
 	}
 
-	/*!	\brief Assigns an enum value to this instance, as type integer.
-	 *	\param val a value of an enum type to be assigned.
+	/*!	\brief Assigns an enum value to this instance, as an integer value.
+	 *	\param val a value of an enum type.
 	 *	\return a reference to this instance.
 	 *
 	 *	Converts the specified enum value to the underlying integer type, 
-	 * 	and assigns that value to this instance. The resulting type of 
-	 *	this instance is type_t::integer.
+	 * 	and assigns that value to this instance. Any previous value contained 
+	 *	by the target instance is destroyed.
 	 */
 	template< typename T >
 	inline typename std::enable_if< std::is_enum< T >::value, any& >::type
@@ -487,11 +521,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assigns an integral value to this instance.
-	 *	\param rhs an integer (signed or unsigned) value to be assigned.
+	/*!	\brief Assigns an integer value to this instance.
+	 *	\param rhs an integer value.
 	 *	\return a reference to this instance.
 	 *
-	 *	The resulting type of this instance is type_t::integer.
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	template< typename T >
 	inline typename std::enable_if< std::is_integral< T >::value, any& >::type
@@ -507,50 +541,51 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assings a float value to this instance.
-	 *	\param rhs a value of type float to be assigned.
+	/*!	\brief Assings a floating value to this instance.
+	 *	\param rhs a float value.
 	 *	\return a reference to this instance.
 	 *
-	 *	The resulting type of this instance is type_t::real.
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( float rhs )
 	{
-		if ( !is_real() )
+		if ( !is_floating() )
 		{
 			clear();
-			m_type = type_t::real;
+			m_type = type_t::floating;
 		}
 		
-		m_data.m_real = rhs;
+		m_data.m_floating = rhs;
 		return *this;
 	}
 	
-	/*!	\brief Assigns a double value to this instance.
-	 *	\param val a value of type double to be assigned.
+	/*!	\brief Assigns a floating value to this instance.
+	 *	\param val a double value.
 	 *	\return a reference to this instance.
 	 *
-	 *	The resulting type of this instance is type_t::real.
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( double rhs )
 	{
-		if ( !is_real() )
+		if ( !is_floating() )
 		{
 			clear();
-			m_type = type_t::real;
+			m_type = type_t::floating;
 		}
 		
-		m_data.m_real = rhs;
+		m_data.m_floating = rhs;
 		return *this;
 	}
 	
-	/*!	\brief Assigns a time_point value to this instance, as type integer.
+	/*!	\brief Assigns a time_point value to this instance as an integer value.
 	 *	\param rhs a time_point value.
 	 *	\return a reference to this instance.
 	 *
 	 *	The time_point specified by the rhs parameter is converted to type time_t, and
-	 * 	assigned to this instance. The resulting type of this instance is as type integer.
+	 * 	assigned to this instance as an integer value.
+	 *	Any previous value contained by the target instance is destroyed.
 	 *
 	 */
 	inline any&
@@ -566,9 +601,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assigns the value of the specified C-style string to this instance.
+	/*!	\brief Assigns a string value to this instance.
 	 *	\param rhs a C-style, null-terminated character string.
 	 *	\return a reference to this instance.
+	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( char *rhs )
@@ -580,9 +617,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assigns the value of the specified C-style string to this instance.
+	/*!	\brief Assigns a string value to this instance.
 	 *	\param rhs a C-style, null-terminated character string.
 	 *	\return a reference to this instance.
+	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( const char *rhs )
@@ -594,9 +633,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assigns the value of the specified string to this instance.
+	/*!	\brief Assigns a string value to this instance.
 	 *	\param rhs a value of type std::string, whose contents are copied to this instance.
 	 *	\return a reference to this instance.
+	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( const string_type &rhs )
@@ -608,9 +649,11 @@ public:
 		return *this;
 	}
 
-	/*!	\brief Assigns the value of the specified string to this instance.
-	 *	\param rhs a value of type std::string whose cotents are moved to this instance.
+	/*!	\brief Assigns a string value to this instance.
+	 *	\param rhs a value of type std::string, whose contents are moved to this instance.
 	 *	\return a reference to this instance.
+	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( string_type&& rhs )
@@ -637,9 +680,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assings (by move) the contents of the specified buffer to this instance, as type blob.
+	/*!	\brief Assigns a blob value to this instance.
 	 *	\param rhs a value of type nodeoze::buffer, whose contents are moved to this instance.
 	 *	\return a reference to this instance.
+	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( blob_type&& rhs )
@@ -651,9 +696,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assigns (by copy) the contents of the specified array to this instance.
-	 *	\param rhs a value of type std::deque<any>, whose contents are copied to this instance.
+	/*!	\brief Assigns a blob value to this instance.
+	 *	\param rhs a value of type nodeoze::buffer, whose contents are copied to this instance.
 	 *	\return a reference to this instance.
+	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( const array_type &rhs )
@@ -665,9 +712,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assigns (by copy) the contents of the specified object to this instance.
+	/*!	\brief Assigns an object value to this instance.
 	 *	\param rhs a value of type std::unordered_map<std::string, any>, whose contents are copied to this instance.
 	 *	\return a reference to this instance.
+	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( const object_type &rhs )
@@ -679,9 +728,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief Assigns (by copy) the contents of the specified vector of strings to this instance, as type array.
-	 *	\
+	/*!	\brief Assigns an array of strings to this instance.
+	 *	\param rhs a value of type std::vector<std::string>, whose contents are copied to this instance.
+	 *	\return a reference to this instance.
 	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( const std::vector< std::string > &rhs )
@@ -698,9 +749,11 @@ public:
 		return *this;
 	}
 
-	/*!	\brief
+	/*!	\brief Copy assignment operator.
+	 *	\param rhs an any value copied to this instance.
+	 *	\return a reference to this instance.
 	 *
-	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( const any &rhs )
@@ -713,9 +766,11 @@ public:
 		return *this;
 	}
 	
-	/*!	\brief
+	/*!	\brief Move assignment operator.
+	 *	\param rhs an any value moved to this instance.
+	 *	\return a reference to this instance.
 	 *
-	 *
+	 *	Any previous value contained by the target instance is destroyed.
 	 */
 	inline any&
 	operator=( any &&rhs )
@@ -728,9 +783,11 @@ public:
 		return *this;
 	}
 
-	/*!	\brief
+	/*!	\brief Equality comparison operator.
+	 *	\param rhs an any value compared with this instance.
+	 *	\return true if the \c rhs param contains the same type and value as this instance, false otherwise.
 	 *
-	 *
+	 *	Equality is determined by invoking the equality operator of the underlying internal representation type.
 	 */
 	inline bool
 	operator==( const any &rhs ) const
@@ -738,9 +795,11 @@ public:
 		return equals( rhs );
 	}
 	
-	/*!	\brief
+	/*!	\brief Inequality comparison operator.
+	 *	\param rhs an any value compared with this instance.
+	 *	\return false if the \c rhs param contains the same type and value as this instance, true otherwise.
 	 *
-	 *
+	 *	Equality is determined by invoking the equality operator of the underlying internal representation type.
 	 */
 	inline bool
 	operator!=( const any &rhs ) const
@@ -780,8 +839,15 @@ public:
 		return *this;
 	}
 
-	/*!	\brief
+	/*!	\brief Returns a reference to the specified element in an array contained by this instance.
+	 *	\param index the index of the array element.
+	 *	\return a reference to the specified array element.
 	 *
+	 *	If this instance does not contain an array, the current contents are destroyed
+	 *	and replaced with an array of size (index + 1) containing null values.
+	 *
+	 *	If this instance contains an array, and the size is less than (index + 1), null
+	 *	values are appended to the contained array until it's size is (index + 1).
 	 *
 	 */
 	inline any&
@@ -805,9 +871,12 @@ public:
 		return m_data.m_array[ index ];
 	}
 
-	/*!	\brief
+	/*!	\brief Returns a const reference to the specified element in an array contained by this instance.
+	 *	\param index the index of the array element.
+	 *	\return a reference to the specified array element.
 	 *
-	 *
+	 *	If this instance does not contain an array, or it contains an array of size
+	 *	less than (index + 1), a null value is returned.
 	 */
 	inline const any&
 	at_index( std::size_t index ) const
@@ -825,8 +894,49 @@ public:
 		return null();
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns a reference to the specified element in an array contained by this instance.
+	 *	\param index the index of the array element.
+	 *	\return a reference to the specified array element.
 	 *
+	 *	If this instance does not contain an array, the current contents are destroyed
+	 *	and replaced with an array of size (index + 1) containing null values.
+	 *
+	 *	If this instance contains an array, and the size is less than (index + 1), null
+	 *	values are appended to the contained array until it's size is (index + 1).
+	 *
+	 */
+	template< class T >
+	inline typename std::enable_if_t< std::is_integral<T>::value, any& >
+	operator[]( T index )
+	{
+		return at_index( static_cast<std::size_t>( index ) );
+	}
+
+	/*!	\brief Returns a const reference to the specified element in an array contained by this instance.
+	 *	\param index the index of the array element.
+	 *	\return a reference to the specified array element.
+	 *
+	 *	If this instance does not contain an array, or it contains an array of size
+	 *	less than (index + 1), a null value is returned.
+	 */
+	template< class T>
+	inline typename std::enable_if_t< std::is_integral<T>::value, const any& >
+	operator[]( T index ) const
+	{
+		return at_index( static_cast<std::size_t>( index ) );
+	}
+
+#if 0
+
+	/*!	\brief Returns a reference to the specified element in an array contained by this instance.
+	 *	\param index the index of the array element.
+	 *	\return a reference to the specified array element.
+	 *
+	 *	If this instance does not contain an array, the current contents are destroyed
+	 *	and replaced with an array of size (index + 1) containing null values.
+	 *
+	 *	If this instance contains an array, and the size is less than (index + 1), null
+	 *	values are appended to the contained array until it's size is (index + 1).
 	 *
 	 */
 	inline any&
@@ -835,9 +945,12 @@ public:
 		return at_index( index );
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns a const reference to the specified element in an array contained by this instance.
+	 *	\param index the index of the array element.
+	 *	\return a reference to the specified array element.
 	 *
-	 *
+	 *	If this instance does not contain an array, or it contains an array of size
+	 *	less than (index + 1), a null value is returned.
 	 */
 	inline const any&
 	operator[]( std::uint8_t index ) const
@@ -985,6 +1098,8 @@ public:
 		return at_index( static_cast< std::size_t >( index ) );
 	}
 	
+#endif
+
 #if defined( NODEOZE_SIZE_T_IS_UNIQUE_TYPE )
 	/*!	\brief
 	 *
@@ -1007,9 +1122,19 @@ public:
 	}
 #endif
 	
-	/*!	\brief
+	/*!	\brief Returns a reference to the value associated with the specified key.
+	 *	\param key a C-style null-terminated string used to locate or create an associated value in an object
+	 *	\return The value associated with the key.
+	 *	
+	 *	If the type of this instance is object, and an entry with the key exists in 
+	 *	the object, a reference to the associated value is returned.
 	 *
+	 *	If the type of this instance is object, and no entry exists with the key,
+	 *	an entry is created with the key and a value of type null.
 	 *
+	 *	If the type of this instance is not object, the current value is destroyed, 
+	 *	and the value is set to an object with a single entry comprising the key 
+	 *	and a null object associated with the key.
 	 */
 	inline any&
 	operator[]( const char *key )
@@ -1021,6 +1146,20 @@ public:
 	/*!	\brief
 	 *
 	 *
+	 */
+	/*!	\brief Returns a reference to the value associated with the specified key.
+	 *	\param key a string used to locate or create an entry in an object
+	 *	\return The value associated with the key.
+	 *	
+	 *	If the type of this instance is object, and an entry with the key exists in 
+	 *	the object, a reference to the associated value is returned.
+	 *
+	 *	If the type of this instance is object, and no entry exists with the key,
+	 *	an entry is created with the key and a value of type null.
+	 *
+	 *	If the type of this instance is not object, the current value is destroyed, 
+	 *	and the value is set to an object with a single entry comprising the key 
+	 *	and a null object associated with the key.
 	 */
 	inline any&
 	operator[]( const std::string &key )
@@ -1046,9 +1185,13 @@ public:
 		}
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns a reference to a value associated with the specified key.
+	 *	\param key a C-style, null-terminated string used to locate or create an object entry.
+	 *	\return a const reference to the associated value, if an entry for the key exists.
 	 *
-	 *
+	 *	If the type of this instance is object, and an entry for the key is present, 
+	 *	a reference to the associated value is returned. Otherwise, A reference to a
+	 *	value of type null is returned.
 	 */
 	inline const any&
 	operator[]( const char *key ) const
@@ -1056,9 +1199,13 @@ public:
 		return operator[]( std::string( key ) );
 	}
 
-	/*!	\brief
+	/*!	\brief Returns a reference to a value associated with the specified key.
+	 *	\param key a string used to locate or create an entry in an object
+	 *	\return a const reference to the associated value, if an entry for the key exists.
 	 *
-	 *
+	 *	If the type of this instance is object, and an entry for the key is present, 
+	 *	a reference to the associated value is returned. Otherwise, A reference to a
+	 *	value of type null is returned.
 	 */
 	inline const any&
 	operator[]( const std::string &key ) const
@@ -1076,8 +1223,8 @@ public:
 		return null();
 	}
 
-	/*!	\brief
-	 *
+	/*!	\brief Returns the type contained by this instance.
+	 *	\return the type contained by this instance.
 	 *
 	 */
 	inline type_t
@@ -1086,6 +1233,7 @@ public:
 		return m_type;
 	}
 	
+	// TODO: if the current type is the same as val, should the value be cleared?
 	/*!	\brief
 	 *
 	 *
@@ -1111,9 +1259,9 @@ public:
 			}
 			break;
 			
-			case type_t::real:
+			case type_t::floating:
 			{
-				m_data.m_real = 0.0f;
+				m_data.m_floating = 0.0f;
 			}
 			break;
 			
@@ -1148,8 +1296,8 @@ public:
 		}
 	}
 
-	/*!	\brief
-	 *
+	/*!	\brief Returns true if the type contained by this instance is null.
+	 *	\return true if the type contained by this instance is null, false otherwise.
 	 *
 	 */
 	inline bool
@@ -1158,8 +1306,8 @@ public:
 		return ( m_type == type_t::null );
 	}
 
-	/*!	\brief
-	 *
+	/*!	\brief Returns true if the type contained by this instance is boolean.
+	 *	\return true if the type contained by this instance is boolean, false otherwise.
 	 *
 	 */
 	inline bool
@@ -1168,8 +1316,8 @@ public:
 		return ( m_type == type_t::boolean );
 	}
 
-	/*!	\brief
-	 *
+	/*!	\brief Returns true if the type contained by this instance is integer.
+	 *	\return true if the type contained by this instance is integer, false otherwise.
 	 *
 	 */
 	inline bool
@@ -1178,18 +1326,18 @@ public:
 		return ( m_type == type_t::integer );
 	}
 	
-	/*!	\brief
-	 *
+	/*!	\brief Returns true if the type contained by this instance is floating.
+	 *	\return true if the type contained by this instance is floating, false otherwise.
 	 *
 	 */
 	inline bool
-	is_real() const
+	is_floating() const
 	{
-		return ( m_type == type_t::real );
+		return ( m_type == type_t::floating );
 	}
 
-	/*!	\brief
-	 *
+	/*!	\brief Returns true if the type contained by this instance is string.
+	 *	\return true if the type contained by this instance is string, false otherwise.
 	 *
 	 */
 	inline bool
@@ -1198,8 +1346,8 @@ public:
 		return ( m_type == type_t::string );
 	}
 	
-	/*!	\brief
-	 *
+	/*!	\brief Returns true if the type contained by this instance is blob.
+	 *	\return true if the type contained by this instance is blob, false otherwise.
 	 *
 	 */
 	inline bool
@@ -1208,8 +1356,8 @@ public:
 		return ( m_type == type_t::blob );
 	}
 		
-	/*!	\brief
-	 *
+	/*!	\brief Returns true if the type contained by this instance is array.
+	 *	\return true if the type contained by this instance is array, false otherwise.
 	 *
 	 */
 	inline bool
@@ -1218,8 +1366,8 @@ public:
 		return ( m_type == type_t::array );
 	}
 
-	/*!	\brief
-	 *
+	/*!	\brief Returns true if the type contained by this instance is object.
+	 *	\return true if the type contained by this instance is object, false otherwise.
 	 *
 	 */
 	inline bool
@@ -1228,9 +1376,11 @@ public:
 		return ( m_type == type_t::object );
 	}
 
-	/*!	\brief
+	/*!	\brief Returns the boolean value contained by this instance.
+	 *	\return the contained boolean value.
 	 *
-	 *
+	 *	If the type contained by this instance is not boolean, the returned
+	 *	value is false.
 	 */
 	inline bool
 	to_bool() const
@@ -1238,9 +1388,20 @@ public:
 		return is_bool() ? m_data.m_bool : false;
 	}
 	
-	/*!	\brief
+	template<class T>
+	inline typename std::enable_if_t< std::is_integral<T>::value, T >
+	to_integer() const
+	{
+		return is_integer() ? static_cast< T >( m_data.m_integer ) : 0;
+	}
+
+	/*!	\brief Returns the integer value contained by this instance.
+	 *	\return the contained integer value.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type std::uint8_t. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
+	 *	
 	 */
 	inline std::uint8_t
 	to_uint8() const
@@ -1248,9 +1409,13 @@ public:
 		return is_integer() ? static_cast< std::uint8_t >( m_data.m_integer ) : 0;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the integer value contained by this instance.
+	 *	\return the contained integer value.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type std::int8_t. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
+	 *	
 	 */
 	inline std::int8_t
 	to_int8() const
@@ -1258,9 +1423,13 @@ public:
 		return is_integer() ? static_cast< std::int8_t >( m_data.m_integer ) : 0;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the integer value contained by this instance.
+	 *	\return the contained integer value.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type std::uint16_t. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
+	 *	
 	 */
 	inline std::uint16_t
 	to_uint16() const
@@ -1268,9 +1437,13 @@ public:
 		return is_integer() ? static_cast< std::uint16_t >( m_data.m_integer ) : 0;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the integer value contained by this instance.
+	 *	\return the contained integer value.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type std::int16_t. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
+	 *	
 	 */
 	inline std::int16_t
 	to_int16() const
@@ -1278,9 +1451,13 @@ public:
 		return is_integer() ? static_cast< std::int16_t >( m_data.m_integer ) : 0;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the integer value contained by this instance.
+	 *	\return the contained integer value.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type std::uint32_t. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
+	 *	
 	 */
 	inline std::uint32_t
 	to_uint32() const
@@ -1288,9 +1465,13 @@ public:
 		return is_integer() ? static_cast< std::uint32_t >( m_data.m_integer ) : 0;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the integer value contained by this instance.
+	 *	\return the contained integer value.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type std::int32_t. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
+	 *	
 	 */
 	inline std::int32_t
 	to_int32() const
@@ -1298,9 +1479,13 @@ public:
 		return is_integer() ? static_cast< std::int32_t >( m_data.m_integer ) : 0;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the integer value contained by this instance.
+	 *	\return the contained integer value.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type std::int64_t. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
+	 *	
 	 */
 	inline std::int64_t
 	to_int64() const
@@ -1308,9 +1493,13 @@ public:
 		return is_integer() ? m_data.m_integer : 0;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the integer value contained by this instance.
+	 *	\return the contained integer value.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type std::uint64_t. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
+	 *	
 	 */
 	inline std::uint64_t
 	to_uint64() const
@@ -1328,9 +1517,12 @@ public:
 		return to_int64();
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the integer value contained by this instance as a time_point.
+	 *	\return the contained integer value, converted to a time_point.
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type time_t, and converted to a time_point. If the type contained by this instance is not integer,
+	 *	the returned value is zero.
 	 */
 	std::chrono::system_clock::time_point
 	to_time() const
@@ -1338,9 +1530,12 @@ public:
 		return std::chrono::system_clock::from_time_t( static_cast< std::time_t >( is_integer() ? m_data.m_integer : 0 ) );
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the contained integer value, as a value of type log::level_t
+	 *	\return the contained value, cast to type log::level_t
 	 *
-	 *
+	 *	If this instance contains an integer value, the value of the internal representation
+	 *	is cast to type log::level_t. If the type contained by this instance is not integer,
+	 *	the returned value is log::level_t::info.
 	 */
 	log::level_t
 	to_log_level() const
@@ -1348,19 +1543,22 @@ public:
 		return is_integer() ? static_cast< log::level_t >( m_data.m_integer ) : log::level_t::info;
 	}
 
-	/*!	\brief
+	/*!	\brief Returns the floating value contained by this instance.
+	 *	\return the contained floating value.
 	 *
-	 *
+	 *	If the type contained by this instance is not floating, the returned value is zero (0.0).
 	 */
 	double
-	to_real() const
+	to_floating() const
 	{
-		return is_real() ? m_data.m_real : 0;
+		return is_floating() ? m_data.m_floating : 0;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns a string_view of the string value contained by this instance.
+	 *	\return a view of the contained string value.
 	 *
-	 *
+	 *	If the type contained by this instance is not string, the returned value is a
+	 *	zero-length string_view.
 	 */
 	std::string_view const&
 	to_string() const
@@ -1368,9 +1566,12 @@ public:
 		return is_string() ? m_data.m_string.view() : m_empty_string_view;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns a vector of strings reflecting the contents of an array contained by this instance.
+	 *	\return A vector of strings.
 	 *
-	 *
+	 *	If this instance contains an array, the resulting vector contains values corresponding to 
+	 *	the result of to_string() being called on each member of the array, in order. The resulting
+	 *	 values for non-string array elements are zero-length strings.
 	 */
 	std::vector< std::string >
 	to_strings() const
@@ -1388,9 +1589,11 @@ public:
 		return ret;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns a buffer_view of the blob value contained by this instance.
+	 *	\return A view of the blob value.
 	 *
-	 *
+	 *	If this instance does not contain a blob value, the returned view will
+	 *	reflect a zero-length, null-valued blob.
 	 */
 	nodeoze::buffer_view const&
 	to_blob() const
@@ -1398,9 +1601,10 @@ public:
 		return is_blob() ? m_data.m_blob.view() : m_empty_buffer_view;
 	}
 	
-	/*!	\brief
+	/*!	\brief Returns the array value contained by this instance.
+	 *	\return A refernce to the contained array.
 	 *
-	 *
+	 *	TODO: we should not be returning a non-const reference to the m_empty_array, I think. Maybe.
 	 */
 	array_type&
 	to_array()
@@ -1420,7 +1624,7 @@ public:
 	
 	/*!	\brief
 	 *
-	 *
+	 *	TODO: we should not be returning a non-const reference to m_empty_object.
 	 */
 	object_type&
 	to_object()
@@ -2265,13 +2469,13 @@ private:
 		
 		data( double val )
 		:
-			m_real( val )
+			m_floating( val )
 		{
 		}
 		
 		bool			m_bool;
 		std::int64_t	m_integer;
-		double			m_real;
+		double			m_floating;
 		string_rep		m_string;
 		blob_rep		m_blob;
 		array_type		m_array;
@@ -2383,9 +2587,9 @@ private:
 			}
 			break;
 			
-			case type_t::real:
+			case type_t::floating:
 			{
-				m_data.m_real = rhs.m_data.m_real;
+				m_data.m_floating = rhs.m_data.m_floating;
 			}
 			break;
 		
@@ -2445,9 +2649,9 @@ private:
 			}
 			break;
 			
-			case type_t::real:
+			case type_t::floating:
 			{
-				m_data.m_real = rhs.m_data.m_real;
+				m_data.m_floating = rhs.m_data.m_floating;
 			}
 			break;
 			
@@ -2592,9 +2796,9 @@ operator<<(std::ostream &os, const any::type_t type )
 		}
 		break;
 	
-		case any::type_t::real:
+		case any::type_t::floating:
 		{
-			os << "real";
+			os << "floating";
 		}
 		break;
 	

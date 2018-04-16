@@ -78,12 +78,12 @@ public:
 	inline location&
 	operator=( const nodeoze::any &root )
 	{
-		m_latitude				= root[ "latitude" ].to_real();
-		m_longitude				= root[ "longitude" ].to_real();
-		m_altitude				= root[ "altitude" ].to_real();
-		m_size					= root[ "size" ].to_real();
-		m_horizontal_accuracy	= root[ "horizontal_accuracy" ].to_real();
-		m_vertical_accuracy		= root[ "vertical_accuracy" ].to_real();
+		m_latitude				= root[ "latitude" ].to_floating();
+		m_longitude				= root[ "longitude" ].to_floating();
+		m_altitude				= root[ "altitude" ].to_floating();
+		m_size					= root[ "size" ].to_floating();
+		m_horizontal_accuracy	= root[ "horizontal_accuracy" ].to_floating();
+		m_vertical_accuracy		= root[ "vertical_accuracy" ].to_floating();
 		
 		return *this;
 	}
@@ -228,12 +228,12 @@ public:
 	{
 		return
 			root.is_object()
-			&& root.is_member( "latitude" )				&& root[ "latitude" ].is_real()
-			&& root.is_member( "longitude" )			&& root[ "longitude" ].is_real()
-			&& root.is_member( "altitude" )				&& root[ "altitude" ].is_real()
-			&& root.is_member( "size" )					&& root[ "size" ].is_real()
-			&& root.is_member( "horizontal_accuracy" )	&& root[ "horizontal_accuracy" ].is_real()
-			&& root.is_member( "vertical_accuracy" )	&& root[ "vertical_accuracy" ].is_real();
+			&& root.is_member( "latitude" )				&& root[ "latitude" ].is_floating()
+			&& root.is_member( "longitude" )			&& root[ "longitude" ].is_floating()
+			&& root.is_member( "altitude" )				&& root[ "altitude" ].is_floating()
+			&& root.is_member( "size" )					&& root[ "size" ].is_floating()
+			&& root.is_member( "horizontal_accuracy" )	&& root[ "horizontal_accuracy" ].is_floating()
+			&& root.is_member( "vertical_accuracy" )	&& root[ "vertical_accuracy" ].is_floating();
 	}
 	
 private:

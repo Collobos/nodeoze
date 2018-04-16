@@ -64,9 +64,9 @@ deflate_to_stream( T &os, const any &root )
 		}
 		break;
 	
-		case any::type_t::real:
+		case any::type_t::floating:
 		{
-			os << root.to_real();
+			os << root.to_floating();
 		}
 		break;
 	

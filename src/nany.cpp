@@ -182,8 +182,8 @@ any::any(bstream::ibstream& is)
 	}
 	else if (typecode::is_floating(code))
 	{
-		m_type = type_t::real;
-		m_data.m_real = is.read_as<double>();
+		m_type = type_t::floating;
+		m_data.m_floating = is.read_as<double>();
 	}
 	else if (typecode::is_string(code))
 	{
@@ -283,9 +283,9 @@ bstream::obstream& any::put(bstream::obstream& os) const
 		}
 		break;
 
-		case type_t::real:
+		case type_t::floating:
 		{
-			os << m_data.m_real;
+			os << m_data.m_floating;
 		}
 		break;
 		
@@ -370,9 +370,9 @@ any::equals( const any &rhs ) const
 		}
 		break;
 
-		case type_t::real:
+		case type_t::floating:
 		{
-			ok = ( m_data.m_real == rhs.m_data.m_real );
+			ok = ( m_data.m_floating == rhs.m_data.m_floating );
 		}
 		break;
 		
@@ -744,9 +744,9 @@ any::create_patches( any &patches, const std::string &path, const any &lhs, cons
 			}
 			break;
 
-			case type_t::real:
+			case type_t::floating:
 			{
-				if ( lhs.to_real() != rhs.to_real() )
+				if ( lhs.to_floating() != rhs.to_floating() )
 				{
 					add_patch( patches, "replace", path, std::string(), rhs, exclusions );
 				}
@@ -883,7 +883,7 @@ any::sanitize()
 		}
 		break;
 		
-		case type_t::real:
+		case type_t::floating:
 		{
 		}
 		break;
@@ -959,8 +959,8 @@ any::operator<(const any &rhs) const
 					result = (*m_data.m_integer < *m_data.m_integer);
 					break;
 
-				case type_t::real:
-					result = (*m_data.m_real < *m_data.m_real);
+				case type_t::floating:
+					result = (*m_data.m_floating < *m_data.m_floating);
 					break;
 
 				case type_t::object:
@@ -1009,8 +1009,8 @@ any::operator>(const any &rhs) const
 					result = (*m_data.m_integer > *m_data.m_integer);
 					break;
 
-				case type_t::real:
-					result = (*m_data.m_real > *m_data.m_real);
+				case type_t::floating:
+					result = (*m_data.m_floating > *m_data.m_floating);
 					break;
 
 				case type_t::object:
@@ -1507,8 +1507,8 @@ TEST_CASE( "nodeoze/smoke/any")
 		REQUIRE( patched.size() == 2 );
 		REQUIRE( patched[ "a" ].is_bool() );
 		REQUIRE( patched[ "a" ].to_bool() == true );
-		REQUIRE( patched[ "b" ].is_real() );
-		REQUIRE( patched[ "b" ].to_real() == 7.5 );
+		REQUIRE( patched[ "b" ].is_floating() );
+		REQUIRE( patched[ "b" ].to_floating() == 7.5 );
 	}
 
 	SUBCASE( "patch empty list, empty docs")
