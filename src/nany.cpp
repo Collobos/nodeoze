@@ -45,6 +45,10 @@
 
 #undef min
 
+#ifndef NODEOZE_MAX_SSO_LENGTH
+#define NODEOZE_MAX_SSO_LENGTH 15
+#endif
+
 using namespace nodeoze;
 
 static struct force_link
@@ -71,13 +75,8 @@ nodeoze::operator<<( std::ostream &os, const any &root )
 	return json::deflate_to_stream( os, root );
 }
 
-
 any::array_type			any::m_empty_array;
 any::object_type		any::m_empty_object;
-std::string_view		any::m_empty_string_view;
-nodeoze::buffer_view	any::m_empty_buffer_view;
-
-
 
 any
 any::array()
@@ -85,13 +84,11 @@ any::array()
 	return any( type_t::array );
 }
 
-
 any
 any::object()
 {
 	return any( type_t::object );
 }
-
 
 const any&
 any::null()
@@ -100,7 +97,6 @@ any::null()
 	
 	return v;
 }
-
 
 any::any( std::initializer_list< any > init, bool type_deduction, type_t manual_type )
 {
@@ -172,7 +168,7 @@ any::any(bstream::ibstream& is)
 {
 	// TODO: figure out how to decide when to use buffer/view and when to consruct values
 	using namespace bstream;
-	constexpr std::size_t max_short_string_size = 15;
+	constexpr std::size_t max_short_string_size = NODEOZE_MAX_SSO_LENGTH;
 
 	auto code = is.peek();
 	if (typecode::is_int(code))
@@ -188,23 +184,16 @@ any::any(bstream::ibstream& is)
 	else if (typecode::is_string(code))
 	{
 		m_type = type_t::string;
-		auto bufp = is.buffer();
-		if (bufp)
+		auto save_pos = is.position();
+		auto string_size = is.read_string_header();
+		is.position( save_pos );
+		if (string_size <= max_short_string_size)
 		{
-			auto string_size = is.read_string_header();
-			if (string_size <= max_short_string_size)
-			{
-				new ( &m_data.m_string ) string_rep{ std::string{ reinterpret_cast<const char*>(is.get_bytes(string_size)), string_size } };
-			}
-			else
-			{	
-				new ( &m_data.m_string ) string_rep{ bufp, is.position(), string_size };
-				is.get_bytes(string_size);
-			}
+			new ( &m_data.m_string ) string_rep{ is.read_as<std::string>() };
 		}
 		else
 		{
-			new ( &m_data.m_string ) string_rep(is.read_as<std::string>());
+			new ( &m_data.m_string ) string_rep{ is.read_as<string_alias>() };
 		}
 	}
 	else if (typecode::is_bool(code))
@@ -215,18 +204,7 @@ any::any(bstream::ibstream& is)
 	else if (typecode::is_blob(code))
 	{
 		m_type = type_t::blob;
-		auto bufp = is.buffer();
-		if (bufp)
-		{
-			auto blob_size = is.read_blob_header();
-			new ( &m_data.m_blob ) blob_rep{ bufp, is.position(), blob_size };
-			is.get_bytes(blob_size);
-		}
-		else
-		{
-			auto blob_size = is.read_blob_header();
-			new ( &m_data.m_blob ) blob_rep{nodeoze::buffer{is.get_bytes(blob_size), blob_size}};
-		}
+		new ( &m_data.m_blob ) blob_type{ is.read_blob() };
 	}
 	else if (typecode::is_array(code))
 	{
@@ -297,8 +275,7 @@ bstream::obstream& any::put(bstream::obstream& os) const
 		
 		case type_t::blob:
 		{
-			os.write_blob_header(m_data.m_blob.size());
-			os.write_blob_body(m_data.m_blob.data(), m_data.m_blob.size());
+			os.write_blob( m_data.m_blob );
 		}
 		break;
 
@@ -384,7 +361,7 @@ any::equals( const any &rhs ) const
 		
 		case type_t::blob:
 		{
-			ok = ( m_data.m_blob.view() == rhs.m_data.m_blob.view() );
+			ok = ( m_data.m_blob == rhs.m_data.m_blob );
 		}
 		break;
 

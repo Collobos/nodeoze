@@ -33,8 +33,6 @@
 #ifndef _nodeoze_buffer_h
 #define _nodeoze_buffer_h
 
-#include <nodeoze/nlog.h>
-#include <nodeoze/nmarkers.h>
 #include <functional>
 #include <algorithm>
 #include <stdexcept>
@@ -42,299 +40,615 @@
 #include <cstring>
 #include <string>
 #include <iomanip>
+#include <iostream>
 
 namespace nodeoze {
-
-
-class buffer_view
-{
-public:
-	typedef std::uint8_t					elemtype;
-	typedef std::size_t 					sizetype;
-	typedef std::shared_ptr< buffer_view>	ptr;
-	typedef std::unique_ptr< buffer_view>	uptr;
-
-	static const sizetype npos = static_cast< sizetype >( -1 );
-
-	inline buffer_view()
-	: m_data{ nullptr }, m_size{ 0ul }
-	{}
-
-	inline buffer_view( buffer_view const& rhs )
-	: m_data{ rhs.m_data }, m_size{ rhs.m_size }
-	{}
-
-	inline buffer_view( const void* data, sizetype size )
-	: m_data{ static_cast<const elemtype*>(data) }, m_size{ size }
-	{}
-
-	inline buffer_view& operator=( buffer_view const& rhs )
-	{
-		m_data = rhs.m_data;
-		m_size = rhs.m_size;
-		return *this;
-	}
-
-	inline bool
-	operator==( buffer_view const& rhs ) const
-	{
-		return ( ( m_size == rhs.m_size ) && ( std::memcmp( m_data, rhs.m_data, m_size ) == 0 ) ) ? true : false;
-	}
-
-	inline bool
-	operator!=( buffer_view const& rhs ) const
-	{
-		return !( *this == rhs );
-	}
-
-	inline sizetype
-	size() const
-	{
-		return m_size;
-	}
-
-	inline const elemtype*
-	data() const
-	{
-		return m_data;
-	}
-
-	inline bool
-	empty() const
-	{
-		return ( m_size == 0 );
-	}
-
-	inline void
-	clear()
-	{
-		m_data = nullptr;
-		m_size = 0;
-	}
-
-	inline elemtype
-	operator[]( sizetype index ) const
-	{
-		return m_data[ index ];
-	}
-
-	inline elemtype
-	at( sizetype index ) const
-	{
-		if ( index >= m_size )
-		{
-			throw std::out_of_range ("index out of range");
-		}
-		else
-		{
-			return m_data[ index ];
-		}
-	}
-
-	inline sizetype
-	find( elemtype c, sizetype pos = 0 ) const
-	{
-		if ( m_size == 0 || pos >= m_size )
-		{
-			return npos;
-		}
-
-		const elemtype* p (static_cast<const elemtype*>( std::memchr( m_data + pos, c, m_size - pos ) ) );
-		return p != 0 ? static_cast<sizetype>( p - m_data ) : npos;
-	}
-	
-	inline sizetype
-	find( const char *s, sizetype len, sizetype pos = 0 ) const
-	{
-		sizetype ret = npos;
-		
-		if ( ( pos + len ) < m_size )
-		{
-			auto p		= std::search( m_data + pos, m_data + m_size - pos, s, s + len );
-			auto index	= static_cast< sizetype >( p - m_data );
-			
-			if ( index < m_size )
-			{
-				ret = index;
-			}
-		}
-	
-		return ret;
-	}
-
-	inline sizetype
-	rfind( elemtype c, sizetype pos = npos ) const
-	{
-		if ( m_size != 0 )
-		{
-			sizetype n = m_size;
-
-			if ( --n > pos )
-			{
-				n = pos;
-			}
-
-			for ( ++n; n-- != 0; )
-			{
-				if ( m_data[ n ] == c )
-				{
-					return n;
-  				}
-			}
-		}
-
-		return npos;
-	}
-	
-	inline std::string
-	to_string() const
-	{
-		return std::string( reinterpret_cast< const char* >( m_data ), m_size );
-	}
-	
-	void
-	dump( std::ostream& os ) const;
-
-private:
-	const elemtype* 	m_data;
-	sizetype			m_size;
-};
 
 class buffer
 {
 public:
 
-	typedef std::uint8_t				elemtype;
-	typedef std::size_t					sizetype;
-	typedef std::shared_ptr< buffer >	ptr;
-	typedef std::unique_ptr< buffer > 	uptr;
+	using elem_type = std::uint8_t;
+	using size_type =  std::size_t;
+	using checksum_type = std::uint32_t;
+
+	using dealloc_function =  std::function< void ( elem_type *data ) >;
+	using realloc_function =  std::function< elem_type* ( elem_type *data, size_type current_size, size_type new_size ) >;
+	static dealloc_function default_dealloc;
+	static realloc_function default_realloc;
+
+	enum class policy
+	{
+		copy_on_write,
+		no_copy_on_write,
+		exclusive
+	};
+
+private:
+
+	class _buffer_shared
+	{
+	public:
 	
-	static const sizetype npos = static_cast< sizetype >( -1 );
-	
-	typedef std::function< void ( elemtype *data ) > deleter_f;
-	
-	static deleter_f do_not_delete_data;
+		friend class buffer;
 
-	inline
-	explicit buffer( sizetype capacity = 0 )
-	:
-		m_size( 0 ),
-		m_capacity( capacity )
-	{
-		m_data = ( m_capacity > 0 ? new elemtype[ m_capacity ] : nullptr );
-	}
+		_buffer_shared()
+		:
+		m_data{ nullptr },
+		m_size{ 0 },
+		m_refs{ 1 },
+		m_dealloc{ default_dealloc },
+		m_realloc{ default_realloc },
+		m_policy{}
+		{}
 
-	inline
-	buffer( const char *data )
-	:
-		buffer( data, data ? strlen( data ) : 0 )
-	{
-	}
+		_buffer_shared( policy pol )
+		:
+		m_data{ nullptr },
+		m_size{ 0 },
+		m_refs{ 1 },
+		m_dealloc{ default_dealloc },
+		m_realloc{ default_realloc },
+		m_policy{ pol }
+		{}
 
-	inline
-	buffer( const std::string &data )
-	:
-		buffer( data.c_str(), data.size() )
-	{
-	}
+	private:
 
-	inline
-	buffer( const void *data, sizetype size )
-	:
-		m_size( size ),
-		m_capacity( size )
-	{
-		if ( m_size > 0 )
+		void initialize( const void* src )
 		{
-			m_data = new elemtype[ m_size ];
-			std::memcpy( m_data, data, m_size );
-		}
-		else
-		{
-			m_data = nullptr;
-		}
-	}
-
-	inline 
-	explicit buffer( buffer_view const& view )
-	: 
-		buffer ( view.data(), view.size() )
-	{}
-
-	inline
-	buffer( const void* data, sizetype size, sizetype capacity )
-	:
-		m_size( 0 ),
-		m_capacity( 0 )
-	{
-		if ( size <= capacity )
-		{
-			if ( capacity != 0 )
+			if ( ! m_data )
 			{
-				m_data = new elemtype[ capacity ];
-
-				if ( size != 0 )
+				if ( m_size > 0 )
 				{
-					std::memcpy( m_data, data, size );
+					m_data = m_realloc( nullptr, 0, m_size );
+					if ( ! m_data )
+					{
+						// this is only called from constructors; fling feces.
+						throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
+					}
+					if ( src )
+					{
+						::memcpy( m_data, src, m_size );
+					}
 				}
+			}
+		}
+
+
+		_buffer_shared( const void *src, size_type nbytes, policy pol = policy::copy_on_write )
+		:
+		m_data{ nullptr },
+		m_size{ nbytes },
+		m_refs{ 1 },
+		m_dealloc{ default_dealloc },
+		m_realloc{ default_realloc },
+		m_policy{ pol }
+		{
+			initialize( src );
+		}
+
+		_buffer_shared( void* data, size_type nbytes, policy pol, dealloc_function dealloc, realloc_function realloc )
+		:
+		m_data{ reinterpret_cast< elem_type* >( data ) },
+		m_size{ nbytes },
+		m_refs{ 1 },
+		m_dealloc{ dealloc },
+		m_realloc{ realloc },
+		m_policy{ pol }
+		{
+			initialize( nullptr );
+		}
+
+		_buffer_shared( _buffer_shared const& rhs, policy pol = policy::copy_on_write )
+		:
+		m_data{ nullptr },
+		m_size{ rhs.m_size },
+		m_refs{ 1 },
+		m_dealloc{ default_dealloc },
+		m_realloc{ default_realloc },
+		m_policy{ pol }
+		{
+			initialize( rhs.m_data );
+		}
+	
+		_buffer_shared( size_type nbytes, policy pol = policy::copy_on_write )
+		:
+		m_data{ nullptr },
+		m_size{ nbytes },
+		m_refs{ 1 },
+		m_dealloc{ default_dealloc },
+		m_realloc{ default_realloc },
+		m_policy{ pol }
+		{
+			initialize( nullptr );
+		}
+
+		~_buffer_shared()
+		{
+			assert( m_refs == 0 );
+			if ( m_data )
+			{
+				if ( m_dealloc )
+				{
+					m_dealloc( m_data );
+				}
+			}
+		}
+
+		inline elem_type*
+		detach()
+		{
+			elem_type* result = nullptr;
+
+			if ( m_refs == 1 )
+			{
+				result =  m_data;
+				m_data = nullptr;
+				m_size = 0;	
+				m_refs = 0;
+				m_dealloc = default_dealloc;
+				m_realloc = default_realloc;
+				m_policy = policy::copy_on_write;
+			}
+
+			return result;
+		}
+
+		inline elem_type*
+		detach( size_type& size, dealloc_function& dealloc )
+		{
+			// if detach() doesn't work, don't side-effect the arguments--be nice.
+			auto tmp_size = m_size;
+			auto tmp_dealloc = m_dealloc;
+			auto result = detach();
+			if ( result )
+			{
+				size = tmp_size;
+				dealloc = tmp_dealloc;
+			}
+			return result;
+		}
+
+		inline void
+		reallocate( size_type new_size )
+		{
+			if ( ! m_realloc )
+			{
+				throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
+			}
+
+			m_data = m_realloc( m_data, m_size,  new_size ) ;
+			if ( m_data )
+			{
+				m_size = new_size;
 			}
 			else
 			{
-				m_data = nullptr;
+				m_size = 0;
+				throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
+			}
+		}
+	
+		inline void
+		reallocate( size_type new_size, std::error_code& ec )
+		{
+			clear_error( ec );
+			if ( ! m_realloc )
+			{
+				ec =  make_error_code( std::errc::no_buffer_space );
+				goto exit;
 			}
 
-			m_size		= size;
-			m_capacity	= capacity;
+			m_data = m_realloc( m_data, m_size,  new_size );
+
+			if ( ! m_data )
+			{
+				m_size = 0;
+				ec = make_error_code( std::errc::no_buffer_space );
+				goto exit;
+			}
+			else
+			{
+				m_size = new_size;
+			}
+
+		exit:
+			return;
 		}
-	}
+	
+		inline elem_type*
+		data()
+		{
+			return m_data;
+		}
+	
+		inline const elem_type*
+		data() const
+		{
+			return m_data;
+		}
+	
+		inline size_type
+		size() const
+		{
+			return m_size;
+		}
+
+		inline void
+		size( size_type val )
+		{
+			m_size = val;
+		}
+	
+		inline std::size_t
+		refs() const
+		{
+			return m_refs;
+		}
+	
+		inline void
+		refs( std::size_t val )
+		{
+			m_refs = val;
+		}
+
+		inline std::size_t
+		increment_refs()
+		{
+			return ++m_refs;
+		}
+
+		inline std::size_t
+		decrement_refs()
+		{
+			return --m_refs;
+		}
+
+		inline bool
+		is_policy( policy value ) const
+		{
+			return m_policy == value;
+		}
+
+		inline void
+		set_policy( policy value )
+		{
+			m_policy = value;
+		}
+
+		inline bool
+		is_exclusive() const
+		{
+			return is_policy( policy::exclusive );
+		}
+
+		inline void
+		set_exclusive()
+		{
+			set_policy( policy::exclusive );
+		}
+
+		inline bool
+		is_copy_on_write() const
+		{
+			return is_policy( policy::copy_on_write );
+		}
+
+		inline void
+		set_copy_on_write()
+		{
+			set_policy( policy::copy_on_write );
+		}
+
+		inline bool
+		is_no_copy_on_write() const
+		{
+			return is_policy( policy::no_copy_on_write );
+		}
+
+		inline void
+		set_no_copy_on_write()
+		{
+			set_policy( policy::no_copy_on_write );
+		}
+
+
+		elem_type* 			m_data;
+		size_type			m_size;
+		std::size_t 		m_refs;
+		dealloc_function	m_dealloc;
+		realloc_function	m_realloc;
+		policy				m_policy;
+	};
+
+	struct do_not_allocate_shared {};
 
 	inline
-	buffer( void* data, sizetype size, sizetype capacity, deleter_f deleter )
-    :
-		m_data( static_cast< elemtype* >( data) ),
-		m_size( size ),
-		m_capacity( capacity ),
-		m_deleter( deleter )
+	buffer( do_not_allocate_shared )
+	:
+	m_shared{ nullptr },
+	m_data{ nullptr },
+	m_size{ 0  }
+	{}
+
+public:
+
+	friend class string_alias;
+
+	static const size_type npos = std::numeric_limits< size_type >::max();
+
+	void debug_state() const
 	{
+		std::cout << "buffer: " << std::endl;
+		print_state();
+		dump( std::cout );
+		std::cout.flush();
 	}
 	
-	buffer( const buffer &rhs ) = delete;
+	inline
+	buffer()
+	:
+		m_shared{ new _buffer_shared{} },
+		m_data{ m_shared->data() },
+		m_size{ m_shared->size() }
+	{}
 
 	inline
-	buffer( buffer &&rhs )
+	explicit buffer( size_type size, policy pol = policy::copy_on_write )
+	:
+		m_shared{ new _buffer_shared{ size, pol } },
+		m_data{ m_shared->data() },
+		m_size{ m_shared->size() }
+	{}
+
+	inline
+	buffer( const char *data, policy pol = policy::copy_on_write )
+	:
+		buffer{ data, data ? strlen( data ) : 0, pol }
 	{
-		move( rhs );
+	}
+
+	inline
+	buffer( const std::string &data, policy pol = policy::copy_on_write )
+	:
+		buffer{ data.c_str(), data.size(), pol }
+	{
+	}
+
+	inline
+	buffer( const void *data, size_type size, policy pol = policy::copy_on_write )
+	:
+		m_shared{ new _buffer_shared{ data, size, pol } },
+		m_data{ m_shared->data() },
+		m_size{ m_shared->size() }
+	{}
+
+	inline
+	buffer( void *data, size_type size, policy pol, dealloc_function dealloc, realloc_function realloc )
+	:
+	m_shared{ new _buffer_shared{ data, size, pol, dealloc, realloc } },
+	m_data{ m_shared->data() },
+	m_size{ m_shared->size() }
+	{}
+
+	inline
+	buffer( const buffer &rhs )
+	:
+	m_shared{ share( rhs ) },
+	m_data{ m_shared->data() },
+	m_size{ m_shared->size() }
+	{}
+
+	/*
+	 *	The move ctor avoids ref-count arithmetic and 
+	 *	potentially hastens freeing the memory because
+	 *	one fewer reference is extant.
+	 */
+	inline
+	buffer( buffer&& rhs )
+	:
+	m_shared{ nullptr },
+	m_data{ nullptr },
+	m_size{ 0 }
+	{
+		swap( rhs );
 	}
 
 	inline ~buffer()
 	{
-		free();
+		unshare();
 	}
 
-	inline
-	operator buffer_view() const noexcept
+	inline bool
+	is_writable()
 	{
-		return buffer_view(m_data, m_size);
+		assert( m_shared != nullptr );
+		return is_unique() || is_no_copy_on_write();
 	}
-
-	buffer&
-	operator=( const buffer &rhs ) = delete;
 
 	inline buffer&
-	operator=( buffer &&rhs )
+	make_writable()
+	{
+		assert( m_shared != nullptr );
+		if ( ! is_writable() )
+		{
+			clone();
+		}
+		return *this;
+	}
+			
+ 	inline buffer&
+	clone()
+	{
+		assert( m_shared != nullptr );
+		unshare( new _buffer_shared{ m_data, m_size } );
+		return *this;
+	}
+
+	inline bool
+	is_unique() const
+	{
+		assert( m_shared != nullptr );
+		return  m_shared->refs() == 1;
+	}
+
+	inline buffer&
+	make_unique()
+	{
+		assert( m_shared != nullptr );
+		if ( ! is_unique() )
+		{
+			clone();
+		}
+		return *this;
+	}
+
+	inline bool
+	is_exclusive() const
+	{
+		assert( m_shared != nullptr );
+		return m_shared->is_exclusive();
+	}
+
+	inline buffer&
+	make_exclusive()
+	{
+		assert( m_shared != nullptr );
+		if ( ! is_exclusive() )
+		{
+			make_unique();
+			m_shared->set_exclusive();
+		}
+		return *this;
+	}
+
+	inline bool
+	is_copy_on_write() const
+	{
+		assert( m_shared != nullptr );
+		return m_shared->is_copy_on_write();
+	}
+	
+	inline buffer&
+	make_copy_on_write()
+	{
+		assert( m_shared != nullptr );
+		if ( ! is_copy_on_write() )
+		{
+			make_unique();
+			m_shared->set_copy_on_write();
+		}
+		return *this;
+	}
+
+	inline bool
+	is_no_copy_on_write() const
+	{
+		assert( m_shared != nullptr );
+		return m_shared->is_no_copy_on_write();
+	}
+	
+	inline buffer&
+	make_no_copy_on_write()
+	{
+		assert( m_shared != nullptr );
+		if ( m_shared->is_exclusive() )
+		{
+			clone();
+			m_shared->set_no_copy_on_write();
+		}
+		else
+		{
+			make_unique();
+			m_shared->set_no_copy_on_write();
+		}
+		return *this;
+	}
+
+	inline buffer&
+	reset_bounds()
+	{
+		assert( m_shared != nullptr );
+		if ( is_writable() )
+		{
+			m_data = m_shared->data();
+			m_size = m_shared->size();
+		}
+		return *this;
+	}
+				
+
+	inline buffer
+	slice( size_type offset, size_type len ) const
+	{
+		assert( invariants() );
+
+		buffer result( do_not_allocate_shared{} );
+
+		size_type slice_size = 0;
+		if ( offset < m_size )
+		{
+			slice_size = std::min( len, m_size - offset );
+			if ( slice_size > 0 )
+			{
+				if ( m_shared->is_exclusive() )
+				{
+					_buffer_shared *tmp = new _buffer_shared{ m_data + offset, slice_size };
+					result.m_shared = tmp;
+					result.m_data = tmp->data();
+					result.m_size = tmp->size();
+				}
+				else
+				{
+					result.m_shared = share(*this);
+					result.m_data = m_data + offset;
+					result.m_size = slice_size;
+				}
+			}
+		}
+
+		assert( invariants() );
+		assert( result.invariants() );
+		return result;
+	}
+
+
+	buffer&
+	operator=( const buffer &rhs )
 	{
 		if ( this != &rhs )
 		{
-			move( rhs );
+			unshare( share( rhs ) );
 		}
-
+		assert( invariants() );
 		return *this;
 	}
-	
+
+	buffer&
+	operator=( buffer&& rhs )
+	{
+		if ( this != &rhs )
+		{
+			unshare();
+			swap( rhs );
+		}
+		assert( invariants() );
+		return *this;
+	}
+
+
 	inline bool
 	operator==( const buffer &rhs ) const
 	{
-		return ( ( m_size == rhs.m_size ) && ( std::memcmp( m_data, rhs.m_data, m_size ) == 0 ) ) ? true : false;
+		return 
+		( 
+			( this == &rhs ) || 
+			( m_size == 0 && rhs.m_size == 0 ) || 
+			( 
+				( m_size == rhs.m_size ) && 
+				( std::memcmp( m_data, rhs.m_data, m_size ) == 0  ) 
+			) 
+		) ? true : false;
 	}
 	
 	inline bool
@@ -346,212 +660,304 @@ public:
 	inline void
 	swap( buffer &rhs )
 	{
-		elemtype	*data		= rhs.m_data;
-		sizetype	size		= rhs.m_size;
-		sizetype	capacity	= rhs.m_capacity;
-		deleter_f	deleter		= rhs.m_deleter;
-
-		rhs.m_data		= m_data;
-		rhs.m_size		= m_size;
-		rhs.m_capacity	= m_capacity;
-		rhs.m_deleter	= m_deleter;
-
-		m_data			= data;
-		m_size			= size;
-		m_capacity		= capacity;
-		m_deleter		= deleter;
+		_buffer_shared *tmp_shared = m_shared;
+		elem_type *tmp_data = m_data;
+		size_type tmp_size = m_size;
+		m_shared = rhs.m_shared;
+		m_data = rhs.m_data;
+		m_size = rhs.m_size;
+		rhs.m_shared = tmp_shared;
+		rhs.m_data = tmp_data;
+		rhs.m_size = tmp_size;
 	}
 
-	inline elemtype*
-	detach()
-	{
-  		auto data = m_data;
-
-		m_data		= 0;
-		m_size		= 0;
-		m_capacity	= 0;
-
-		return data;
-	}
-
-	inline void
+	inline buffer&
 	assign( const char *data )
 	{
 		assign( data, data ? strlen( data ) : 0 );
+		return *this;
 	}
 
-	inline void
+	inline buffer&
+	assign( const char *data, std::error_code& ec )
+	{
+		assign( data, data ? strlen( data ) : 0, ec );
+		return *this;
+	}
+
+	inline buffer&
 	assign( const std::string &data )
 	{
 		assign( data.c_str(), data.size() );
+		return *this;
 	}
 
-	inline void
-	assign( const void *data, sizetype size )
+	inline buffer&
+	assign( const std::string &data, std::error_code& ec )
 	{
-		if ( size > m_capacity )
+		assign( data.c_str(), data.size(), ec );
+		return *this;
+	}
+
+	inline buffer&
+	assign( const void *data, size_type length )
+	{
+		std::error_code ec;
+		assign( data, length, ec );
+		if ( ec ) throw std::system_error{ ec };
+		return *this;
+	}
+
+	inline buffer&
+	assign( const void *data, size_type length, std::error_code& ec )
+	{
+		clear_error( ec );
+
+		if ( data && length > 0 )
 		{
-			free();
-
-    		m_data		= new elemtype[ size ];
-    		m_capacity	= size;
-  		}
-
-		if ( size != 0 )
-		{
-			std::memcpy( m_data, data, size );
-		}
-
-		m_size = size;
-	}
-
-	inline void
-	assign( void* data, sizetype size, sizetype capacity, deleter_f deleter )
-	{
-		free();
-
-		m_data		= static_cast< elemtype* >( data );
-		m_size		= size;
-		m_capacity	= capacity;
-		m_deleter	= deleter;
-	}
-	
-	inline void
-	push_back( elemtype val )
-	{
-		append( &val, 1 );
-	}
-	
-	inline void
-	assign( const void* data, sizetype pos, sizetype size )
-	{
-		if ( size > 0 )
-		{
-			sizetype new_size = pos + size;
-                                                              
-			if ( m_capacity < new_size )
+			if ( is_writable() ) 
 			{
-				capacity( new_size );
-			}
-                                                              
-			std::memcpy( m_data + pos, data, size );
-                                                              
-			if ( m_size < new_size )
-			{
-				m_size = new_size;
-			}
-		}
-	}
-
-	inline void
-	append( const buffer& rhs )
-	{
-		append( rhs.data(), rhs.size() );
-	}
-
-	inline void accommodate( sizetype size )
-	{
-		if ( size > 0 )
-		{
-			sizetype ns = m_size + size;
-			if ( m_capacity < ns )
-			{
-				auto next_capacity = (sizetype)(m_capacity * 1.5);
-				if ( next_capacity >= ns )
+				if ( length <= m_shared->size() )
 				{
-					capacity(next_capacity);
+					std::memcpy( m_shared->data(), data, length );
+					m_data = m_shared->data();
+					m_size = length;
 				}
 				else
 				{
-					capacity( ns );
+					m_size = 0; // don't preserve any buffer contents
+					m_shared->reallocate( length, ec );
+					if ( ec ) goto exit;
+					std::memcpy( m_data, data, m_size );
 				}
 			}
+			else
+			{
+				unshare( new _buffer_shared{data, length} );
+			}
 		}
-	}
-	
-	inline void
-	append( const void* data, sizetype size )
-	{
-		accommodate( size );
-		std::memcpy( m_data + m_size, data, size );
-		m_size += size;
-	}
-	
-	
-	// added to make this buffer directly usable by msgpack::packer
-    void write(const char* buf, size_t len)
-	{
-		append( buf, len );
-	}
-	
-	
-	inline buffer
-	copy() const
-	{
-		return buffer( m_data, m_size, m_capacity );
+		else
+		{
+			m_size = 0;
+		}
+
+	exit:
+		return *this;
 	}
 
-	inline void
-	fill( elemtype value = 0 )
+	inline buffer&
+	assign( const void* data, size_type pos, size_type length )
 	{
-		if ( m_size > 0 )
+		if ( pos > m_size )
 		{
+			pos = m_size;
+		}
+		if ( pos < m_size )
+		{
+			m_size = pos;
+		}
+
+		append( data, length );
+		assert( invariants() );
+		return *this;
+	}
+
+	inline buffer&
+	assign( buffer const& buf, size_type pos )
+	{
+		assign( buf.m_data, pos, buf.m_size );
+		return *this;
+	}
+
+	inline buffer&
+	clear()
+	{
+		unshare( new _buffer_shared{} );
+		return *this;
+	}
+
+	inline buffer&
+	append( const buffer& rhs )
+	{
+		append( rhs.m_data, rhs.m_size );
+		return *this;
+	}
+
+	inline buffer&
+	append( const buffer& rhs, std::error_code& ec )
+	{
+		append( rhs.m_data, rhs.m_size, ec );
+		return *this;
+	}
+
+	inline buffer&
+	append( const void* src, size_type nbytes )
+	{
+		std::error_code ec;
+		append( src, nbytes, ec );
+		if ( ec ) throw std::system_error{ ec };
+		return *this;
+	}
+
+	inline buffer&
+	append( const void* src, size_type nbytes, std::error_code& ec )
+	{
+		clear_error( ec );
+
+		assert(invariants());
+
+		if ( src != nullptr && nbytes > 0 )
+		{
+			if ( is_writable() )
+			{
+				// if necessary, normalize the buffer
+				if ( m_data > m_shared->data() )
+				{
+					std::memmove( m_shared->data(), m_data, m_size );
+					m_data = m_shared->data();
+				}
+				auto required_size = m_size + nbytes;
+				if ( required_size > m_shared->size() )
+				{
+					auto append_offset = m_size;
+					m_shared->reallocate( required_size, ec );
+					if ( ec ) goto exit;
+					std::memmove( m_shared->data() + append_offset, src, nbytes );
+				}
+				else // enough space to append exists in allocated block
+				{
+					std::memmove( m_shared->data() + m_size, src, nbytes );
+					m_size += nbytes;
+				}
+			}
+			else
+			{
+				_buffer_shared *tmp = new _buffer_shared{ m_size + nbytes };
+				std::memmove( tmp->data(), m_data, m_size );
+				std::memmove( tmp->data() + m_size, src, nbytes );
+				unshare( tmp );
+			}
+		}
+		assert(invariants());
+
+	exit:
+		return *this;
+	}
+
+	inline buffer&
+	fill( elem_type value = 0 )
+	{
+		std::error_code ec;
+		fill( value, ec );
+		if ( ec ) throw std::system_error{ ec };
+		return *this;
+	}
+
+	inline buffer&
+	fill( elem_type value, std::error_code& ec )
+	{
+		clear_error( ec );
+
+		assert(invariants());
+
+		if ( m_size > 0 ) // implies pointers are non-null
+		{
+			if ( ! is_writable() )
+			{
+				// don't make_unique() -- it copies the buffer, which is just going to be overwritten by the fill
+				unshare( new _buffer_shared{ m_size } );
+			}
+			if ( m_shared->data() == nullptr )
+			{
+				auto alloc_size = m_size;
+				m_size = 0;
+				m_shared->reallocate( alloc_size, ec );
+				if ( ec ) goto exit;
+			}
 			std::memset( m_data, value, m_size );
 		}
-	}
-	
-	inline sizetype
-	space() const
-	{
-		return ( m_capacity - m_size );
+
+	exit:
+		return *this;
 	}
 
-	inline sizetype
+	inline size_type
 	size() const
 	{
 		return m_size;
 	}
 
-	inline bool
-	size( sizetype size )
-	{
-		bool ok = false;
-
-		if ( m_capacity < size )
-		{
-			ok = capacity( size );
-		}
-
-		m_size = size;
-		return ok;
-	}
-
-	inline sizetype
+	inline size_type
 	capacity() const
 	{
-		return m_capacity;
+		return m_size;
 	}
 
-	inline bool
-	capacity( sizetype cap )
+	inline buffer&
+	size( size_type nbytes )
 	{
-		if ( m_capacity < cap )
+		std::error_code ec;
+		size( nbytes, ec );
+		if ( ec ) throw std::system_error{ ec };
+		return *this;
+	}
+
+	inline buffer&
+	size( size_type nbytes, std::error_code& ec )
+	{
+		clear_error( ec );
+
+		assert(invariants());
+
+		if ( nbytes <= m_size )
 		{
-			elemtype *data = new elemtype[ cap ];
-			std::memset( data, 0, cap );
-
-			if ( m_size > 0 )
-			{
-				std::memcpy( data, m_data, m_size );
-			}
-
-			free();
-
-			m_data		= data;
-			m_capacity	= cap;
+			m_size = nbytes;
 		}
-	
-		return true;
+		else
+		{
+			if ( is_writable() )
+			{
+				// normalize if necessary
+				if ( m_data > m_shared->data() )
+				{
+					std::memmove( m_shared->data(), m_data, std::min( nbytes, m_size ) );
+					m_data = m_shared->data();
+				}
+				if ( nbytes > m_shared->size() )
+				{
+					m_shared->reallocate( nbytes, ec );
+					if ( ec ) goto exit;
+					m_data = m_shared->data();
+				}
+				m_size = nbytes;
+			}
+			else
+			{
+				size_type move_size = std::min( m_size, nbytes );
+				_buffer_shared *tmp = new _buffer_shared{ nbytes };
+				std::memcpy( tmp->data(), m_data, move_size );
+				unshare( tmp );
+			}
+		}
+		assert( invariants() );
+
+	exit:
+		return *this;
+	}
+
+	inline buffer&
+	capacity( size_type nbytes )
+	{
+		size( nbytes );
+		return *this;
+	}
+
+	inline buffer&
+	capacity( size_type nbytes, std::error_code& ec )
+	{
+		clear_error( ec );
+		size( nbytes, ec );
+		return *this;
 	}
 
 	inline bool
@@ -560,100 +966,268 @@ public:
 		return ( m_size == 0 );
 	}
 
-	inline void
-	clear()
-	{
-		m_size = 0;
-	}
 
-	inline elemtype*
-	data()
+	inline elem_type*
+	mutable_data()
 	{
+		if ( ! is_writable() )
+		{
+			make_unique();
+		}
 		return m_data;
 	}
 
-	inline const elemtype*
-	data() const
+	inline elem_type*
+	exclusive_data()
 	{
+		make_exclusive();
 		return m_data;
-	}
-
-	inline elemtype&
-	operator[]( sizetype index )
-	{
-		return m_data[ index ];
-	}
-
-	inline elemtype
-	operator[]( sizetype index ) const
-	{
-		return m_data[ index ];
-	}
-
-	inline elemtype&
-	at( sizetype i )
-	{
-		if (i >= m_size)
-		{
-			throw std::out_of_range ("index out of range");
-		}
-		else
-		{
-			return m_data[i];
-		}
-	}
-
-	inline elemtype
-	at( sizetype index ) const
-	{
-		if ( index >= m_size )
-		{
-			throw std::out_of_range ("index out of range");
-		}
-		else
-		{
-			return m_data[ index ];
-		}
 	}
 	
+	inline const elem_type*
+	const_data() const
+	{
+		return m_data;
+	}
+
+	inline elem_type*
+	detach()
+	{
+		elem_type* result = nullptr;
+		result = m_shared->detach(); // null if not unique
+		if ( result ) 
+		{
+			m_data = m_shared->data();
+			m_size = m_shared->size();
+		}
+		return result;
+	}
+
+	inline elem_type*
+	detach( size_type& size, dealloc_function& dealloc )
+	{
+		elem_type* result = nullptr;
+		result = m_shared->detach( size, dealloc );
+		if ( result )
+		{
+			m_data = m_shared->data();
+			m_size = m_shared->size();
+		}
+		return result;
+	}
+
+	inline elem_type
+	operator[]( size_type index ) const
+	{
+		return at( index );
+	}
+
+	inline elem_type
+	at( size_type index ) const
+	{
+		if ( m_data == nullptr )
+		{
+			throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
+		}
+
+		if ( index >= m_size )
+		{
+			throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+		}
+
+		return *(m_data + index);
+	}
+	
+	inline elem_type
+	at( size_type index, std::error_code& ec )
+	{
+		elem_type result = 0;
+
+		clear_error( ec );
+		if ( m_data == nullptr )
+		{
+			ec = make_error_code( std::errc::no_buffer_space );
+			goto exit;
+		}
+
+		if ( index >= m_size )
+		{
+			ec = make_error_code( std::errc::invalid_argument );
+			goto exit;
+		}
+
+		result = *(m_data + index);
+
+	exit:
+		return result;
+	}
+
+
+	inline buffer&
+	reckless_put( size_type pos, elem_type value )
+	{
+		*( m_data + pos  ) = value;
+		return *this;
+	}
+
+	inline buffer&
+	reckless_put( size_type pos, const void *data, size_type length )
+	{
+		std::memmove( m_data + pos, data, length );
+		return *this;
+	}
+
+	inline buffer&
+	put( size_type index, elem_type value )
+	{
+		if ( m_data == nullptr )
+		{
+			throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
+		}
+
+		if ( index >= m_size )
+		{
+			throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+		}
+
+		if ( ! is_writable() )
+		{
+			make_unique();
+		}
+
+		*( m_data + index ) = value;
+		return *this;
+	}
+
+	inline buffer&
+	put( size_type index, elem_type value, std::error_code& ec )
+	{
+		clear_error( ec );
+
+		if ( m_data == nullptr )
+		{
+			ec = make_error_code( std::errc::no_buffer_space );
+			goto exit;
+		}
+
+		if ( index >= m_size )
+		{
+			ec = make_error_code( std::errc::invalid_argument );
+			goto exit;
+		}
+
+		if ( ! is_writable() )
+		{
+			make_unique();
+		}
+
+		*( m_data + index ) = value;
+
+	exit:
+		return *this;
+	}
+
+	inline buffer&
+	put( size_type index, const void* data, size_type length )
+	{
+		if ( m_data == nullptr )
+		{
+			throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
+		}
+
+		if ( index + length >= m_size )
+		{
+			throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+		}
+
+		if ( ! is_writable() )
+		{
+			make_unique();
+		}
+
+		::memcpy( m_data + index, data, length );
+		return *this;
+	}
+
+	inline buffer&
+	put( size_type index, const void* data, size_type length, std::error_code& ec )
+	{
+		clear_error( ec );
+
+		if ( m_data == nullptr )
+		{
+			ec = make_error_code( std::errc::no_buffer_space );
+			goto exit;
+		}
+
+		if ( index + length >= m_size )
+		{
+			ec = make_error_code( std::errc::invalid_argument );
+			goto exit;
+		}
+
+		if ( ! is_writable() )
+		{
+			make_unique();
+		}
+
+		::memcpy( m_data + index, data, length );
+	
+	exit:
+		return *this;
+	}
+
+	// TODO: fix/make alternative signature with error_code& argument
+	// TODO: confused by name; not sure this is doing whatever it is supposed to be doing
 	inline std::error_code
-	rotate( sizetype to, sizetype from, sizetype end )
+	rotate( size_type to, size_type from, size_type end ) 
 	{
 		auto err = std::error_code();
 
-		if ( ( to < m_size ) && ( from < m_size ) && ( end <= m_size ) )
+		if ( m_size == 0 )
 		{
-			std::memmove( m_data + to, m_data + from, end - from );
+			err = make_error_code( std::errc::no_buffer_space );
 		}
 		else
 		{
-			err = make_error_code( std::errc::invalid_argument );
+			if ( ! ( ( to < m_size ) && ( from < m_size ) && ( end <= m_size ) ) )
+			{
+				err = make_error_code( std::errc::invalid_argument );
+			}
+			else
+			{
+				if ( ! is_writable() )
+				{
+					make_unique();
+				}
+				std::memmove( m_data + to, m_data + from, end - from );
+			}
 		}
 
 		return err;
 	}
 
-	inline sizetype
-	find( elemtype c, sizetype pos = 0 ) const
+	inline size_type
+	find( elem_type c, size_type pos = 0 ) const
 	{
 		if ( m_size == 0 || pos >= m_size )
 		{
 			return npos;
 		}
 
-		elemtype* p (static_cast<elemtype*>( std::memchr( m_data + pos, c, m_size - pos ) ) );
-		return p != 0 ? static_cast<sizetype>( p - m_data ) : npos;
+		const elem_type* p (static_cast<const elem_type*>( std::memchr( m_data + pos, c, m_size - pos ) ) );
+		return p != 0 ? static_cast<size_type>( p - m_data ) : npos;
 	}
 	
-	inline sizetype
-	find( const char *s, sizetype len, sizetype pos = 0 ) const
+	inline size_type
+	find( const char *s, size_type len, size_type pos = 0 ) const
 	{
-		sizetype ret = npos;
+		size_type ret = npos;
 		
 		if ( ( pos + len ) < m_size )
 		{
 			auto p		= std::search( m_data + pos, m_data + m_size - pos, s, s + len );
-			auto index	= static_cast< sizetype >( p - m_data );
+			auto index	= static_cast< size_type >( p - m_data );
 			
 			if ( index < m_size )
 			{
@@ -664,12 +1238,12 @@ public:
 		return ret;
 	}
 
-	inline sizetype
-	rfind( elemtype c, sizetype pos = npos ) const
+	inline size_type
+	rfind( elem_type c, size_type pos = npos ) const
 	{
 		if ( m_size != 0 )
 		{
-			sizetype n = m_size;
+			size_type n = m_size;
 
 			if ( --n > pos )
 			{
@@ -688,10 +1262,30 @@ public:
 		return npos;
 	}
 	
+	checksum_type
+	checksum() const
+	{
+		return checksum( 0, size() );
+	}
+
+	checksum_type
+	checksum( size_type length ) const
+	{
+		return checksum( 0, length );
+	}
+
+	checksum_type
+	checksum( size_type offset, size_type length ) const;
+
 	inline std::string
 	to_string() const
 	{
-		return std::string( reinterpret_cast< const char* >( m_data ), m_size );
+		std::string result;
+		if ( m_size > 0 )
+		{
+			result =  std::string( reinterpret_cast< const char* >( m_data ), m_size );
+		}
+		return result;
 	}
 	
 	void
@@ -699,43 +1293,213 @@ public:
 
 private:
 
-	inline void
-	move( buffer &rhs )
+	static inline void
+	clear_error( std::error_code& ec )
 	{
-		free();
-	
-		m_capacity		= rhs.m_capacity;
-		rhs.m_capacity	= 0;
-		m_size			= rhs.m_size;
-		rhs.m_size		= 0;
-		m_data			= rhs.m_data;
-		rhs.m_data		= nullptr;
-		m_deleter		= rhs.m_deleter;
+		static const std::error_code no_error;
+		ec = no_error;
 	}
-	
-	inline void
-	free()
+
+	void
+	print_state() const;
+
+	inline bool
+	invariants() const
 	{
-		if ( m_data )
+		bool result = true;
+		if ( m_shared == nullptr )
 		{
-			if ( m_deleter )
+			result = false;
+		}
+		else // m_shared != nullptr
+		{
+
+			if ( m_shared->data() != nullptr )
 			{
-				m_deleter( m_data );
+				if ( m_data == nullptr ||  m_data < m_shared->data() || ( ( m_data + m_size ) > ( m_shared->data() + m_shared->size() ) ) )
+					result = false;
 			}
 			else
 			{
-				delete [] m_data;
+				if ( m_data != nullptr  || m_size > 0 )
+					result = false;
 			}
 
-			m_data		= nullptr;
-			m_deleter	= nullptr;
+			if ( m_shared->is_exclusive() && m_shared->refs() > 1 ) result = false;
+
+		}
+
+		if ( ! result )
+		{
+			print_state();
+		}
+
+		return result;
+	}
+
+	inline _buffer_shared*
+	share( buffer const& rhs ) const
+	{
+		_buffer_shared* result = nullptr;
+
+		if ( rhs.is_exclusive() )
+		{
+			result = new _buffer_shared{ *rhs.m_shared };
+		}
+		else
+		{
+			result = rhs.m_shared;
+			result->increment_refs();
+		}
+		return result;
+	}
+
+	inline void
+	unshare( _buffer_shared* replacement )
+	{
+		assert( replacement != nullptr );
+		assert( m_shared != nullptr );
+		assert( m_shared->refs() > 0 );
+
+		if ( m_shared->decrement_refs() == 0 )
+		{
+			delete m_shared;
+		}
+		m_shared = replacement;
+		m_data = m_shared->data();
+		m_size = m_shared->size();
+	}
+
+	inline void
+	unshare()
+	{
+		if ( m_shared )
+		{
+			assert( m_shared->refs() > 0 );
+
+			if ( m_shared->decrement_refs() == 0 )
+			{
+				delete m_shared;
+			}
+			m_shared = nullptr;
+			m_data = nullptr;
+			m_size = 0;
 		}
 	}
 
-	elemtype	*m_data		= nullptr;
-	sizetype	m_size		= 0;
-	sizetype	m_capacity	= 0;
-	deleter_f	m_deleter;
+	_buffer_shared*				m_shared;
+	elem_type*					m_data;
+	size_type					m_size;
+};
+
+class string_alias
+{
+public:
+
+	string_alias()
+	:
+	m_buf{}
+	{}
+
+	string_alias( buffer const& buf )
+	: 
+	m_buf{ buf }
+	{}
+		
+	string_alias( buffer const& buf, std::size_t offset, std::size_t size )
+	:
+	m_buf{ buf.slice( offset, size ) }
+	{}
+
+	string_alias( string_alias const& rhs )
+	:
+	m_buf{ rhs.m_buf }
+	{}
+
+	string_alias( string_alias&& rhs )
+	:
+	m_buf{ std::move( rhs.m_buf ) }
+	{}
+
+	string_alias&
+	operator=( string_alias const& rhs )
+	{
+		if ( this != &rhs )
+		{
+			m_buf = rhs.m_buf;
+		}
+		return *this;
+	}	
+
+	string_alias&
+	operator=( string_alias&& rhs )
+	{
+		if ( this != & rhs )
+		{
+			m_buf = std::move( rhs.m_buf );
+		}
+		return *this;
+	}
+
+
+	inline void
+	clear()
+	{
+		m_buf.clear();
+	}
+	
+	inline
+	operator std::string_view () const noexcept
+	{
+		return std::string_view{ reinterpret_cast< const char* >( m_buf.m_data ), m_buf.m_size };
+	}
+
+	inline std::string_view
+	view() const noexcept
+	{
+		return std::string_view{ reinterpret_cast< const char* >( m_buf.m_data ), m_buf.m_size };
+	}
+
+private:
+
+	buffer	m_buf;
+};
+
+// This is for interim support of msgpack::packer
+
+class bufwriter
+{
+public:
+	bufwriter( std::size_t init_buf_size = 2048 )
+	:
+	m_buf{ init_buf_size },
+	m_pos{ 0 }
+	{}
+
+
+	void write(const char* src, size_t len)
+	{
+		std::size_t required_size = m_pos + len;
+		if ( required_size > m_buf.size() )
+		{
+			std::size_t new_size = ( 3 * required_size ) / 2;
+			m_buf.size( new_size );
+		}
+
+		m_buf.reckless_put( m_pos, src, len );
+		m_pos += len;
+	}
+
+	buffer
+	move_buffer()
+	{
+		return buffer{ std::move( m_buf ) };
+	}
+
+private:
+	buffer m_buf;
+	std::size_t m_pos;
+
 };
 
 }

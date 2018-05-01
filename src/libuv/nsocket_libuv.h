@@ -243,7 +243,7 @@ private:
 			m_ret( ret )
 		{
 			handle			= reinterpret_cast< uv_stream_t* >( owner );
-			m_uv_buf.base	= reinterpret_cast< char* >( m_buf.data() );
+			m_uv_buf.base	= reinterpret_cast< char* >( m_buf.mutable_data() );
 #if defined( WIN32 )
 			m_uv_buf.len	= static_cast< ULONG >( m_buf.size() );
 #else
@@ -324,7 +324,7 @@ private:
 		
 		self->m_recv_buf.capacity( size_hint );
 		
-		buf->base	= reinterpret_cast< char* >( self->m_recv_buf.data() );
+		buf->base	= reinterpret_cast< char* >( self->m_recv_buf.mutable_data() );
 	#if defined( WIN32 )
 		buf->len	= static_cast< ULONG >( size_hint );
 	#else
@@ -646,7 +646,7 @@ protected:
 		{
 			handle			= owner;
 			
-			m_uv_buf.base	= reinterpret_cast< char* >( m_buf.data() );
+			m_uv_buf.base	= reinterpret_cast< char* >( m_buf.mutable_data() );
 #if defined( WIN32 )
 			m_uv_buf.len	= static_cast< ULONG >( m_buf.size() );
 #else
@@ -692,7 +692,7 @@ protected:
 		
 		self->m_recv_buf.capacity( size_hint );
 		
-		buf->base	= reinterpret_cast< char* >( self->m_recv_buf.data() );
+		buf->base	= reinterpret_cast< char* >( self->m_recv_buf.mutable_data() );
 #if defined( WIN32 )
 		buf->len	= static_cast< ULONG >( size_hint );
 #else
@@ -721,7 +721,8 @@ protected:
 		
 		if ( nread > 0 )
 		{
-			self->owner()->on_recv( std::error_code(), from, buffer( buf->base, nread, nread, buffer::do_not_delete_data ) );
+//			self->owner()->on_recv( std::error_code(), from, buffer( buf->base, nread, nread, buffer::do_not_delete_data ) );
+			self->owner()->on_recv( std::error_code(), from, buffer( buf->base, nread, buffer::policy::exclusive, nullptr, nullptr ) );
 		}
 		else if ( nread < 0 )
 		{

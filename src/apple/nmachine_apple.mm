@@ -105,12 +105,12 @@ machine_apple::nif_apple::get_mac_address( const std::string &name )
 			
 	// Get system information, store in buffer
 				
-	err = sysctl( mgmt_info_base, 6, msg_buffer.data(), &length, NULL, 0 );
+	err = sysctl( mgmt_info_base, 6, msg_buffer.mutable_data(), &length, NULL, 0 );
 	ncheck_error_quiet( err >= 0, exit );
 
 	// Map msgbuffer to interface message structure
 	
-	interface_msg_struct = reinterpret_cast< if_msghdr* >( msg_buffer.data() );
+	interface_msg_struct = reinterpret_cast< if_msghdr* >( msg_buffer.mutable_data() );
 
 	// Map to link-level socket structure
 		

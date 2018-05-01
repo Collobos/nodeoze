@@ -126,8 +126,6 @@ public:
 
 	using keys = 								std::vector<std::string>;
 
-	using buf_ptr = std::shared_ptr<const nodeoze::buffer>;
-	
 	struct find_t;
 
 	/*! \enum type_t
@@ -351,7 +349,7 @@ public:
 	:
 		m_type( type_t::blob )
 	{
-		new ( &m_data.m_blob ) blob_rep( std::move( val ) );
+		new ( &m_data.m_blob ) blob_type( std::move( val ) );
 	}
 	
 	/*!	\brief Constructs an instance containing a blob value.
@@ -362,7 +360,7 @@ public:
 	:
 		m_type( type_t::blob )
 	{
-		new ( &m_data.m_blob ) blob_rep( blob_type( val.data(), val.size() ) );
+		new ( &m_data.m_blob )  blob_type( val.const_data(), val.size() );
 	}
 	
 	/*!	\brief Constucts an instance containing an array value.
@@ -675,7 +673,7 @@ public:
 	{
 		clear();
 		m_type = type_t::blob;
-		new ( &m_data.m_blob ) blob_rep ( blob_type( rhs.data(), rhs.size() ) );
+		new ( &m_data.m_blob ) blob_type( rhs.const_data(), rhs.size() );
 		
 		return *this;
 	}
@@ -691,7 +689,7 @@ public:
 	{
 		clear();
 		m_type = type_t::blob;
-		new ( &m_data.m_blob ) blob_rep( std::move( rhs ) );
+		new ( &m_data.m_blob ) blob_type( std::move( rhs ) );
 		
 		return *this;
 	}
@@ -1285,7 +1283,7 @@ public:
 
 			case type_t::blob:
 			{
-				new ( &m_data.m_blob ) blob_rep();
+				new ( &m_data.m_blob ) blob_type();
 			}
 			break;
 			
@@ -1560,10 +1558,10 @@ public:
 	 *	If the type contained by this instance is not string, the returned value is a
 	 *	zero-length string_view.
 	 */
-	std::string_view const&
+	std::string_view
 	to_string() const
 	{
-		return is_string() ? m_data.m_string.view() : m_empty_string_view;
+		return is_string() ? m_data.m_string.view() : std::string_view{};
 	}
 	
 	/*!	\brief Returns a vector of strings reflecting the contents of an array contained by this instance.
@@ -1589,16 +1587,10 @@ public:
 		return ret;
 	}
 	
-	/*!	\brief Returns a buffer_view of the blob value contained by this instance.
-	 *	\return A view of the blob value.
-	 *
-	 *	If this instance does not contain a blob value, the returned view will
-	 *	reflect a zero-length, null-valued blob.
-	 */
-	nodeoze::buffer_view const&
+	nodeoze::buffer
 	to_blob() const
 	{
-		return is_blob() ? m_data.m_blob.view() : m_empty_buffer_view;
+		return is_blob() ? m_data.m_blob : nodeoze::buffer{};
 	}
 	
 	/*!	\brief Returns the array value contained by this instance.
@@ -2124,320 +2116,134 @@ public:
 
 private:
 
-	struct string_value_rep
-	{
-		string_value_rep()
-		: m_value{}, m_view{}
-		{}
-		string_value_rep(std::string const& val) 
-		: m_value{val}, m_view{m_value} 
-		{}
-		string_value_rep(std::string&& val) 
-		: m_value{std::move(val)}, m_view{m_value} 
-		{}
-		string_value_rep(string_value_rep const& rhs)
-		: m_value{rhs.m_value}, m_view{m_value}
-		{}
-		string_value_rep(string_value_rep&& rhs)
-		: m_value{std::move(rhs.m_value)}, m_view{m_value}
-		{}
-		string_value_rep&
-		operator=(string_value_rep const& rhs)
-		{
-			m_value = rhs.m_value;
-			m_view = m_value;
-			return *this;
-		}
-		string_value_rep&
-		operator=(string_value_rep&& rhs)
-		{
-			m_value = std::move(rhs.m_value);
-			m_view = m_value;
-			return *this;
-		}
-		std::string m_value;
-		std::string_view m_view;
-	};
-
-	struct string_view_rep
-	{
-		string_view_rep()
-		: m_buf_ptr{nullptr}, m_view{}
-		{}
-		string_view_rep(buf_ptr bufp, std::size_t pos, std::size_t size)
-		: m_buf_ptr{bufp}, m_view{reinterpret_cast<const char*>(&(bufp->data()[pos])), size}
-		{}
-		string_view_rep(string_view_rep const& rhs)
-		: m_buf_ptr{rhs.m_buf_ptr}, m_view{rhs.m_view}
-		{}
-		string_view_rep&
-		operator=(string_view_rep const& rhs)
-		{
-			m_buf_ptr = rhs.m_buf_ptr;
-			m_view = rhs.m_view;
-			return *this;
-		}
-		buf_ptr m_buf_ptr;
-		std::string_view m_view;
-	};
-
 	struct string_rep
 	{
+		inline 
 		string_rep()
+		:
+		m_is_alias{ false }
 		{
-			m_is_view_rep = false;
-			new ( &m_value_rep ) string_value_rep{};
+			new ( &m_value ) string_type{};
 		}
+
+		inline 
 		string_rep(std::string const& val)
+		:
+		m_is_alias{ false }
 		{
-			m_is_view_rep = false;
-			new ( &m_value_rep ) string_value_rep{val};
+			new ( &m_value ) string_type{ val };
 		}
+
+		inline 
 		string_rep(std::string&& val)
+		:
+		m_is_alias{ false }
 		{
-			m_is_view_rep = false;
-			new ( &m_value_rep ) string_value_rep{std::move(val)};
+			new ( &m_value ) string_type{ std::move( val ) };
 		}
-		string_rep(buf_ptr bufp, std::size_t pos, std::size_t size)
-		{
-			m_is_view_rep = true;
-			new ( &m_view_rep ) string_view_rep{bufp, pos, size};
-		}
+
+		inline 
 		string_rep(string_rep const& rhs)
+		:
+		m_is_alias{ rhs.m_is_alias }
 		{
-			if (rhs.m_is_view_rep)
+			if ( m_is_alias )
 			{
-				m_is_view_rep = true;
-				new ( &m_view_rep ) string_view_rep{rhs.m_view_rep};
+				new ( &m_alias ) string_alias{ rhs.m_alias };
 			}
 			else
 			{
-				m_is_view_rep = false;
-				new ( &m_value_rep ) string_value_rep{rhs.m_value_rep};
+				new ( &m_value ) string_type{ rhs.m_value };
 			}
 		}
-		string_rep(string_rep&& rhs)
+
+		inline 
+		string_rep( string_rep&& rhs )
+		:
+		m_is_alias{ rhs.m_is_alias }
 		{
-			if (rhs.m_is_view_rep)
+			if ( m_is_alias )
 			{
-				m_is_view_rep = true;
-				new ( &m_view_rep ) string_view_rep{rhs.m_view_rep};
+				new ( &m_alias ) string_alias{ std::move( rhs.m_alias ) };
 			}
 			else
 			{
-				m_is_view_rep = false;
-				new ( &m_value_rep ) string_value_rep{std::move(rhs.m_value_rep)};
+				new ( &m_value ) string_type{ std::move( rhs.m_value ) };
 			}
 		}
-		std::string_view const& view() const
+
+		inline
+		string_rep( string_alias const& alias )
+		:
+		m_is_alias{ true }
 		{
-			if (m_is_view_rep)
+			new ( &m_alias ) string_alias( alias );
+		}
+
+		inline
+		string_rep( string_alias&& alias )
+		:
+		m_is_alias{ true }
+		{
+			new ( &m_alias ) string_alias( std::move( alias ) );
+		}
+
+		inline std::string_view 
+		view() const
+		{
+			if ( !m_is_alias )
 			{
-				return m_view_rep.m_view;
+				return std::string_view{ m_value };
 			}
 			else
 			{
-				return m_value_rep.m_view;
+				return m_alias.view();
 			}
 		}
-		std::string value() const
+
+		inline std::string 
+		value() const
 		{
 			return std::string(view());
 		}
-		string_rep
-		copy() const
-		{
-			return string_rep{value()};
-		}
-		bool
+
+		inline bool
 		empty() const
 		{
 			return size() == 0;
 		}
-		std::size_t
+
+		inline std::size_t
 		size() const
 		{
 			return view().size();
 		}
+
+		inline 
 		~string_rep()
 		{
 			clear();
 		}
-		void
+
+		inline void
 		clear()
 		{
-			if (m_is_view_rep)
+			if ( m_is_alias )
 			{
-				m_view_rep.~string_view_rep();
+				m_alias.~string_alias();
 			}
 			else
 			{
-				m_value_rep.~string_value_rep();
+				m_value.~string_type();
 			}
 		}
-		bool m_is_view_rep;
+
+		bool m_is_alias;
+
 		union
 		{
-			string_value_rep m_value_rep;
-			string_view_rep m_view_rep;
-		};
-	};
-
-	struct blob_value_rep
-	{
-		blob_value_rep()
-		: m_value{}, m_view{m_value}
-		{}
-		blob_value_rep(nodeoze::buffer&& rhs)
-		: m_value{std::move(rhs)}, m_view{m_value}
-		{}
-		blob_value_rep(const void* data, std::size_t size)
-		: m_value{data, size}, m_view{m_value}
-		{}
-		blob_value_rep(nodeoze::buffer_view const& buf_view)
-		: m_value{buf_view.data(), buf_view.size()}, m_view{m_value}
-		{}
-		blob_value_rep(blob_value_rep const& rhs)
-		: m_value{rhs.m_value.data(), rhs.m_value.size()}, m_view{m_value}
-		{}
-		blob_value_rep(blob_value_rep&& rhs)
-		: m_value{std::move(rhs.m_value)}, m_view{m_value}
-		{}
-		blob_value_rep&
-		operator=(blob_value_rep const& rhs)
-		{
-			m_value = rhs.m_value.copy();
-			m_view = m_value;
-			return *this;	
-		}
-		blob_value_rep&
-		operator=(blob_value_rep&& rhs)
-		{
-			m_value = std::move(rhs.m_value);
-			m_view = m_value;
-			return *this;
-		}
-		nodeoze::buffer			m_value;
-		nodeoze::buffer_view	m_view;
-	};
-
-	struct blob_view_rep
-	{
-		blob_view_rep()
-		: m_buf_ptr{nullptr}, m_view{}
-		{}
-		blob_view_rep(buf_ptr bufp, std::size_t pos, std::size_t size)
-		: m_buf_ptr{bufp}, m_view{&(bufp->data()[pos]), size}
-		{}
-		blob_view_rep(blob_view_rep const& rhs)
-		: m_buf_ptr{rhs.m_buf_ptr}, m_view{rhs.m_view}
-		{}
-		blob_view_rep&
-		operator=(blob_view_rep const& rhs)
-		{
-			m_buf_ptr = rhs.m_buf_ptr;
-			m_view = rhs.m_view;
-			return *this;
-		}
-		buf_ptr						m_buf_ptr;
-		nodeoze::buffer_view		m_view;
-	};
-
-	struct blob_rep
-	{
-		blob_rep() {}
-		blob_rep(nodeoze::buffer&& buf)
-		{
-			m_is_view_rep = false;
-			new ( &m_value_rep ) blob_value_rep{std::move(buf)};
-		}
-		blob_rep(buf_ptr bufp, std::size_t pos, std::size_t size)
-		{
-			m_is_view_rep = true;
-			new ( &m_view_rep ) blob_view_rep{bufp, pos, size};
-		}
-		blob_rep(blob_rep const& rhs)
-		{
-			if (rhs.m_is_view_rep)
-			{
-				m_is_view_rep = true;
-				new ( &m_view_rep ) blob_view_rep{rhs.m_view_rep};
-			}
-			else
-			{
-				m_is_view_rep = false;
-				new ( &m_value_rep ) blob_value_rep{rhs.m_value_rep};
-			}
-		}
-		blob_rep(blob_rep&& rhs)
-		{
-			if (rhs.m_is_view_rep)
-			{
-				m_is_view_rep = true;
-				new ( &m_view_rep ) blob_view_rep{rhs.m_view_rep};
-			}
-			else
-			{
-				m_is_view_rep = false;
-				new ( &m_value_rep ) blob_value_rep{std::move(rhs.m_value_rep)};
-			}
-		}
-		nodeoze::buffer
-		value() const
-		{
-			return nodeoze::buffer{view().data(), view().size()};
-		}
-		blob_rep
-		copy() const
-		{
-			return blob_rep{value()};
-		}
-		nodeoze::buffer_view const& view() const
-		{
-			if (m_is_view_rep)
-			{
-				return m_view_rep.m_view;
-			}
-			else
-			{
-				return m_value_rep.m_view;
-			}
-		}
-		bool empty() const
-		{
-			return view().size() == 0;
-		}
-		std::size_t
-		size() const
-		{
-			return view().size();
-		}
-		const std::uint8_t*
-		data() const
-		{
-			return view().data();
-		}
-		void
-		clear()
-		{
-			if (m_is_view_rep)
-			{
-				m_view_rep.~blob_view_rep();
-			}
-			else
-			{
-				m_value_rep.~blob_value_rep();
-			}
-		}
-		~blob_rep()
-		{
-			clear();
-		}
-		bool m_is_view_rep;
-		union
-		{
-			blob_value_rep	m_value_rep;
-			blob_view_rep	m_view_rep;
+			string_alias	m_alias;
+			string_type		m_value;
 		};
 	};
 
@@ -2477,7 +2283,7 @@ private:
 		std::int64_t	m_integer;
 		double			m_floating;
 		string_rep		m_string;
-		blob_rep		m_blob;
+		blob_type		m_blob;
 		array_type		m_array;
 		object_type		m_object;
 	};
@@ -2593,16 +2399,16 @@ private:
 			}
 			break;
 		
-			// TODO: should copy() copy the view or the value?	
+			// TODO: should copy always make a string_type value copy?
 			case type_t::string:
 			{
-				new ( &m_data.m_string ) string_rep( rhs.m_data.m_string.value() );
+				new ( &m_data.m_string ) string_rep( rhs.m_data.m_string );
 			}
 			break;
 			
 			case type_t::blob:
 			{
-				new ( &m_data.m_blob ) blob_rep( rhs.m_data.m_blob.value() );
+				new ( &m_data.m_blob ) blob_type( rhs.m_data.m_blob );
 			}
 			break;
 			
@@ -2655,7 +2461,6 @@ private:
 			}
 			break;
 			
-			// TODO: figure out what to do on move
 			case type_t::string:
 			{
 				new ( &m_data.m_string ) string_rep( std::move( rhs.m_data.m_string ) );
@@ -2665,7 +2470,7 @@ private:
 			// TODO: figure out what to do on move
 			case type_t::blob:
 			{
-				new ( &m_data.m_blob ) blob_rep( std::move( rhs.m_data.m_blob ) );
+				new ( &m_data.m_blob ) blob_type( std::move( rhs.m_data.m_blob ) );
 			}
 			break;
 			
@@ -2701,7 +2506,7 @@ private:
 			
 			case type_t::blob:
 			{
-				m_data.m_blob.~blob_rep();
+				m_data.m_blob.~blob_type();
 			}
 			break;
 			
@@ -2728,8 +2533,6 @@ private:
 
 	static array_type			m_empty_array;
 	static object_type			m_empty_object;
-	static std::string_view 	m_empty_string_view;
-	static nodeoze::buffer_view	m_empty_buffer_view;
 	type_t						m_type;
 	data						m_data;
 };

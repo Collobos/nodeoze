@@ -35,7 +35,7 @@
 using namespace nodeoze;
 
 static std::error_code
-deflate( const any &root, ::msgpack::packer< nodeoze::buffer > &packer );
+deflate( const any &root, ::msgpack::packer< nodeoze::bufwriter > &packer );
 
 static std::error_code
 inflate( any &root, ::msgpack::object &obj );
@@ -43,13 +43,13 @@ inflate( any &root, ::msgpack::object &obj );
 nodeoze::buffer
 nodeoze::mpack::deflate( const any &root )
 {
-	nodeoze::buffer buf;
+	nodeoze::bufwriter buf;
 	
-	msgpack::packer< nodeoze::buffer > packer( buf );
+	msgpack::packer< nodeoze::bufwriter > packer( buf );
 	
 	::deflate( root, packer );
 	
-	return buf;
+	return buf.move_buffer();
 }
 
 
@@ -100,7 +100,7 @@ nodeoze::mpack::inflate( any& root, const buffer& buf )
 	{
 		mpack::parser p( root );
 	
-		return p.process( buf.data(), buf.size() );
+		return p.process( buf.const_data(), buf.size() );
 	}
 }
 
@@ -136,7 +136,7 @@ nodeoze::mpack::parser::process( const std::uint8_t *buf, std::size_t len )
 
 
 static std::error_code
-deflate( const any &root, ::msgpack::packer< nodeoze::buffer > &packer )
+deflate( const any &root, ::msgpack::packer< nodeoze::bufwriter > &packer )
 {
 	auto err = std::error_code();
 	
@@ -175,7 +175,7 @@ deflate( const any &root, ::msgpack::packer< nodeoze::buffer > &packer )
 		case any::type_t::blob:
 		{
 			auto buf = root.to_blob();
-			packer.pack_bin( static_cast< std::uint32_t >( root.size() ) ).pack_bin_body( reinterpret_cast< const char* >( buf.data() ), static_cast< std::uint32_t >( buf.size() ) );
+			packer.pack_bin( static_cast< std::uint32_t >( root.size() ) ).pack_bin_body( reinterpret_cast< const char* >( buf.const_data() ), static_cast< std::uint32_t >( buf.size() ) );
 		}
 		break;
 
@@ -520,7 +520,7 @@ nodeoze::mpack::rpc::connection::process( const buffer &buf )
 {
 	mlog( marker::msgpack, log::level_t::info, "received % bytes", buf.size() );
 
-	auto err = m_parser.process( buf.data(), buf.size() );
+	auto err = m_parser.process( buf.const_data(), buf.size() );
 	ncheck_error( !err, exit, "unable to process msgpack encoded rpc message" );
 
 	mlog( marker::msgpack, log::level_t::info, "after parsing: %", m_root );

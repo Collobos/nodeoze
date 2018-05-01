@@ -108,7 +108,7 @@ on_alloc_stdout( uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf )
 	
 	context->stdout_buf.capacity( suggested_size );
 	
-	buf->base	= reinterpret_cast< char* >( context->stdout_buf.data() );
+	buf->base	= reinterpret_cast< char* >( context->stdout_buf.mutable_data() );
 	buf->len	= suggested_size;
 }
 
@@ -120,7 +120,7 @@ on_alloc_stderr( uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf )
 	
 	context->stderr_buf.capacity( suggested_size );
 	
-	buf->base	= reinterpret_cast< char* >( context->stderr_buf.data() );
+	buf->base	= reinterpret_cast< char* >( context->stderr_buf.mutable_data() );
 	buf->len	= suggested_size;
 }
 

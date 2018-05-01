@@ -63,7 +63,7 @@ notification::notification()
 				static any			root;
 				static json::parser parser( root );
 				
-				auto err = parser.process( buf.data(), buf.size() );
+				auto err = parser.process( buf.const_data(), buf.size() );
 				ncheck_error( !err, exit, "unable to parse JSON encoded rpc message" );
 				
 				rpc::manager::shared().dispatch( root, [=]( const any &out, bool close )

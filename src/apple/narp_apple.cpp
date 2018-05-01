@@ -90,9 +90,9 @@ arp_apple::resolve( const ip::address &ip_address )
 	{
 		mlog( nodeoze::marker::arp, log::level_t::info, "sending 1 byte to udp socket for arp" );
 		
-		buffer buf;
+		buffer buf{ 1 };
 		
-		buf.push_back( 1 );
+		buf.put( 0, 1 );
 		
 		sock->send( std::move( buf ), ip::endpoint( ip_address, 80 ) )
 		.then( [=]() mutable
@@ -142,11 +142,11 @@ arp_apple::lookup( const ip::address &ip_address )
 	res = sysctl(mib, 6, NULL, &needed, NULL, 0 );
 	ncheck_error( res >= 0, exit, "sysctl failed (%)", errno );
 	buf.capacity( needed );
-    res = sysctl(mib, 6, buf.data(), &needed, NULL, 0 );
+    res = sysctl(mib, 6, buf.mutable_data(), &needed, NULL, 0 );
 	ncheck_error( res >= 0, exit, "sysctl failed (%)", errno );
-	lim = buf.data() + needed;
+	lim = buf.mutable_data() + needed;
 	
-	for ( next = buf.data(); next < lim; next += rtm->rtm_msglen )
+	for ( next = buf.mutable_data(); next < lim; next += rtm->rtm_msglen )
 	{
 		rtm = reinterpret_cast< rt_msghdr *>( next );
 		sin = reinterpret_cast< sockaddr_inarp* >( rtm + 1 );

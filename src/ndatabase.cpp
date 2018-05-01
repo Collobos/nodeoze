@@ -1436,7 +1436,7 @@ database::statement::set_blob( nodeoze::buffer& value, const std::string& var_na
 				
 				auto result = sqlite3_bind_blob( m_shared->stmt, index, bufptr, static_cast<int>(bufsize), [] ( void * ptr )
 				{
-					delete static_cast< std::uint8_t * > ( ptr );
+					buffer::default_dealloc( reinterpret_cast< buffer::elem_type* >( ptr ) );
 				} );
 				
 				if ( result != SQLITE_OK )
@@ -1481,7 +1481,7 @@ database::statement::set_blob( nodeoze::buffer& value, int var_index )
 				
 			auto result = sqlite3_bind_blob( m_shared->stmt, var_index, bufptr, static_cast<int>(bufsize), [] ( void * ptr )
 			{
-				delete static_cast< std::uint8_t * > ( ptr );
+				buffer::default_dealloc( reinterpret_cast< buffer::elem_type* >( ptr ) );
 			} );
 			
 			if ( result != SQLITE_OK )

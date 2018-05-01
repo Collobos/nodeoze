@@ -176,7 +176,7 @@ ip::tcp::ssocket::send( buffer buf, std::chrono::milliseconds timeout )
 #if defined( WIN32 )
 		auto num = ::send( m_fd, reinterpret_cast< const char* >( buf.data() ), buf.size(), 0 );
 #else
-		auto num = ::send( m_fd, buf.data(), buf.size(), 0 );
+		auto num = ::send( m_fd, buf.const_data(), buf.size(), 0 );
 #endif
 		
 		if ( num > 0 )
@@ -214,7 +214,7 @@ ip::tcp::ssocket::recv( buffer &buf, std::chrono::milliseconds timeout )
 #if defined( WIN32 )
 		num = ::recv( m_fd, reinterpret_cast< char* >( buf.data() ), buf.capacity(), 0 );
 #else
-		num = ::recv( m_fd, buf.data(), buf.capacity(), 0 );
+		num = ::recv( m_fd, buf.mutable_data(), buf.capacity(), 0 );
 #endif
 				
 		if ( num > 0 )

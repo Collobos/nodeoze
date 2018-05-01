@@ -675,7 +675,7 @@ json::rpc::connection::deflate( const nodeoze::any &message )
 std::error_code
 json::rpc::connection::process( const buffer &buf )
 {
-	auto err = m_parser.process( buf.data(), buf.size() );
+	auto err = m_parser.process( buf.const_data(), buf.size() );
 	ncheck_error( !err, exit, "unable to process JSON encoded rpc message" );
 	
 	nodeoze::rpc::manager::shared().dispatch( m_root, [=]( const any &message, bool close )

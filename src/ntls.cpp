@@ -66,11 +66,11 @@ public:
 	static inline bool
 	is_buffer_valid( const std::string &name, buffer *buf )
 	{
-		auto valid = ( ( buf != nullptr ) && ( buf->data() != nullptr ) && ( buf->size() > 0 ) );
+		auto valid = ( ( buf != nullptr ) && ( buf->const_data() != nullptr ) && ( buf->size() > 0 ) );
 		
 		if ( !valid )
 		{
-			auto data = reinterpret_cast< void* >( buf ? buf->data() : nullptr );
+			auto data = reinterpret_cast< void* >( buf ? buf->mutable_data() : nullptr );
 			auto size = buf ? buf->size() : 0u;
 		}
 		
@@ -189,7 +189,7 @@ tls::use_server_cert( const std::vector< nodeoze::buffer > &chain, const nodeoze
 	
 	ncheck_error_action( chain.size() >= 1, err = make_error_code( std::errc::invalid_argument ), exit, "no certs in chain" );
 	
-	data = chain[ 0 ].data();
+	data = chain[ 0 ].const_data();
 	cert = d2i_X509( nullptr, &data, chain[ 0 ].size() );
 	ncheck_error_action( cert, err = make_error_code( std::errc::invalid_argument ), exit, "d2i_x509() failed" );
 	
@@ -197,13 +197,13 @@ tls::use_server_cert( const std::vector< nodeoze::buffer > &chain, const nodeoze
 	
 	for ( auto i = 1u; i < chain.size(); i++ )
 	{
-		data = chain[ i ].data();
+		data = chain[ i ].const_data();
 		cert = d2i_X509( nullptr, &data, chain[ i ].size() );
 		ncheck_error_action( cert, err = make_error_code( std::errc::invalid_argument ), exit, "d2i_x509() failed" );
 		certs.push_back( cert );
 	}
 	
-	data = key.data();
+	data = key.const_data();
 	
 	rsa = d2i_RSAPrivateKey( nullptr, &data, key.size() );
 	ncheck_error_action( rsa, err = make_error_code( std::errc::invalid_argument ), exit, "d2i_RSAPrivateKey() failed" );
@@ -369,7 +369,7 @@ std::streamsize
 tls_filter_impl::data_to_write( buffer &buf )
 {
 	std::streamsize bytes_used	= 0;
-	std::streamsize result		= SSL_write( m_ssl, buf.data(), static_cast< int >( buf.size() ) );
+	std::streamsize result		= SSL_write( m_ssl, buf.const_data(), static_cast< int >( buf.size() ) );
 
 	if ( result < 0 )
 	{
@@ -392,27 +392,33 @@ tls_filter_impl::data_to_write( buffer &buf )
 std::streamsize
 tls_filter_impl::data_to_read( buffer &in_buf, std::vector< buffer > &out_bufs )
 {
-	std::size_t			bytes_used	= BIO_write( m_ssl->rbio, in_buf.data(), ( int ) in_buf.size() );
+	std::size_t			bytes_used	= BIO_write( m_ssl->rbio, in_buf.const_data(), ( int ) in_buf.size() );
 	int					bytes_out	= 0;
 	const std::size_t	buf_size	= 8192;
 	buffer				out_buf;
    
 	m_read_required = false;
-	
+
+	buffer tmp{ buf_size };
+
+	// TODO: this is a temporary kludge to deal with buffer changes in progress	
 	do
 	{
-		if ( out_buf.space() < buf_size )
-		{
-			out_buf.capacity( out_buf.capacity() + ( buf_size - out_buf.space() ) );
-		}
+//		if ( out_buf.space() < buf_size )
+//		{
+//			out_buf.capacity( out_buf.capacity() + ( buf_size - out_buf.space() ) );
+//		}
 	
-		assert( out_buf.space() > 0 );
+//		assert( out_buf.space() > 0 );
 		
-		bytes_out = SSL_read( m_ssl, ( void* ) ( out_buf.data() + out_buf.size() ), static_cast< int >( out_buf.space() ) );
+//		bytes_out = SSL_read( m_ssl, ( void* ) ( out_buf.data() + out_buf.size() ), static_cast< int >( out_buf.space() ) );
+
+		bytes_out = SSL_read( m_ssl, ( void* ) ( tmp.const_data() ), static_cast< int >( tmp.size() ) );
 
 		if ( bytes_out > 0 )
 		{
-			out_buf.size( out_buf.size() + bytes_out );
+			out_buf.append( tmp.const_data(), bytes_out );
+//			out_buf.size( out_buf.size() + bytes_out );
 		}
 		else if ( bytes_out < 0 )
 		{
@@ -435,20 +441,30 @@ tls_filter_impl::grab_pending_data( buffer &buf )
 {
 	std::size_t pending;
 
+	// TODO: fix -- kludge mods to deal with buffer changes in progress
+
+	buffer tmp;
+
 	while ( ( pending = BIO_ctrl_pending( m_ssl->wbio ) ) > 0 )
 	{
-		if ( buf.space() < pending )
-		{
-			buf.capacity( buf.capacity() + ( pending - buf.space() ) );
-		}
+		tmp.size( pending );
+
+//		if ( buf.space() < pending )
+//		{
+//			buf.capacity( buf.capacity() + ( pending - buf.space() ) );
+//		}
 		
-		assert( buf.space() > 0 );
+//		assert( buf.space() > 0 );
 		
-		int bytes_to_grab = BIO_read( m_ssl->wbio, ( void* ) ( buf.data() + buf.size() ), static_cast< int >( buf.space() ) );
+//		int bytes_to_grab = BIO_read( m_ssl->wbio, ( void* ) ( buf.data() + buf.size() ), static_cast< int >( buf.space() ) );
+
+		// I'm assuming that bytes_to_grab <= tmp.size()
+		int bytes_to_grab = BIO_read( m_ssl->wbio, ( void* ) ( tmp.const_data() ), static_cast< int >( tmp.size() ) );
 
 		if ( bytes_to_grab > 0 )
 		{
-			buf.size( buf.size() + bytes_to_grab );
+//			buf.size( buf.size() + bytes_to_grab );
+			buf.append( tmp.const_data(), bytes_to_grab );
 		}
 		else
 		{
@@ -768,7 +784,7 @@ TEST_CASE( "nodeoze/smoke/tls" )
 		
 		for ( auto i = 0; i < 10; i++ )
 		{
-			buffers.front().push_back( i );
+			buffers.front().put( i,  i );
 		}
 		
 		CHECK( buffers.size() == 1 );

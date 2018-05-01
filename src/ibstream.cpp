@@ -28,22 +28,15 @@
 
 using namespace nodeoze;
 
-bstream::ibstream::ibstream(obstream&& ostr)
-{
-    in_byte_stream::hijack(std::move(ostr));
-}
-      
-bstream::ibstream::ibstream(obstream const& other)
-: in_byte_stream{other.data(), other.size()}
-{}
 
-bstream::ibstream_cntxt::ibstream_cntxt(obstream_cntxt&& ostr) 
-: ibstream(std::move(ostr))
+bstream::ibstream::ibstream(obstream const& other)
+: in_byte_stream{ other }
 {}
 
 bstream::ibstream_cntxt::ibstream_cntxt(obstream_cntxt const& other)
-: ibstream{other.data(), other.size()}
+: ibstream{ other }
 {}
+
 
 void bstream::ibstream::save_ptr(std::shared_ptr<void>)
 {}

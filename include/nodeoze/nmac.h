@@ -46,8 +46,6 @@ public:
 
 	address( const nodeoze::buffer &bytes );
 
-	address( const nodeoze::buffer_view &bytes );
-	
 	address( const std::string &s );
 
 	template < class T >

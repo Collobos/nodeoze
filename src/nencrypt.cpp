@@ -42,7 +42,8 @@ transform( const std::string &input, const std::string &key )
 
 	for( auto i = 0; i < ilen; i++ )
     {
-		ret.push_back( input[ i ] ^ key[ k ] );
+		ret.put( i, ( input[ i ] ^ key[ k ] ) );
+//		ret.push_back( input[ i ] ^ key[ k ] );
 		k = ( ++k < klen ? k : 0 );
     }
 

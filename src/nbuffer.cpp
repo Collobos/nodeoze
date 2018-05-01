@@ -24,14 +24,20 @@
  *
  */
 
- #include <nodeoze/nbuffer.h>
- #include <nodeoze/nmacros.h>
+#include <nodeoze/nbuffer.h>
+#include <nodeoze/nmacros.h>
+#include <iostream>
+#include <boost/crc.hpp>
 
+nodeoze::buffer::dealloc_function nodeoze::buffer::default_dealloc = []( elem_type *data )
+{
+	::free( data );
+};
 
- nodeoze::buffer::deleter_f nodeoze::buffer::do_not_delete_data = []( std::uint8_t *data )
- {
-	nunused( data );
- };
+nodeoze::buffer::realloc_function nodeoze::buffer::default_realloc = []( elem_type *data, size_type, size_type new_size )
+{
+	return ( data == nullptr ) ? reinterpret_cast< elem_type* >( ::malloc( new_size ) ) : reinterpret_cast< elem_type* >( ::realloc( data, new_size ) ); 
+};
 
 void dump_impl(const std::uint8_t* data, std::size_t size, std::ostream& os)
 {
@@ -110,9 +116,21 @@ void dump_impl(const std::uint8_t* data, std::size_t size, std::ostream& os)
 }
 
 void
-nodeoze::buffer_view::dump( std::ostream& os ) const
+nodeoze::buffer::print_state() const
 {
-	dump_impl(m_data, m_size, os);
+	std::cerr << "m_shared: " << reinterpret_cast< void* >( m_shared );
+	if ( m_shared )
+	{
+		std::cerr << ", m_shared->data(): " << reinterpret_cast< void* >( m_shared->data() )
+				  << ", m_shared->size(): " << m_shared->size()
+				  << ", m_shared->refs(): " << m_shared->refs()
+				  << std::boolalpha << ", m_shared->is_exclusive(): " << m_shared->is_exclusive()
+				  << ", m_shared->is_copy_on_write(): " << m_shared->is_copy_on_write()
+				  << ", m_shared->is_no_copy_on_write(): " << m_shared->is_no_copy_on_write();
+	}
+	std::cerr << ", m_data: " << reinterpret_cast< void* >( m_data )
+			  << ", m_size: " << m_size << std::endl;
+	std::cerr.flush();
 }
 
 void
@@ -120,3 +138,16 @@ nodeoze::buffer::dump( std::ostream& os ) const
 {
 	dump_impl(m_data, m_size, os);
 }
+
+nodeoze::buffer::checksum_type
+nodeoze::buffer::checksum( size_type offset, size_type length ) const
+{
+	
+	boost::crc_32_type crc;
+	if ( ( m_data != nullptr ) && ( offset < length ) && ( ( offset + length ) < m_size ) )
+	{
+		crc.process_bytes( m_data + offset, length );
+	}
+	return crc.checksum();
+}
+

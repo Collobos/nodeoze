@@ -947,7 +947,7 @@ http::message::body( std::ostream &os ) const
 	
 	if ( m_body.size() > 0 )
 	{
-		os.write( reinterpret_cast< const char* >( m_body.data() ), m_body.size() );
+		os.write( reinterpret_cast< const char* >( m_body.const_data() ), m_body.size() );
 	}
 	
 	ret.resolve();
@@ -1373,7 +1373,7 @@ http::connection::process( const buffer &buf )
 			m_reset_parser = false;
 		}
 		
-		std::streamsize processed = http_parser_execute( m_parser.get(), m_settings.get(), reinterpret_cast< const char* >( buf.data() ), buf.size() );
+		std::streamsize processed = http_parser_execute( m_parser.get(), m_settings.get(), reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
 		
 		if ( !m_reset_parser && ( processed != std::streamsize( buf.size() ) ) )
 		{
@@ -1538,15 +1538,18 @@ http::connection::body_was_received( http_parser *parser, const char *data, size
 	auto self = reinterpret_cast< connection* >( parser->data );
 	assert( self );
 	
-	buffer buf( ( void* ) data, len, len, []( std::uint8_t *data ) { nunused( data ); } );
+//	buffer buf( ( void* ) data, len, len, []( std::uint8_t *data ) { nunused( data ); } );
+//	buffer buf( data, len ); // TODO: check with Scott -- is it ok to make a copy here?
+
+	buffer buf( ( void* ) data, len, buffer::policy::exclusive, nullptr, nullptr );
 	
 	if ( self->m_on_body_handler )
 	{
-		self->m_on_body_handler( buf );
+		self->m_on_body_handler( buf ); // regarding the above TODO: -- buf is passed as non-const reference here
 	}
 	else
 	{
-		self->m_in_message->on_body( buf );
+		self->m_in_message->on_body( buf ); // and here
 	}
 	
 	return 0;
@@ -1651,7 +1654,7 @@ http::connection::setup_buffer()
 {
 	assert( m_buffer.size() == 0 );
 	m_buffer.size( default_buffer_size );
-	setp( reinterpret_cast< char* >( m_buffer.data() ), reinterpret_cast< char* >( m_buffer.data() + m_buffer.size() ) );
+	setp( reinterpret_cast< char* >( m_buffer.mutable_data() ), reinterpret_cast< char* >( m_buffer.mutable_data() + m_buffer.size() ) );
 }
 
 
@@ -2003,7 +2006,12 @@ http::server::body_was_received( http_parser *parser, const char *data, size_t l
 	assert( conn->m_in_message );
 	auto id			= conn->id();
 	auto binding	= reinterpret_cast< server::binding* >( conn->data() );
-	auto buf		= buffer( ( void* ) data, len, len, []( std::uint8_t *data ) { nunused( data ); } );
+// TODO: same as earlier
+//	auto buf		= buffer( ( void* ) data, len, len, []( std::uint8_t *data ) { nunused( data ); } );
+//	auto buf		= buffer( ( void* ) data, len );
+
+	auto buf = buffer( ( void* ) data, len, buffer::policy::exclusive, nullptr, nullptr );
+
 	assert( binding );
 	
 	return binding->m_rbwr( *conn->m_in_message, buf, [=]( http::message &response, bool close ) mutable

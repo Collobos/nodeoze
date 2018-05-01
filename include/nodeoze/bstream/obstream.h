@@ -46,26 +46,28 @@ namespace bstream
 {
     class obstream : public out_byte_stream
     {
-    public:
-		
-        using buffer_type = out_byte_stream;
-		
 	protected:
 		
 		inline obstream() {}
 		
 	public:	
 
-		inline obstream(obstream const&) = delete;	
-		
-		inline obstream(std::size_t capacity) : out_byte_stream{std::make_unique<buffer>(capacity)}
+		inline obstream( obstream const& rhs )
+		: 
+		out_byte_stream{ rhs }
 		{}
-		
-		inline obstream(obstream&& other) : out_byte_stream{other.release()} {}
-		
+	
+		inline obstream( std::size_t capacity, buffer::policy pol = buffer::policy::copy_on_write )
+		: 
+		out_byte_stream{ capacity, pol }
+		{}
+	
 		inline
-		obstream(buffer::uptr&& buf) : out_byte_stream{std::move(buf)} {}
-		
+		obstream( buffer const& buf )
+		: 
+		out_byte_stream{ buf } 
+		{}
+	
         inline obstream&
         write_map_header(std::uint32_t size)
         {
@@ -139,6 +141,14 @@ namespace bstream
             put(p, size);
             return *this;
         }
+
+		inline obstream&
+		write_blob_body( nodeoze::buffer const& blob )
+		{
+			accommodate_put( blob.size() );
+			put( blob.const_data(), blob.size() );
+			return *this;
+		}
        
         inline obstream&
         write_blob(const void* p, std::size_t size)
@@ -147,6 +157,14 @@ namespace bstream
 			write_blob_body(p, size);
             return *this;
        }
+
+		inline obstream&
+		write_blob( nodeoze::buffer const& buf )
+		{
+			write_blob_header( buf.size() );
+			write_blob_body( buf );
+			return *this;
+		}
 
         inline obstream&
         write_object_header(std::uint32_t size)
@@ -236,18 +254,26 @@ namespace bstream
 
 		inline obstream_cntxt() : obstream() {} 
 		
-		inline obstream_cntxt(obstream_cntxt const&) = delete;	
-		
-		inline obstream_cntxt(std::size_t capacity) : obstream{capacity}
+		inline obstream_cntxt(obstream_cntxt const& rhs )	
+		: 
+		obstream{ rhs }, 
+		m_shared_pointers{ rhs.m_shared_pointers }
 		{}
 		
-		inline obstream_cntxt(obstream_cntxt&& other)
-		: obstream{std::move(other)}, m_shared_pointers{std::move(other.m_shared_pointers)}
+		inline obstream_cntxt(std::size_t capacity, buffer::policy pol = buffer::policy::copy_on_write )
+		: 
+		obstream{ capacity, pol }
+		{}
+		
+		inline obstream_cntxt(obstream_cntxt&& rhs )
+		: 
+		obstream{ std::move( rhs ) }, 
+		m_shared_pointers{ std::move( rhs.m_shared_pointers ) }
 		{}
 		
 		inline
-		obstream_cntxt(buffer::uptr&& buf) 
-		: obstream{std::move(buf)}
+		obstream_cntxt(buffer const& buf) 
+		: obstream{ buf }
 		{}
 		
 		virtual obstream_cntxt& clear() noexcept override
@@ -510,6 +536,15 @@ namespace bstream
 		}
 	};
 	
+	template<>
+	struct serializer<nodeoze::string_alias>
+	{
+		static inline obstream& put( obstream& os, nodeoze::string_alias const& value )
+		{
+			return serializer<std::string_view>::put( os, value.view() );
+		}
+	};
+
 	template<>
 	struct serializer<std::string>
 	{

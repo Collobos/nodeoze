@@ -28,10 +28,10 @@
 #define _nodeoze_base64_h
 
 #include <string>
+#include <vector>
 
 namespace nodeoze {
 
-class buffer_view;
 class buffer;
 
 namespace codec {
@@ -41,10 +41,13 @@ class base64
 public:
 
 	static std::string
-	encode( const buffer_view &buf );
+	encode( const buffer &buf );
 	
 	static buffer
 	decode( const std::string &s );
+
+private:
+	static const std::vector<int> m_decode_table;
 };
 
 }

@@ -49,6 +49,7 @@
 #include <nodeoze/bstream/typecode.h>
 #include <nodeoze/bstream/in_byte_stream.h>
 #include <nodeoze/bstream/utils/traits.h>
+#include <nodeoze/nbuffer.h>
 
 namespace nodeoze
 {
@@ -556,6 +557,67 @@ namespace bstream
             }
         }
     };	
+
+	template<>
+    struct value_deserializer<nodeoze::string_alias>
+	{
+        inline nodeoze::string_alias operator()(in_byte_stream& is) const
+        {
+            return get(is);
+        }
+
+		inline static nodeoze::string_alias get(in_byte_stream& is, std::size_t length)
+		{
+			nodeoze::buffer buf = is.get_buffer();
+			nodeoze::buffer slice;
+			if ( buf.empty() )
+			{
+				slice = nodeoze::buffer( reinterpret_cast<const char*>(is.get_bytes(length)), length );
+			}
+			else
+			{
+				slice = buf.slice( is.position(), length );
+				is.get_bytes( length );
+			}
+			return nodeoze::string_alias{ slice };
+		}
+
+        inline static nodeoze::string_alias get(in_byte_stream& is)
+        {
+            auto tcode = is.get();
+            if (tcode >= typecode::fixstr_min && tcode <= typecode::fixstr_max)
+            {
+                std::uint8_t mask = 0x1f;
+                std::size_t length = tcode & mask;
+				return get( is, length );
+            }
+            else
+            {
+                switch(tcode)
+                {
+                    case typecode::str_8:
+                    {
+                        std::size_t length = is.get_arithmetic_as<std::uint8_t>();
+						return get( is, length );
+                    }
+                    case typecode::str_16:
+                    {
+                        std::size_t length = is.get_arithmetic_as<std::uint16_t>();
+						return get( is, length );
+                    }
+                    case typecode::str_32:
+                    {
+                        std::size_t length = is.get_arithmetic_as<std::uint32_t>();
+						return get( is, length );
+                    }
+                    default:
+						std::ostringstream msg;
+						msg << "2 - at pos " << is.position() << " - invalid typecode value for string: " << std::hex << (int)tcode << std::dec;
+                        throw type_error(msg.str());
+                }
+            }
+        }
+    };	
 	
 	class obstream;
     
@@ -581,7 +643,8 @@ namespace bstream
 		/*! \brief null constructor
 		 */
 		inline
-		ibstream() { }
+		ibstream() 
+		{}
 
 		/*	\brief constructor with externally-managed buffer
 		 * 
@@ -592,19 +655,16 @@ namespace bstream
 		 *	\c data will be valid throughout the lifetime of the ibstream instance
 		 *	being constructed.
 		 */
+
+		inline
+		ibstream( ibstream const& rhs )
+		: in_byte_stream{ rhs }
+		{}
+
 		inline
 		ibstream(const void* data, std::size_t size)
-		{
-			in_byte_stream::use(nodeoze::buffer_view{data, size});
-		}
-		
-		/*! \brief constructor from moved obstream buffer
-		 *	\param ostr an obstream instance that provides the buffer for the constructed ibstream
-		 * 
-		 *	The constructed instance of ibstream will take possession of the internal buffer from
-		 *	\c ostr by moving it. 
-		 */
-		ibstream(obstream&& ostr);
+		: in_byte_stream{ data, size }
+		{}
 		
 		/*! \brief constructor from copied obstream buffer
 		 *	\param ostr obstream instance whose internal buffer is copied
@@ -621,8 +681,9 @@ namespace bstream
 		 *	entire contents of the buffer are assumed to be meaningful (that is, corresponding to
 		 *	the originating obstream).
 		 */
-		ibstream(buffer::uptr&& buf)
-		: in_byte_stream{std::move(buf)}
+		inline
+		ibstream( buffer const& buf )
+		: in_byte_stream{ buf }
 		{}
 		
         template<class T>
@@ -827,22 +888,24 @@ namespace bstream
             return length;
         }
 		
-		void
-		read_blob_body(void* dst, std::size_t nbytes)
-		{
-			const void* src = base::get_bytes(nbytes);
-			memcpy(dst, src, nbytes);
-		}
-		
-		std::vector<std::uint8_t> 
+		nodeoze::buffer
 		read_blob_body(std::size_t nbytes)
 		{
-			std::vector<std::uint8_t> blob(nbytes);
-			read_blob_body(blob.data(), nbytes);
+			nodeoze::buffer blob;
+			nodeoze::buffer buf = base::get_buffer();
+			if ( !buf.empty() )
+			{
+				blob = buf.slice( position(), nbytes );
+				base::get_bytes(nbytes);
+			}
+			else
+			{
+				blob = nodeoze::buffer{ base::get_bytes( nbytes ), nbytes };
+			}
 			return blob;
 		}
 		
-		std::vector<std::uint8_t> 
+		nodeoze::buffer
 		read_blob()
 		{
 			auto nbytes = read_blob_header();
@@ -947,12 +1010,10 @@ namespace bstream
 		ibstream_cntxt(const void* data, std::size_t size) : ibstream{data, size}
 		{}
 		
-		ibstream_cntxt(obstream_cntxt&& ostr);
-		
 		ibstream_cntxt(obstream_cntxt const& ostr);
 
-		ibstream_cntxt(buffer::uptr&& buf)
-		: ibstream{std::move(buf)}
+		ibstream_cntxt(buffer const& buf)
+		: ibstream{ buf }
 		{}
 		
 		virtual void rewind() noexcept override

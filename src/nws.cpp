@@ -509,8 +509,11 @@ private:
 	void
 	make_frame( int type, std::uint8_t *msg, std::size_t msg_len, buffer &frame );
 
+	void
+	make_frame( int type, buffer const& msg, buffer &frame );
+
 	int
-	get_frame( std::uint8_t *in_buffer, std::size_t in_length, std::uint8_t *out_buffer, std::size_t out_size, std::size_t *out_length, std::size_t *out_parsed );
+	get_frame( const std::uint8_t *in_buffer, std::size_t in_length, std::uint8_t *out_buffer, std::size_t out_size, std::size_t *out_length, std::size_t *out_parsed );
 
 	inline std::size_t
 	msg_size_to_frame_size( std::size_t msg_size )
@@ -654,7 +657,8 @@ ws_filter_impl::send( buffer &in_buf, buffer &out_buf )
 		if ( in_buf.size() > 0 )
 		{
 			auto frame_type = ( m_type == type_t::text ) ? frame::type_t::text : frame::type_t::binary;
-			make_frame( frame_type, in_buf.data(), in_buf.size(), out_buf );
+//			make_frame( frame_type, in_buf.data(), in_buf.size(), out_buf );
+			make_frame( frame_type, in_buf, out_buf );
 			mlog( marker::websocket, log::level_t::info, "send data (% bytes)", out_buf.size() );
 		}
 
@@ -720,7 +724,8 @@ ws_filter_impl::send( buffer &in_buf, buffer &out_buf )
 		{
 			auto frame_type = ( m_type == type_t::text ) ? frame::type_t::text : frame::type_t::binary;
 			buffer pending_buf;
-			make_frame( frame_type, in_buf.data(), in_buf.size(), pending_buf );
+//			make_frame( frame_type, in_buf.data(), in_buf.size(), pending_buf );
+			make_frame( frame_type, in_buf, pending_buf );
 			mlog( marker::websocket, log::level_t::info, "queue data while waiting for handshake (% bytes)", pending_buf.size() );
 			m_pending_send_list.push( std::move( pending_buf ) );
 		}
@@ -757,7 +762,7 @@ ws_filter_impl::recv( std::vector< buffer > &in_bufs, buffer &out_send_buf, std:
 			{
 				std::vector< std::uint8_t > parsed_data( m_unparsed_recv_data.size() );
 
-				type = get_frame( &m_unparsed_recv_data[ 0 ], m_unparsed_recv_data.size(), &parsed_data[ 0 ], parsed_data.size(), &payload_len, &parsed_len );
+				type = get_frame( m_unparsed_recv_data.const_data(), m_unparsed_recv_data.size(), &parsed_data[ 0 ], parsed_data.size(), &payload_len, &parsed_len );
 				
 				if ( ( type == frame::type_t::text ) || ( type == frame::type_t::binary ) )
 				{
@@ -793,7 +798,8 @@ ws_filter_impl::recv( std::vector< buffer > &in_bufs, buffer &out_send_buf, std:
 						m_unparsed_recv_data.size( m_unparsed_recv_data.size() - parsed_len );
 					}
 					
-					make_frame( frame::type_t::pong, nullptr, 0, out_send_buf );
+//					make_frame( frame::type_t::pong, nullptr, 0, out_send_buf );
+					make_frame( frame::type_t::pong, buffer{}, out_send_buf );
 				}
 				else if ( type == frame::type_t::pong )
 				{
@@ -916,14 +922,14 @@ ws_filter_impl::reset()
 void
 ws_filter_impl::ping( buffer &out_buf )
 {
-	make_frame( frame::type_t::ping, nullptr, 0, out_buf );
+	make_frame( frame::type_t::ping, buffer{}, out_buf );
 }
 
 
 void
 ws_filter_impl::close( buffer &out_buf )
 {
-	make_frame( frame::type_t::close, nullptr, 0, out_buf );
+	make_frame( frame::type_t::close, buffer{}, out_buf );
 }
 
 
@@ -1115,7 +1121,7 @@ ws_filter_impl::parse( buffer &buf, http::message &message )
 	http_parser_init( &parser, HTTP_BOTH );
 	parser.data = &message;
 	
-	processed = http_parser_execute( &parser, &settings, reinterpret_cast< const char* >( buf.data() ), buf.size() );
+	processed = http_parser_execute( &parser, &settings, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
 	
 	message.set_code( static_cast< http::code_t >( parser.status_code ) );
 	
@@ -1148,6 +1154,60 @@ ws_filter_impl::make_server_handshake( buffer &buf )
 	buf.assign( os.str() );
 }
 
+void
+ws_filter_impl::make_frame( int type, buffer const& msg, buffer& frame )
+{
+	int pos = 0;
+	std::size_t msg_size = msg.size();
+	
+	switch ( type )
+	{
+		case frame::type_t::text:
+		case frame::type_t::binary:
+		{
+			frame.size( msg_size_to_frame_size( msg_size ) );
+	
+			frame.put( pos++, static_cast< std::uint8_t >( type ) );
+
+			if ( msg_size <= 125 )
+			{
+				frame.put( pos++, static_cast< std::uint8_t >( msg_size ) );
+			}
+			else if ( msg_size <= 65535 )
+			{
+				frame.put( pos++, 126 );
+				codec::big_endian::put( frame.mutable_data() + pos, static_cast< std::uint16_t >( msg_size ) );
+				pos += 2;
+			}
+			else
+			{
+				frame.put( pos++, 127 );
+				codec::big_endian::put( frame.mutable_data() + pos, static_cast< std::uint64_t >( msg_size ) );
+				pos += 8;
+			}
+
+			frame.assign( msg, pos );
+		}
+		break;
+		
+		case frame::type_t::ping:
+		case frame::type_t::pong:
+		case frame::type_t::close:
+		{
+			frame.size( 2 );
+			frame.put( pos++, static_cast< std::uint8_t >( type ) );
+			frame.put( pos++, 0 );
+		}
+		break;
+		
+		default:
+		{
+			assert( 0 );
+		}
+		break;
+	}
+}
+
 
 void
 ws_filter_impl::make_frame( int type, std::uint8_t *msg, std::size_t msg_size, buffer &frame )
@@ -1161,25 +1221,25 @@ ws_filter_impl::make_frame( int type, std::uint8_t *msg, std::size_t msg_size, b
 		{
 			frame.size( msg_size_to_frame_size( msg_size ) );
 	
-			frame[ pos++ ] = static_cast< std::uint8_t >( type );
+			frame.put( pos++, static_cast< std::uint8_t >( type ) );
 
 			if ( msg_size <= 125 )
 			{
-				frame[ pos++ ] = static_cast< std::uint8_t >( msg_size );
+				frame.put( pos++, static_cast< std::uint8_t >( msg_size ) );
 			}
 			else if ( msg_size <= 65535 )
 			{
-				frame[ pos++ ] = 126;
-				codec::big_endian::put( frame.data() + pos, static_cast< std::uint16_t >( msg_size ) );
+				frame.put( pos++, 126 );
+				codec::big_endian::put( frame.mutable_data() + pos, static_cast< std::uint16_t >( msg_size ) );
 				pos += 2;
 			}
 			else
 			{
-				frame[ pos++ ] = 127;
-				codec::big_endian::put( frame.data() + pos, static_cast< std::uint64_t >( msg_size ) );
+				frame.put( pos++, 127 );
+				codec::big_endian::put( frame.mutable_data() + pos, static_cast< std::uint64_t >( msg_size ) );
 				pos += 8;
 			}
-			
+
 			frame.assign( msg, pos, msg_size );
 		}
 		break;
@@ -1189,8 +1249,8 @@ ws_filter_impl::make_frame( int type, std::uint8_t *msg, std::size_t msg_size, b
 		case frame::type_t::close:
 		{
 			frame.size( 2 );
-			frame[ pos++ ] = static_cast< std::uint8_t >( type );
-			frame[ pos++ ] = 0;
+			frame.put( pos++, static_cast< std::uint8_t >( type ) );
+			frame.put( pos++, 0 );
 		}
 		break;
 		
@@ -1204,7 +1264,7 @@ ws_filter_impl::make_frame( int type, std::uint8_t *msg, std::size_t msg_size, b
 
 
 int
-ws_filter_impl::get_frame( std::uint8_t *in_buffer, std::size_t in_length, std::uint8_t *out_buffer, std::size_t out_size, std::size_t *out_length, std::size_t *out_parsed )
+ws_filter_impl::get_frame( const std::uint8_t *in_buffer, std::size_t in_length, std::uint8_t *out_buffer, std::size_t out_size, std::size_t *out_length, std::size_t *out_parsed )
 {
 	if ( in_length < 2 )
 	{
@@ -1262,7 +1322,7 @@ ws_filter_impl::get_frame( std::uint8_t *in_buffer, std::size_t in_length, std::
 		mask = *( ( unsigned int* )( in_buffer + pos ) );
 		pos += 4;
 
-		std::uint8_t* c = in_buffer + pos;
+		std::uint8_t* c = const_cast< unsigned char* >( in_buffer ) + pos;
 
 		for ( auto i = 0u; i < payload_length; i++ )
 		{

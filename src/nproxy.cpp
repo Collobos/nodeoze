@@ -359,18 +359,18 @@ socks5_proxy::send( buffer &in_buf, buffer &out_buf )
 			{
 				out_buf.size( 4 );
 			
-				out_buf[ 0 ] = 0x05;
-				out_buf[ 1 ] = 0x02;
-				out_buf[ 2 ] = 0x00;
-				out_buf[ 3 ] = 0x02;
+				out_buf.put( 0, 0x05 );
+				out_buf.put( 1, 0x02 );
+				out_buf.put( 2, 0x00 );
+				out_buf.put( 3, 0x02 );
 			}
 			else
 			{
 				out_buf.size( 3 );
 				
-				out_buf[ 0 ] = 0x05;
-				out_buf[ 1 ] = 0x01;
-				out_buf[ 2 ] = 0x00;
+				out_buf.put( 0, 0x05 );
+				out_buf.put( 1, 0x01 );
+				out_buf.put( 2, 0x00 );
 			}
 			
 			mlog( marker::proxy_socks, log::level_t::info, "greeting size: %", out_buf.size() );
@@ -410,7 +410,7 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 			std::size_t handshake_left	= 2 - m_recv_handshake.size();
 			mlog( marker::proxy_socks, log::level_t::info, "handshake left: %", handshake_left );
 	
-			m_recv_handshake.append( in_recv_bufs[ 0 ].data(), std::min( handshake_left, bytes_available ) );
+			m_recv_handshake.append( in_recv_bufs[ 0 ].const_data(), std::min( handshake_left, bytes_available ) );
 			
 			if ( m_recv_handshake.size() < 2 )
 			{
@@ -458,7 +458,7 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 			std::size_t bytes_available = in_recv_bufs[ 0 ].size();
 			std::size_t handshake_left	= 2 - m_recv_handshake.size();
 	
-			m_recv_handshake.append( in_recv_bufs[ 0 ].data(), std::min( handshake_left, bytes_available ) );
+			m_recv_handshake.append( in_recv_bufs[ 0 ].const_data(), std::min( handshake_left, bytes_available ) );
 			
 			if ( m_recv_handshake.size() < 2 )
 			{
@@ -492,7 +492,7 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 			std::size_t handshake_left	= 4 - m_recv_handshake.size();
 			mlog( marker::proxy_socks, log::level_t::info, "handshake left: %", handshake_left );
 	
-			m_recv_handshake.append( in_recv_bufs[ 0 ].data(), std::min( handshake_left, bytes_available ) );
+			m_recv_handshake.append( in_recv_bufs[ 0 ].const_data(), std::min( handshake_left, bytes_available ) );
 			
 			if ( m_recv_handshake.size() < 4 )
 			{
@@ -568,26 +568,42 @@ socks5_proxy::make_auth_buffer()
 	std::string		password;
 	std::uint8_t	ulen;
 	std::uint8_t	plen;
-	buffer			buf;
+//	buffer			buf;
 	
 	proxy::manager::shared().decode_authorization( username, password );
 	
 	ulen = username.size() > 255 ? 255 : ( std::uint8_t ) username.size();
 	plen = password.size() > 255 ? 255 : ( std::uint8_t ) password.size();
+
+	buffer buf( 3 + ulen + plen );
+	std::size_t ibuf = 0;
+
+
+//	buf.push_back( 0x01 );
+//	buf.push_back( ulen );
+	buf.put( ibuf++, 0x01 );
+	buf.put( ibuf++, ulen );
+
 	
-	buf.push_back( 0x01 );
-	buf.push_back( ulen );
-	
-	for ( auto &c : username )
+//	for ( auto &c : username )
+//	{
+//		buf.push_back( c );
+//	}
+	for ( auto i = 0; i < ulen; ++i )
 	{
-		buf.push_back( c );
+		buf.put( ibuf++, username[i] );
 	}
 	
-	buf.push_back( plen );
-	
-	for ( auto &c : password )
+//	buf.push_back( plen );
+	buf.put( ibuf++, ulen );
+
+//	for ( auto &c : password )
+//	{
+//		buf.push_back( c );
+//	}
+	for ( auto i = 0; i < plen; ++i )
 	{
-		buf.push_back( c );
+		buf.put( ibuf++, password[i] );
 	}
 	
 	return buf;
@@ -597,14 +613,17 @@ socks5_proxy::make_auth_buffer()
 buffer
 socks5_proxy::make_connect_buffer()
 {
-	buffer buf;
+//	buffer buf;
+	buffer buf( 10 );
+	std::size_t ibuf = 0;
+
 	sockaddr_storage addr;
 	sockaddr_in		*v4;
 			
 	ip::endpoint_to_sockaddr( m_to, addr );
 			
 	v4 = reinterpret_cast< sockaddr_in* >( &addr );
-			
+/*			
 	buf.push_back( 0x05 );
 	buf.push_back( 0x01 );
 	buf.push_back( 0x00 );
@@ -615,6 +634,17 @@ socks5_proxy::make_connect_buffer()
 	buf.push_back( ( ( std::uint8_t* ) &v4->sin_addr.s_addr )[ 3 ] );
 	buf.push_back( ( ( std::uint8_t* ) &v4->sin_port )[ 0 ] );
 	buf.push_back( ( ( std::uint8_t* ) &v4->sin_port )[ 1 ] );
+*/	
+	buf.put( ibuf++, 0x05 );
+	buf.put( ibuf++, 0x01 );
+	buf.put( ibuf++, 0x00 );
+	buf.put( ibuf++, 0x01 );
+	buf.put( ibuf++, ( ( std::uint8_t* ) &v4->sin_addr.s_addr )[ 0 ] );
+	buf.put( ibuf++, ( ( std::uint8_t* ) &v4->sin_addr.s_addr )[ 1 ] );
+	buf.put( ibuf++, ( ( std::uint8_t* ) &v4->sin_addr.s_addr )[ 2 ] );
+	buf.put( ibuf++, ( ( std::uint8_t* ) &v4->sin_addr.s_addr )[ 3 ] );
+	buf.put( ibuf++, ( ( std::uint8_t* ) &v4->sin_port )[ 0 ] );
+	buf.put( ibuf++, ( ( std::uint8_t* ) &v4->sin_port )[ 1 ] );
 	
 	return buf;
 }

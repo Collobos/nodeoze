@@ -157,7 +157,8 @@ set(NODEOZE_SRCS
 	include/nodeoze/nusername.h 
 	include/nodeoze/nuuid.h 
 	include/nodeoze/nws.h 
-	include/nodeoze/nzip.h 
+	include/nodeoze/nzip.h
+	include/nodeoze/traits.h
 	src/naddress.cpp 
 	src/nany.cpp 
 	src/napplication.cpp 
