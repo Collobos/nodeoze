@@ -50,6 +50,8 @@ public:
 
 	using elem_type = std::uint8_t;
 	using size_type =  std::size_t;
+	using position_type = std::uint64_t;
+	using offset_type = std::int64_t;
 	using checksum_type = std::uint32_t;
 
 	using dealloc_function =  std::function< void ( elem_type *data ) >;
@@ -579,8 +581,9 @@ public:
 				
 
 	inline buffer
-	slice( size_type offset, size_type len ) const
+	slice( size_type offset, size_type len, bool force_copy = false ) const
 	{
+
 		assert( invariants() );
 
 		buffer result( do_not_allocate_shared{} );
@@ -591,7 +594,7 @@ public:
 			slice_size = std::min( len, m_size - offset );
 			if ( slice_size > 0 )
 			{
-				if ( m_shared->is_exclusive() )
+				if ( m_shared->is_exclusive() || force_copy )
 				{
 					_buffer_shared *tmp = new _buffer_shared{ m_data + offset, slice_size };
 					result.m_shared = tmp;
@@ -608,6 +611,10 @@ public:
 		}
 
 		assert( invariants() );
+		if ( result.m_shared == nullptr )
+		{
+			result.m_shared = new _buffer_shared{};
+		}
 		assert( result.invariants() );
 		return result;
 	}
@@ -1064,14 +1071,14 @@ public:
 
 
 	inline buffer&
-	reckless_put( size_type pos, elem_type value )
+	rput( position_type pos, elem_type value )
 	{
 		*( m_data + pos  ) = value;
 		return *this;
 	}
 
 	inline buffer&
-	reckless_put( size_type pos, const void *data, size_type length )
+	rputn( position_type pos, const void *data, size_type length )
 	{
 		std::memmove( m_data + pos, data, length );
 		return *this;
@@ -1465,41 +1472,83 @@ private:
 	buffer	m_buf;
 };
 
-// This is for interim support of msgpack::packer
+// Ghetto streambuf to provide support for msgpack::packer and unpacker
 
 class bufwriter
 {
 public:
-	bufwriter( std::size_t init_buf_size = 2048 )
+
+	inline
+	bufwriter( std::size_t size )
 	:
-	m_buf{ init_buf_size },
+	m_buf{ size },
 	m_pos{ 0 }
 	{}
 
-
-	void write(const char* src, size_t len)
+	inline void
+	reset()
 	{
-		std::size_t required_size = m_pos + len;
-		if ( required_size > m_buf.size() )
-		{
-			std::size_t new_size = ( 3 * required_size ) / 2;
-			m_buf.size( new_size );
-		}
-
-		m_buf.reckless_put( m_pos, src, len );
-		m_pos += len;
+		m_pos = 0;
 	}
 
-	buffer
-	move_buffer()
+	inline std::size_t
+	position() const
 	{
-		return buffer{ std::move( m_buf ) };
+		return m_pos;
+	}
+
+	inline void 
+	putn( const void* src, std::size_t n )
+	{
+		accommodate( n );
+		m_buf.rputn( m_pos, src, n );
+		m_pos += n;
+	}
+
+	inline void 
+	put( std::uint8_t b )
+	{
+		accommodate( 1 );
+		m_buf.rput( m_pos, b );
+		++m_pos;
+	}
+
+	inline std::uint8_t* 
+	accommodate( std::size_t n )
+	{
+		auto remaining = m_buf.size() - m_pos;
+		if ( n > remaining )
+		{
+			auto required = m_pos + n;
+			auto cushioned_size = ( 3 * required ) / 2;
+			m_buf.size( cushioned_size );
+		}
+		return m_buf.mutable_data() + m_pos;
+	}
+
+	inline void 
+	advance( std::size_t n )
+	{
+		m_pos += n;
+	}
+
+	inline buffer
+	get_buffer()
+	{
+		m_buf.size( m_pos );
+		return m_buf;
+	}
+
+	inline void 
+	write(const char* src, std::size_t len)
+	{
+		putn( src, len );
 	}
 
 private:
+
 	buffer m_buf;
 	std::size_t m_pos;
-
 };
 
 }

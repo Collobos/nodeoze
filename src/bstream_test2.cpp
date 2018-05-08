@@ -172,7 +172,7 @@ TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 		mpc0.n = 27;
 
 		os << mpc0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		fee mpc1 = is.read_as<fee>();
 
 		CHECK(mpc1.s == mpc0.s);
@@ -194,7 +194,7 @@ TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 		mpc0.n = 27;
 
 		os << mpc0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		fie mpc1 = is.read_as<fie>();
 
 		CHECK(mpc1.s == mpc0.s);
@@ -216,7 +216,7 @@ TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 		mpc0.n = 27;
 
 		os << mpc0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		foe mpc1 = is.read_as<foe>();
 
 		CHECK(mpc1.s == mpc0.s);
@@ -238,7 +238,7 @@ TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 		mpc0.n = 27;
 
 		os << mpc0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		fum mpc1 = is.read_as<fum>();
 
 		CHECK(mpc1.s == mpc0.s);

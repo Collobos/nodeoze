@@ -68,7 +68,7 @@ TEST_CASE("nodeoze/smoke/bstream/array_base_macro")
 	foo f0("france is bacon", 27);
 	os << f0;
 	
-	bstream::ibstream is{os};
+	bstream::ibstream is{ os.get_buffer() };
 	
 	foo f1 = is.read_as<foo>();
 	CHECK(f1.name() == f0.name());
@@ -81,7 +81,7 @@ TEST_CASE("nodeoze/smoke/bstream/map_base_macro")
 	far f0("france is bacon", 27);
 	os << f0;
 	
-	bstream::ibstream is{os};
+	bstream::ibstream is{ os.get_buffer() };
 	
 	far f1 = is.read_as<far>();
 	CHECK(f1.name() == f0.name());

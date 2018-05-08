@@ -47,7 +47,7 @@
 #include <boost/endian/conversion.hpp>
 #include <nodeoze/bstream/error.h>
 #include <nodeoze/bstream/typecode.h>
-#include <nodeoze/bstream/in_byte_stream.h>
+#include <nodeoze/bstream/numstream.h>
 #include <nodeoze/bstream/utils/traits.h>
 #include <nodeoze/nbuffer.h>
 
@@ -180,7 +180,7 @@ namespace bstream
             std::numeric_limits<T>::is_signed && 
             sizeof(T) == 1>>
     {
-        inline static T get(in_byte_stream& is)
+        inline static T get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -202,7 +202,7 @@ namespace bstream
                     case typecode::int_8:
                         return static_cast<T>(static_cast<std::int8_t>(is.get()));
                     default:
-                        throw type_error("invalid value for 8-bit signed integer");
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }                
         }
@@ -215,7 +215,7 @@ namespace bstream
             !std::numeric_limits<T>::is_signed && 
             sizeof(T) == 1>>
     {
-        inline static T get(in_byte_stream& is)
+        inline static T get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -233,7 +233,7 @@ namespace bstream
                     case typecode::uint_8:
                         return static_cast<T>(is.get());
                     default:
-                        throw type_error("invalid value for 8-bit unsigned integer");
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }                
         }
@@ -246,7 +246,7 @@ namespace bstream
             std::numeric_limits<T>::is_signed && 
             sizeof(T) == 2>>
     {
-        inline static T get(in_byte_stream& is)
+        inline static T get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -266,25 +266,25 @@ namespace bstream
                     case typecode::bool_false:
                         return static_cast<T>(0);
                     case typecode::int_8:
-                        return static_cast<T>(is.get_arithmetic_as<int8_t>());
+                        return static_cast<T>(is.get_num<int8_t>());
                     case typecode::uint_8:
-                        return static_cast<T>(is.get_arithmetic_as<uint8_t>());
+                        return static_cast<T>(is.get_num<uint8_t>());
                     case typecode::int_16:
-                        return static_cast<T>(is.get_arithmetic_as<int16_t>());
+                        return static_cast<T>(is.get_num<int16_t>());
                     case typecode::uint_16:
                     {
-                        std::uint16_t n = is.get_arithmetic_as<uint16_t>();
+                        std::uint16_t n = is.get_num<uint16_t>();
                         if (n <= std::numeric_limits<T>::max())
                         {
                             return static_cast<T>(n);
                         }
                         else
                         {
-                            throw type_error("invalid value for 16-bit signed integer");
+							throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                         }
                     }
                     default:
-                        throw type_error("invalid value for 16-bit signed integer");
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
         }
@@ -297,7 +297,7 @@ namespace bstream
             !std::numeric_limits<T>::is_signed && 
             sizeof(T) == 2>>
     {
-        inline static T get(in_byte_stream& is)
+        inline static T get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -313,11 +313,11 @@ namespace bstream
                     case typecode::bool_false:
                         return static_cast<T>(0);
                     case typecode::uint_8:
-                        return static_cast<T>(is.get_arithmetic_as<uint8_t>());
+                        return static_cast<T>(is.get_num<uint8_t>());
                     case typecode::uint_16:
-                        return static_cast<T>(is.get_arithmetic_as<uint16_t>());
+                        return static_cast<T>(is.get_num<uint16_t>());
                     default:
-                        throw type_error("invalid value for 16-bit unsigned integer");
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
         }
@@ -330,7 +330,7 @@ namespace bstream
             std::numeric_limits<T>::is_signed && 
             sizeof(T) == 4>>
     {
-        inline static T get(in_byte_stream& is)
+        inline static T get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -350,29 +350,29 @@ namespace bstream
                     case typecode::bool_false:
                         return static_cast<T>(0);
                     case typecode::int_8:
-                        return static_cast<T>(is.get_arithmetic_as<int8_t>());
+                        return static_cast<T>(is.get_num<int8_t>());
                     case typecode::uint_8:
-                        return static_cast<T>(is.get_arithmetic_as<uint8_t>());
+                        return static_cast<T>(is.get_num<uint8_t>());
                     case typecode::int_16:
-                        return static_cast<T>(is.get_arithmetic_as<int16_t>());
+                        return static_cast<T>(is.get_num<int16_t>());
                     case typecode::uint_16:
-                        return static_cast<T>(is.get_arithmetic_as<uint16_t>());
+                        return static_cast<T>(is.get_num<uint16_t>());
                     case typecode::int_32:
-                        return static_cast<T>(is.get_arithmetic_as<int32_t>());
+                        return static_cast<T>(is.get_num<int32_t>());
                     case typecode::uint_32:
                     {
-                        std::uint32_t n = is.get_arithmetic_as<uint32_t>();
+                        std::uint32_t n = is.get_num<uint32_t>();
                         if (n <= std::numeric_limits<T>::max())
                         {
                             return static_cast<T>(n);
                         }
                         else
                         {
-                            throw type_error("invalid value for 32-bit signed integer");
+							throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                         }
                     }
                     default:
-                        throw type_error("invalid value for 32-bit signed integer");
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
         }
@@ -385,7 +385,7 @@ namespace bstream
             !std::numeric_limits<T>::is_signed && 
             sizeof(T) == 4>>
     {
-        inline static T get(in_byte_stream& is)
+        inline static T get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -401,13 +401,13 @@ namespace bstream
                     case typecode::bool_false:
                         return static_cast<T>(0);
                     case typecode::uint_8:
-                        return static_cast<T>(is.get_arithmetic_as<uint8_t>());
+                        return static_cast<T>(is.get_num<uint8_t>());
                     case typecode::uint_16:
-                        return static_cast<T>(is.get_arithmetic_as<uint16_t>());
+                        return static_cast<T>(is.get_num<uint16_t>());
                     case typecode::uint_32:
-                        return static_cast<T>(is.get_arithmetic_as<uint32_t>());
+                        return static_cast<T>(is.get_num<uint32_t>());
                     default:
-                        throw type_error("invalid value for 32-bit unsigned integer");
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
         }
@@ -420,7 +420,7 @@ namespace bstream
             std::numeric_limits<T>::is_signed && 
             sizeof(T) == 8>>
     {
-        inline static T get(in_byte_stream& is)
+        inline static T get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -440,33 +440,33 @@ namespace bstream
                     case typecode::bool_false:
                         return static_cast<T>(0);
                     case typecode::int_8:
-                        return static_cast<T>(is.get_arithmetic_as<int8_t>());
+                        return static_cast<T>(is.get_num<int8_t>());
                     case typecode::uint_8:
-                        return static_cast<T>(is.get_arithmetic_as<uint8_t>());
+                        return static_cast<T>(is.get_num<uint8_t>());
                     case typecode::int_16:
-                        return static_cast<T>(is.get_arithmetic_as<int16_t>());
+                        return static_cast<T>(is.get_num<int16_t>());
                     case typecode::uint_16:
-                        return static_cast<T>(is.get_arithmetic_as<uint16_t>());
+                        return static_cast<T>(is.get_num<uint16_t>());
                     case typecode::int_32:
-                        return static_cast<T>(is.get_arithmetic_as<int32_t>());
+                        return static_cast<T>(is.get_num<int32_t>());
                     case typecode::uint_32:
-                        return static_cast<T>(is.get_arithmetic_as<uint32_t>());
+                        return static_cast<T>(is.get_num<uint32_t>());
                     case typecode::int_64:
-                        return static_cast<T>(is.get_arithmetic_as<int64_t>());
+                        return static_cast<T>(is.get_num<int64_t>());
                     case typecode::uint_64:
                     {
-                        std::uint64_t n = is.get_arithmetic_as<uint64_t>();
+                        std::uint64_t n = is.get_num<uint64_t>();
                         if (n <= std::numeric_limits<T>::max())
                         {
                             return static_cast<T>(n);
                         }
                         else
                         {
-                            throw type_error("invalid value for 64-bit signed integer");
+							throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                         }
                     }
                     default:
-                        throw type_error("invalid value for 64-bit signed integer");
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
         }
@@ -479,7 +479,7 @@ namespace bstream
             !std::numeric_limits<T>::is_signed && 
             sizeof(T) == 8>>
     {
-        inline static T get(in_byte_stream& is)
+        inline static T get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode <= typecode::positive_fixint_max)
@@ -495,15 +495,15 @@ namespace bstream
                     case typecode::bool_false:
                         return static_cast<T>(0);
                     case typecode::uint_8:
-                        return static_cast<T>(is.get_arithmetic_as<uint8_t>());
+                        return static_cast<T>(is.get_num<uint8_t>());
                     case typecode::uint_16:
-                        return static_cast<T>(is.get_arithmetic_as<uint16_t>());
+                        return static_cast<T>(is.get_num<uint16_t>());
                     case typecode::uint_32:
-                        return static_cast<T>(is.get_arithmetic_as<uint32_t>());
+                        return static_cast<T>(is.get_num<uint32_t>());
                     case typecode::uint_64:
-                        return static_cast<T>(is.get_arithmetic_as<uint64_t>());
+                        return static_cast<T>(is.get_num<uint64_t>());
                     default:
-                        throw type_error("invalid value for type 64-bit unsigned integer");
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
         }
@@ -512,20 +512,19 @@ namespace bstream
     template<>
     struct value_deserializer<std::string>
     {
-        inline std::string operator()(in_byte_stream& is) const
+        inline std::string operator()(inumstream& is) const
         {
             return get(is);
         }
 
-        inline static std::string get(in_byte_stream& is)
+        inline static std::string get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode >= typecode::fixstr_min && tcode <= typecode::fixstr_max)
             {
                 std::uint8_t mask = 0x1f;
                 std::size_t length = tcode & mask;
-                const char* p = reinterpret_cast<const char*>(is.get_bytes(length));
-                return std::string(p, length);
+                return is.getn( length ).to_string();
             }
             else
             {
@@ -533,26 +532,21 @@ namespace bstream
                 {
                     case typecode::str_8:
                     {
-                        std::size_t length = is.get_arithmetic_as<std::uint8_t>();
-                        const char* p = reinterpret_cast<const char*>(is.get_bytes(length));
-                        return std::string(p, length);
+                        std::size_t length = is.get_num<std::uint8_t>();
+                		return is.getn( length ).to_string();
                     }
                     case typecode::str_16:
                     {
-                        std::size_t length = is.get_arithmetic_as<std::uint16_t>();
-                        const char* p = reinterpret_cast<const char*>(is.get_bytes(length));
-                        return std::string(p, length);
+                        std::size_t length = is.get_num<std::uint16_t>();
+                		return is.getn( length ).to_string();
                     }
                     case typecode::str_32:
                     {
-                        std::size_t length = is.get_arithmetic_as<std::uint32_t>();
-                        const char* p = reinterpret_cast<const char*>(is.get_bytes(length));
-                        return std::string(p, length);
+                        std::size_t length = is.get_num<std::uint32_t>();
+                		return is.getn( length ).to_string();
                     }
                     default:
-						std::ostringstream msg;
-						msg << "2 - at pos " << is.position() << " - invalid typecode value for string: " << std::hex << (int)tcode << std::dec;
-                        throw type_error(msg.str());
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
         }
@@ -561,28 +555,17 @@ namespace bstream
 	template<>
     struct value_deserializer<nodeoze::string_alias>
 	{
-        inline nodeoze::string_alias operator()(in_byte_stream& is) const
+        inline nodeoze::string_alias operator()(inumstream& is) const
         {
             return get(is);
         }
 
-		inline static nodeoze::string_alias get(in_byte_stream& is, std::size_t length)
+		inline static nodeoze::string_alias get(inumstream& is, std::size_t length)
 		{
-			nodeoze::buffer buf = is.get_buffer();
-			nodeoze::buffer slice;
-			if ( buf.empty() )
-			{
-				slice = nodeoze::buffer( reinterpret_cast<const char*>(is.get_bytes(length)), length );
-			}
-			else
-			{
-				slice = buf.slice( is.position(), length );
-				is.get_bytes( length );
-			}
-			return nodeoze::string_alias{ slice };
+			return nodeoze::string_alias{ is.getn( length ) };
 		}
 
-        inline static nodeoze::string_alias get(in_byte_stream& is)
+        inline static nodeoze::string_alias get(inumstream& is)
         {
             auto tcode = is.get();
             if (tcode >= typecode::fixstr_min && tcode <= typecode::fixstr_max)
@@ -597,23 +580,21 @@ namespace bstream
                 {
                     case typecode::str_8:
                     {
-                        std::size_t length = is.get_arithmetic_as<std::uint8_t>();
+                        std::size_t length = is.get_num<std::uint8_t>();
 						return get( is, length );
                     }
                     case typecode::str_16:
                     {
-                        std::size_t length = is.get_arithmetic_as<std::uint16_t>();
+                        std::size_t length = is.get_num<std::uint16_t>();
 						return get( is, length );
                     }
                     case typecode::str_32:
                     {
-                        std::size_t length = is.get_arithmetic_as<std::uint32_t>();
+                        std::size_t length = is.get_num<std::uint32_t>();
 						return get( is, length );
                     }
                     default:
-						std::ostringstream msg;
-						msg << "2 - at pos " << is.position() << " - invalid typecode value for string: " << std::hex << (int)tcode << std::dec;
-                        throw type_error(msg.str());
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
         }
@@ -633,10 +614,10 @@ namespace bstream
 	 *	\a a \a priori the contents of buffer as streamed by the sender (that is,
 	 *	the types, number, and order of the items).
 	 */
-    class ibstream : public in_byte_stream
+    class ibstream : public inumstream
     {
     public:
-        using base = in_byte_stream;
+        using base = inumstream;
 
 		template<class U, class E> friend struct value_deserializer;
 		
@@ -646,46 +627,26 @@ namespace bstream
 		ibstream() 
 		{}
 
-		/*	\brief constructor with externally-managed buffer
-		 * 
-		 *	\param data pointer to the beginning of the buffer
-		 *	\param size number of bytes in the buffer
-		 * 
-		 *	The caller is responsible for guaranteeing that the buffer passed as
-		 *	\c data will be valid throughout the lifetime of the ibstream instance
-		 *	being constructed.
-		 */
-
 		inline
-		ibstream( ibstream const& rhs )
-		: in_byte_stream{ rhs }
+		ibstream( std::unique_ptr< std::streambuf > strmbuf )
+		: inumstream{ std::move( strmbuf ) }
 		{}
 
 		inline
-		ibstream(const void* data, std::size_t size)
-		: in_byte_stream{ data, size }
+		ibstream( std::unique_ptr< imembuf > strmbuf )
+		: inumstream{ std::move( strmbuf ) }
 		{}
-		
-		/*! \brief constructor from copied obstream buffer
-		 *	\param ostr obstream instance whose internal buffer is copied
-		 * 
-		 *	The constructed instance of ibstream will own a read-only copy of the buffer
-		 *	from \c ostr. The copy will be destroyed when this instance of ibstream is destroyed.
-		 */
-		ibstream(obstream const& ostr);
 
-		/*!	\brief constructor from moved const_memory_block
-		 *	\param buf unique_ptr to buffer whose contents are moved to this ibstream
-		 *	
-		 *	The constructed instance of ibstream takes possession of \c buf (by moving it). The
-		 *	entire contents of the buffer are assumed to be meaningful (that is, corresponding to
-		 *	the originating obstream).
-		 */
 		inline
 		ibstream( buffer const& buf )
-		: in_byte_stream{ buf }
+		: inumstream{ buf }
 		{}
-		
+
+		inline
+		ibstream( buffer&& buf )
+		: inumstream{ std::move( buf ) }
+		{}
+
         template<class T>
         inline typename std::enable_if_t<is_ibstream_constructible<T>::value, T>
         read_as()
@@ -725,24 +686,22 @@ namespace bstream
                 {
                     case typecode::str_8:
                     {
-                        length = base::get_arithmetic_as<std::uint8_t>();
+                        length = base::get_num<std::uint8_t>();
                     }
 					break;
                     case typecode::str_16:
                     {
-                        length = base::get_arithmetic_as<std::uint16_t>();
+                        length = base::get_num<std::uint16_t>();
                     }
 					break;
                     case typecode::str_32:
                     {
-                        length = base::get_arithmetic_as<std::uint32_t>();
+                        length = base::get_num<std::uint32_t>();
                     }
 					break;
                     default:
 					{
-						std::ostringstream msg;
-						msg << "1 - invalid typecode value for string: " << std::hex << (int)tcode << std::dec;
-                        throw type_error(msg.str());
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 					}
                 }
             }
@@ -765,19 +724,17 @@ namespace bstream
                 {
                     case typecode::array_16:
                     {
-                        length = base::get_arithmetic_as<std::uint16_t>();
+                        length = base::get_num<std::uint16_t>();
                     }
                     break;
                     case typecode::array_32:
                     {
-                        length = base::get_arithmetic_as<std::uint32_t>();
+                        length = base::get_num<std::uint32_t>();
                     }
                     break;
                     default:
                     {
-						std::ostringstream msg;
-						msg << "invalid value for array header: " << std::hex << (int)tcode << std::dec;
-                        throw type_error(msg.str());
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                     }
                 }
             }
@@ -800,19 +757,17 @@ namespace bstream
                 {
 				case typecode::map_16:
                     {
-                        length = base::get_arithmetic_as<std::uint16_t>();
+                        length = base::get_num<std::uint16_t>();
                     }
                     break;
                     case typecode::map_32:
                     {
-                        length = base::get_arithmetic_as<std::uint32_t>();
+                        length = base::get_num<std::uint32_t>();
                     }
                     break;
                     default:
                     {
-						std::ostringstream msg;
-						msg << "invalid value for map header: " << std::hex << (int)tcode << std::dec;
-                        throw type_error(msg.str());
+						throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                     }
                 }
             }
@@ -825,9 +780,7 @@ namespace bstream
 			auto name = read_as<std::string>();
 			if (name != key)
 			{				
-				std::ostringstream msg;
-				msg << "invalid map key: expected " << key << ", found " << name;
-                throw type_error(msg.str());
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 			}
 			return *this;
 		}
@@ -838,9 +791,7 @@ namespace bstream
 			auto actual = read_array_header();
 			if (actual != expected)
 			{
-				std::ostringstream msg;
-				msg << "invalid size in array header: expected " << expected << ", found " << actual;
-                throw type_error(msg.str());
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 			}
 			return *this;
 		}
@@ -851,9 +802,7 @@ namespace bstream
 			auto actual = read_map_header();
 			if (actual != expected)
 			{
-				std::ostringstream msg;
-				msg << "invalid size in map header: expected " << expected << ", found " << actual;
-                throw type_error(msg.str());
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 			}
 			return *this;
 		}
@@ -867,22 +816,22 @@ namespace bstream
             {
                 case typecode::bin_8:
                 {
-                    length = base::get_arithmetic_as<std::uint8_t>();
+                    length = base::get_num<std::uint8_t>();
                 }
                 break;
                 case typecode::bin_16:
                 {
-                    length = base::get_arithmetic_as<std::uint16_t>();
+                    length = base::get_num<std::uint16_t>();
                 }
                 break;
                 case typecode::bin_32:
                 {
-                    length = base::get_arithmetic_as<std::uint32_t>();
+                    length = base::get_num<std::uint32_t>();
                 }
                 break;
                 default:
                 {
-                    throw type_error("invalid value for blob header");
+					throw std::system_error{ make_error_code( bstream::errc::type_error ) };
                 }
             }
             return length;
@@ -891,18 +840,7 @@ namespace bstream
 		nodeoze::buffer
 		read_blob_body(std::size_t nbytes)
 		{
-			nodeoze::buffer blob;
-			nodeoze::buffer buf = base::get_buffer();
-			if ( !buf.empty() )
-			{
-				blob = buf.slice( position(), nbytes );
-				base::get_bytes(nbytes);
-			}
-			else
-			{
-				blob = nodeoze::buffer{ base::get_bytes( nbytes ), nbytes };
-			}
-			return blob;
+			return base::getn( nbytes );
 		}
 		
 		nodeoze::buffer
@@ -912,18 +850,96 @@ namespace bstream
 			return read_blob_body(nbytes);
 		}
 
+		inline std::size_t
+		read_ext_header( std::uint8_t& ext_type )
+		{
+            std::size_t length = 0;
+            auto tcode = base::get();
+            switch (tcode)
+            {
+                case typecode::fixext_1:
+                {
+                    length = 1;
+					ext_type = base::get_num< std::uint8_t >();
+                }
+                break;
+                case typecode::fixext_2:
+                {
+                    length = 2;
+					ext_type = base::get_num< std::uint8_t >();
+                }
+                break;
+                case typecode::fixext_4:
+                {
+                    length = 4;
+					ext_type = base::get_num< std::uint8_t >();
+                }
+                break;
+                case typecode::fixext_8:
+                {
+                    length = 8;
+					ext_type = base::get_num< std::uint8_t >();
+                }
+                break;
+                case typecode::fixext_16:
+                {
+                    length = 16;
+					ext_type = base::get_num< std::uint8_t >();
+                }
+                break;
+                case typecode::ext_8:
+                {
+                    length = base::get_num< std::uint8_t >();
+					ext_type = base::get_num< std::uint8_t >();
+                }
+                break;
+                case typecode::ext_16:
+                {
+                    length = base::get_num<std::uint16_t>();
+					ext_type = base::get_num< std::uint8_t >();
+                }
+                break;
+                case typecode::ext_32:
+                {
+                    length = base::get_num<std::uint32_t>();
+					ext_type = base::get_num< std::uint8_t >();
+                }
+                break;
+                default:
+                {
+					throw std::system_error{ make_error_code( bstream::errc::type_error ) };
+                }
+            }
+            return length;
+		}
+
+		nodeoze::buffer
+		read_ext_body(std::size_t nbytes)
+		{
+			return base::getn( nbytes );
+		}
+		
 		void
 		read_nil()
 		{
 			auto tcode = base::get();
 			if (tcode != typecode::nil)
 			{
-				throw type_error("expected nil typecode");
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 			}
 		}
 
+		virtual void 
+		rewind() noexcept
+		{
+			position( 0 );
+		}
+
+		buffer
+		get_msgpack_obj_buf();
+
 	protected:
-		
+
 		template<class T>
 		using shared_ptr_factory = std::function< std::shared_ptr<T> (ibstream&) >;
 
@@ -936,7 +952,7 @@ namespace bstream
 			auto n = read_array_header();
 			if (n != 1)
 			{
-				throw type_error("ill-formed shared_ptr in stream, invalid array size");
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 			}
 			
 			auto code = peek();
@@ -957,7 +973,7 @@ namespace bstream
 			}
 			else
 			{
-				throw type_error("invalid typecode for shared_ptr");
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 			}
 			return result;
 		}
@@ -972,7 +988,7 @@ namespace bstream
 			auto n = read_array_header();
 			if (n != 1)
 			{
-				throw type_error("ill-formed unique_ptr in stream, invalid array size");
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 			}
 			
 			auto code = peek();
@@ -988,7 +1004,7 @@ namespace bstream
 			}
 			else
 			{
-				throw type_error("invalid typecode for unique_ptr");
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
 			}
 		}
 		
@@ -997,30 +1013,47 @@ namespace bstream
 		
 		virtual void 
 		save_ptr(std::shared_ptr<void> ptr);
-		
+
+		void 
+		ingest( bufwriter& os );
+
+		std::unique_ptr< bufwriter > m_bufwriter = nullptr;		
     };
 	
 	class ibstream_cntxt : public ibstream
 	{
 	public:
+
 		inline
 		ibstream_cntxt() : ibstream{} { }
 
 		inline
-		ibstream_cntxt(const void* data, std::size_t size) : ibstream{data, size}
+		ibstream_cntxt( std::unique_ptr< std::streambuf > strmbuf )
+		: ibstream{ std::move( strmbuf ) }
 		{}
-		
-		ibstream_cntxt(obstream_cntxt const& ostr);
 
-		ibstream_cntxt(buffer const& buf)
+		inline
+		ibstream_cntxt( std::unique_ptr< imembuf > strmbuf )
+		: ibstream{ std::move( strmbuf ) }
+		{}
+
+		inline
+		ibstream_cntxt( buffer const& buf )
 		: ibstream{ buf }
 		{}
-		
-		virtual void rewind() noexcept override
+
+		inline
+		ibstream_cntxt( buffer&& buf )
+		: ibstream{ std::move( buf ) }
+		{}
+
+		virtual void 
+		rewind() noexcept override
 		{
 			ibstream::rewind();
 			m_shared_pointers.clear();
 		}
+
 	protected:		
 		virtual void 
 		save_ptr(std::shared_ptr<void> ptr) override;
@@ -1106,7 +1139,7 @@ namespace bstream
                 case typecode::bool_false:
                     return false;
                 default:
-                    throw type_error("invalid value for bool");
+					throw std::system_error{ make_error_code( bstream::errc::type_error ) };
             }
         }
     };
@@ -1119,12 +1152,12 @@ namespace bstream
             auto tcode = is.get();
             if (tcode == typecode::float_32)
             {
-                std::uint32_t unpacked = is.get_arithmetic_as<std::uint32_t>();
+                std::uint32_t unpacked = is.get_num<std::uint32_t>();
                 return reinterpret_cast<float&>(unpacked);
             }
             else
             {
-                throw type_error("invalid value for float");
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
             }
         }
     };
@@ -1137,17 +1170,17 @@ namespace bstream
             auto tcode = is.get();
             if (tcode == typecode::float_32)
             {
-                std::uint32_t unpacked = is.get_arithmetic_as<std::uint32_t>();
+                std::uint32_t unpacked = is.get_num<std::uint32_t>();
                 return static_cast<double>(reinterpret_cast<float&>(unpacked));
             }
             else if (tcode == typecode::float_64)
             {
-                std::uint64_t unpacked = is.get_arithmetic_as<std::uint64_t>();
+                std::uint64_t unpacked = is.get_num<std::uint64_t>();
                 return reinterpret_cast<double&>(unpacked);
             }
             else
             {
-                throw type_error("invalid value for double");
+				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
             }
         }
     };

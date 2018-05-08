@@ -166,11 +166,11 @@ any::any( std::initializer_list< any > init, bool type_deduction, type_t manual_
 
 any::any(bstream::ibstream& is)
 {
-	// TODO: figure out how to decide when to use buffer/view and when to consruct values
 	using namespace bstream;
 	constexpr std::size_t max_short_string_size = NODEOZE_MAX_SSO_LENGTH;
 
 	auto code = is.peek();
+
 	if (typecode::is_int(code))
 	{
 		m_type = type_t::integer;
@@ -1026,7 +1026,7 @@ TEST_CASE( "nodeoze/smoke/any/bstream_blob" )
 	REQUIRE(root.is_blob());
 	bstream::obstream os{1024};
 	os << root;
-	bstream::ibstream is{std::move(os)};
+	bstream::ibstream is{ os.get_buffer() };
 	any copy(is);
 	REQUIRE(copy.type() == any::type_t::blob);
 	REQUIRE(root == copy);
@@ -1049,7 +1049,7 @@ TEST_CASE( "nodeoze/smoke/any/bstream_write_read" )
 	REQUIRE(root["h"].is_blob());
 	bstream::obstream os{1024};
 	os << root;
-	bstream::ibstream is{std::move(os)};
+	bstream::ibstream is{ os.get_buffer() };
 	any other(is);
 	REQUIRE(other == root);
 }	

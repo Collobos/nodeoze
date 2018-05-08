@@ -43,13 +43,13 @@ inflate( any &root, ::msgpack::object &obj );
 nodeoze::buffer
 nodeoze::mpack::deflate( const any &root )
 {
-	nodeoze::bufwriter buf;
+	nodeoze::bufwriter buf{ 16 * 1024 };
 	
 	msgpack::packer< nodeoze::bufwriter > packer( buf );
 	
 	::deflate( root, packer );
 	
-	return buf.move_buffer();
+	return buf.get_buffer();
 }
 
 

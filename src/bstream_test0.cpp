@@ -311,7 +311,7 @@ namespace test_types
 
 #define CHECK_0(ostrm)							\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 1);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0);							\
@@ -321,7 +321,7 @@ namespace test_types
 
 #define CHECK_neg_fixint_max(ostrm)				\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 1);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xff);						\
@@ -331,7 +331,7 @@ namespace test_types
 
 #define CHECK_neg_fixint_min(ostrm)				\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 1);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xe0);						\
@@ -341,7 +341,7 @@ namespace test_types
 
 #define CHECK_neg_fixint_min_minus_1(ostrm)		\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 2);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xd0);						\
@@ -353,7 +353,7 @@ namespace test_types
 
 #define CHECK_pos_fixint_max(ostrm)				\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 1);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0x7f);						\
@@ -363,7 +363,7 @@ namespace test_types
 
 #define CHECK_pos_fixint_max_plus_1(ostrm)		\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 2);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xcc);						\
@@ -375,7 +375,7 @@ namespace test_types
 
 #define CHECK_int_8_min(ostrm)					\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 2);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xd0);						\
@@ -387,7 +387,7 @@ namespace test_types
 
 #define CHECK_int_8_min_minus_1(ostrm)			\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 3);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xd1);						\
@@ -401,7 +401,7 @@ namespace test_types
 
 #define CHECK_uint_8_max(ostrm)					\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 2);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xcc);						\
@@ -413,7 +413,7 @@ namespace test_types
 
 #define CHECK_uint_8_max_plus_1(ostrm)			\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 3);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xcd);						\
@@ -427,7 +427,7 @@ namespace test_types
 
 #define CHECK_int_16_min(ostrm)					\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 3);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xd1);						\
@@ -441,7 +441,7 @@ namespace test_types
 
 #define CHECK_int_16_min_minus_1(ostrm)			\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 5);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xd2);						\
@@ -459,7 +459,7 @@ namespace test_types
 
 #define CHECK_uint_16_max(ostrm)				\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 3);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xcd);						\
@@ -473,7 +473,7 @@ namespace test_types
 
 #define CHECK_uint_16_max_plus_1(ostrm)			\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 5);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xce);						\
@@ -491,7 +491,7 @@ namespace test_types
 
 #define CHECK_int_32_min(ostrm)					\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 5);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xd2);						\
@@ -509,7 +509,7 @@ namespace test_types
 
 #define CHECK_int_32_min_minus_1(ostrm)			\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 9);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xd3);						\
@@ -535,7 +535,7 @@ namespace test_types
 
 #define CHECK_uint_32_max(ostrm)				\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 5);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xce);						\
@@ -553,7 +553,7 @@ namespace test_types
 
 #define CHECK_uint_32_max_plus_1(ostrm)			\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 9);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xcf);						\
@@ -579,7 +579,7 @@ namespace test_types
 
 #define CHECK_int_64_min(ostrm)					\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 9);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xd3);						\
@@ -605,7 +605,7 @@ namespace test_types
 
 #define CHECK_uint_64_max(ostrm)				\
 {												\
-	bstream::ibstream is(ostrm);				\
+	bstream::ibstream is(ostrm.get_buffer());	\
 	CHECK(is.size() == 9);						\
 	auto byte = is.get();						\
 	CHECK(byte == 0xcf);						\
@@ -818,7 +818,7 @@ TEST_CASE("nodeoze/smoke/bstream/numeric_representation")
 	bstream::obstream os{1024};					\
 	type v0 = value;							\
 	os << v0;									\
-	bstream::ibstream is{os};					\
+	bstream::ibstream is{ os.get_buffer() };	\
 	type v1;									\
 	is >> v1;									\
 	CHECK(v1 == v0);							\
@@ -831,13 +831,15 @@ TEST_CASE("nodeoze/smoke/bstream/numeric_representation")
 {												\
 	bstream::obstream os{1024};					\
 	os << value;								\
-	bstream::ibstream is{os};					\
+	bstream::ibstream is{ os.get_buffer() };	\
 	try {										\
 		type v;									\
 		is >> v;								\
 		CHECK(false);							\
-	} catch (bstream::type_error const& e) {	\
-		CHECK(true);							\
+	} catch (std::system_error const& e) {		\
+		auto ec = make_error_code(				\
+			bstream::errc::type_error );		\
+		CHECK( e.code() == ec );				\
 	}											\
 }												\
 /**/
@@ -1019,7 +1021,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fee{"zoot", 0}, test_types::fee{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fee, test_types::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1030,7 +1032,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fee{"zoot", 0}, test_types::fie{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fee, test_types::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1041,7 +1043,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fee{"zoot", 0}, test_types::foe{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fee, test_types::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1052,7 +1054,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fee{"zoot", 0}, test_types::fum{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fee, test_types::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1063,7 +1065,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fie{"zoot", 0}, test_types::fee{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fie, test_types::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1074,7 +1076,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fie{"zoot", 0}, test_types::fie{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fie, test_types::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1085,7 +1087,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fie{"zoot", 0}, test_types::foe{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fie, test_types::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1096,7 +1098,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fie{"zoot", 0}, test_types::fum{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fie, test_types::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1109,7 +1111,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::foe{"zoot", 0}, test_types::fee{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::foe, test_types::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1120,7 +1122,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::foe{"zoot", 0}, test_types::fie{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::foe, test_types::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1131,7 +1133,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::foe{"zoot", 0}, test_types::foe{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::foe, test_types::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1142,7 +1144,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::foe{"zoot", 0}, test_types::fum{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::foe, test_types::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1156,7 +1158,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fum{"zoot", 0}, test_types::fee{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fum, test_types::fee> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
@@ -1168,7 +1170,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fum{"zoot", 0}, test_types::fie{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fum, test_types::fie> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
@@ -1180,7 +1182,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fum{"zoot", 0}, test_types::foe{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fum, test_types::foe> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
@@ -1192,7 +1194,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 		map0.emplace(test_types::fum{"zoot", 0}, test_types::fum{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_map<test_types::fum, test_types::fum> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
@@ -1229,7 +1231,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fee{"zoot", 0}, test_types::fee{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fee, test_types::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1240,7 +1242,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fee{"zoot", 0}, test_types::fie{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fee, test_types::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1251,7 +1253,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fee{"zoot", 0}, test_types::foe{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fee, test_types::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1262,7 +1264,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fee{"zoot", 0}, test_types::fum{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fee, test_types::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1273,7 +1275,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fie{"zoot", 0}, test_types::fee{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fie, test_types::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1284,7 +1286,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fie{"zoot", 0}, test_types::fie{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fie, test_types::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1295,7 +1297,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fie{"zoot", 0}, test_types::foe{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fie, test_types::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1306,7 +1308,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fie{"zoot", 0}, test_types::fum{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fie, test_types::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1319,7 +1321,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::foe{"zoot", 0}, test_types::fee{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::foe, test_types::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1330,7 +1332,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::foe{"zoot", 0}, test_types::fie{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::foe, test_types::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1341,7 +1343,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::foe{"zoot", 0}, test_types::foe{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::foe, test_types::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1352,7 +1354,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::foe{"zoot", 0}, test_types::fum{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::foe, test_types::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
@@ -1366,7 +1368,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fum{"zoot", 0}, test_types::fee{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fum, test_types::fee> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
@@ -1378,7 +1380,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fum{"zoot", 0}, test_types::fie{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fum, test_types::fie> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
@@ -1390,7 +1392,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fum{"zoot", 0}, test_types::foe{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fum, test_types::foe> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
@@ -1402,7 +1404,7 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 		map0.emplace(test_types::fum{"zoot", 0}, test_types::fum{"arble", 100});
 		bstream::obstream os{1024};
 		os << map0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::map<test_types::fum, test_types::fum> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
@@ -1417,7 +1419,7 @@ TEST_CASE("nodeoze/smoke/bstream/vector")
 		std::vector<test_types::fee> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << vec0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::vector<test_types::fee> vec1;
 		is >> vec1;
 		CHECK(vec0 == vec1);
@@ -1429,7 +1431,7 @@ TEST_CASE("nodeoze/smoke/bstream/vector")
 		std::vector<test_types::fie> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << vec0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::vector<test_types::fie> vec1;
 		is >> vec1;
 		CHECK(vec0 == vec1);
@@ -1441,7 +1443,7 @@ TEST_CASE("nodeoze/smoke/bstream/vector")
 		std::vector<test_types::foe> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << vec0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::vector<test_types::foe> vec1;
 		is >> vec1;
 		CHECK(vec0 == vec1);
@@ -1453,7 +1455,7 @@ TEST_CASE("nodeoze/smoke/bstream/vector")
 		std::vector<test_types::fum> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << vec0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::vector<test_types::fum> vec1;
 		is >> vec1;
 		CHECK(vec0 == vec1);
@@ -1469,7 +1471,7 @@ TEST_CASE("nodeoze/smoke/bstream/deque")
 		std::deque<test_types::fee> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << deq0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::deque<test_types::fee> deq1;
 		is >> deq1;
 		CHECK(deq0 == deq1);
@@ -1481,7 +1483,7 @@ TEST_CASE("nodeoze/smoke/bstream/deque")
 		std::deque<test_types::fie> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << deq0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::deque<test_types::fie> deq1;
 		is >> deq1;
 		CHECK(deq0 == deq1);
@@ -1493,7 +1495,7 @@ TEST_CASE("nodeoze/smoke/bstream/deque")
 		std::deque<test_types::foe> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << deq0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::deque<test_types::foe> deq1;
 		is >> deq1;
 		CHECK(deq0 == deq1);
@@ -1505,7 +1507,7 @@ TEST_CASE("nodeoze/smoke/bstream/deque")
 		std::deque<test_types::fum> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << deq0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::deque<test_types::fum> deq1;
 		is >> deq1;
 		CHECK(deq0 == deq1);
@@ -1521,7 +1523,7 @@ TEST_CASE("nodeoze/smoke/bstream/forward_list")
 		std::forward_list<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::forward_list<test_types::fee> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1533,7 +1535,7 @@ TEST_CASE("nodeoze/smoke/bstream/forward_list")
 		std::forward_list<test_types::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::forward_list<test_types::fie> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1545,7 +1547,7 @@ TEST_CASE("nodeoze/smoke/bstream/forward_list")
 		std::forward_list<test_types::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::forward_list<test_types::foe> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1557,7 +1559,7 @@ TEST_CASE("nodeoze/smoke/bstream/forward_list")
 		std::forward_list<test_types::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::forward_list<test_types::fum> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1573,7 +1575,7 @@ TEST_CASE("nodeoze/smoke/bstream/list")
 		std::list<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::list<test_types::fee> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1585,7 +1587,7 @@ TEST_CASE("nodeoze/smoke/bstream/list")
 		std::list<test_types::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::list<test_types::fie> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1597,7 +1599,7 @@ TEST_CASE("nodeoze/smoke/bstream/list")
 		std::list<test_types::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::list<test_types::foe> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1609,7 +1611,7 @@ TEST_CASE("nodeoze/smoke/bstream/list")
 		std::list<test_types::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::list<test_types::fum> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1625,7 +1627,7 @@ TEST_CASE("nodeoze/smoke/bstream/set")
 		std::set<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::set<test_types::fee> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1637,7 +1639,7 @@ TEST_CASE("nodeoze/smoke/bstream/set")
 		std::set<test_types::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::set<test_types::fie> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1649,7 +1651,7 @@ TEST_CASE("nodeoze/smoke/bstream/set")
 		std::set<test_types::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::set<test_types::foe> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1661,7 +1663,7 @@ TEST_CASE("nodeoze/smoke/bstream/set")
 		std::set<test_types::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::set<test_types::fum> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1677,7 +1679,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_set")
 		std::unordered_set<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_set<test_types::fee> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1689,7 +1691,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_set")
 		std::unordered_set<test_types::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_set<test_types::fie> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1701,7 +1703,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_set")
 		std::unordered_set<test_types::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_set<test_types::foe> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1713,7 +1715,7 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_set")
 		std::unordered_set<test_types::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		std::unordered_set<test_types::fum> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1736,7 +1738,7 @@ TEST_CASE("nodeoze/smoke/bstream/tuple")
 		tup_type obj0(test_types::fee{"silly", 0}, test_types::fie{"sully", 1}, test_types::foe{"sally", 2}, test_types::fum{"solly", 3});
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		tup_type obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -1763,7 +1765,7 @@ TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 		test_types::fee obj0{"the answer is", 42}; 
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{std::move(os)};
+		bstream::ibstream is{ os.get_buffer() };
 		test_types::fee obj1;
 		is >> obj1;
 		CHECK(obj1 == obj0);
@@ -1784,7 +1786,7 @@ TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 		test_types::fie obj0{"the answer is", 42}; 
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{std::move(os)};
+		bstream::ibstream is{ os.get_buffer() };
 //		test_types::fie obj1{bstream::ibstream_initializer<test_types::fie>::get(is)};
 		test_types::fie obj1;
 		is >> obj1;
@@ -1806,7 +1808,7 @@ TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 		test_types::foe obj0{"the answer is", 42}; 
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{std::move(os)};
+		bstream::ibstream is{ os.get_buffer() };
 		test_types::foe obj1;
 		is >> obj1;
 		CHECK(obj1 == obj0);
@@ -1827,7 +1829,7 @@ TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 		test_types::fum obj0{"the answer is", 42}; 
 		bstream::obstream os{1024};
 		os << obj0;
-		bstream::ibstream is{std::move(os)};
+		bstream::ibstream is{ os.get_buffer() };
 		test_types::fum obj1;
 		is >> obj1;
 		CHECK(obj1 == obj0);
@@ -1850,7 +1852,7 @@ TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 		bstream::obstream os{1024};
 		os << obj0;
 //		bstream::dump_json(std::cout, os);
-		bstream::ibstream is{std::move(os)};
+		bstream::ibstream is{ os.get_buffer() };
 		test_types::foo obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
@@ -2048,7 +2050,7 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 
 		os << objp0;
 		
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 
 		std::shared_ptr<test_types::fee> objp1;
 
@@ -2069,7 +2071,7 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 
 		os << objp0;
 
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 
 		std::unique_ptr<test_types::fee> objp1;
 
@@ -2090,7 +2092,7 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 
 		os << objp0;
 
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 
 		std::unique_ptr<test_types::fou> objp1;
 
@@ -2111,7 +2113,7 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 
 		os << objp0;
 
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 
 		std::unique_ptr<test_types::flu> objp1;
 
@@ -2130,7 +2132,7 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 		std::shared_ptr<test_types::fee> objp0 = std::make_shared<test_types::fee>("shamma", 0);
 		auto objp0_copy = objp0;
 		os << objp0 << objp0_copy;
-		bstream::ibstream_cntxt is{os};
+		bstream::ibstream_cntxt is{ os.get_buffer() };
 		std::shared_ptr<test_types::fee> objp1;
 		is >> objp1;
 		CHECK(*objp0 == *objp1);
@@ -2141,7 +2143,7 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 		bstream::obstream_cntxt os{1024};
 		std::shared_ptr<test_types::fee> objp0 = std::make_shared<test_types::fee>("shamma", 0);
 		os << objp0;
-		bstream::ibstream_cntxt is{os};
+		bstream::ibstream_cntxt is{ os.get_buffer() };
 		std::shared_ptr<test_types::fee> objp1;
 		is >> objp1;
 		CHECK(*objp0 == *objp1);
@@ -2160,7 +2162,7 @@ TEST_CASE("nodeoze/smoke/bstream/initializer")
 		bstream::obstream_cntxt os{1024};
 		test_types::fou objp0{"shamma", 0};
 		os << objp0;
-		bstream::ibstream_cntxt is{os};
+		bstream::ibstream_cntxt is{ os.get_buffer() };
 		test_types::fou objp1{bstream::ibstream_initializer<test_types::fou>::get(is)};
 		CHECK(objp0 == objp1);
 	}
@@ -2172,7 +2174,7 @@ TEST_CASE("nodeoze/smoke/bstream/initializer")
 		bstream::obstream_cntxt os{1024};
 		test_types::flu objp0{"shamma", 0};
 		os << objp0;
-		bstream::ibstream_cntxt is{os};
+		bstream::ibstream_cntxt is{ os.get_buffer() };
 		test_types::flu objp1{bstream::ibstream_initializer<test_types::flu>::get(is)};
 		CHECK(objp0 == objp1);
 	}
@@ -2183,7 +2185,7 @@ TEST_CASE("nodeoze/smoke/bstream/initializer")
 		bstream::obstream_cntxt os{1024};
 		test_types::fox objp0{"shamma", 0};
 		os << objp0;
-		bstream::ibstream_cntxt is{os};
+		bstream::ibstream_cntxt is{ os.get_buffer() };
 		test_types::fox objp1{bstream::ibstream_initializer<test_types::fox>::get(is)};
 		CHECK(objp0 == objp1);
 	}
@@ -2200,7 +2202,7 @@ TEST_CASE("nodeoze/smoke/bstream/pair")
 		
 		os << p0;
 		
-		bstream::ibstream is{os};
+		bstream::ibstream is{ os.get_buffer() };
 		
 		pair_type p1;
 		

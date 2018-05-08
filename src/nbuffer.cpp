@@ -26,6 +26,7 @@
 
 #include <nodeoze/nbuffer.h>
 #include <nodeoze/nmacros.h>
+#include <nodeoze/dump.h>
 #include <iostream>
 #include <boost/crc.hpp>
 
@@ -38,82 +39,6 @@ nodeoze::buffer::realloc_function nodeoze::buffer::default_realloc = []( elem_ty
 {
 	return ( data == nullptr ) ? reinterpret_cast< elem_type* >( ::malloc( new_size ) ) : reinterpret_cast< elem_type* >( ::realloc( data, new_size ) ); 
 };
-
-void dump_impl(const std::uint8_t* data, std::size_t size, std::ostream& os)
-{
-	static const int bytes_per_line = 16;
-
-	std::ios sstate(nullptr);
-	sstate.copyfmt( os );
-	
-	os << std::endl;
-	auto remaining = size;
-	auto line_index = 0;
-	while ( remaining > 0 )
-	{
-		
-		if ( remaining >= bytes_per_line )
-		{
-			os << std::hex << std::setfill( '0' );
-			os << std::setw(8) << line_index << ": ";
-			for ( auto i = 0; i < bytes_per_line; ++i )
-			{
-				auto byte = data[ line_index + i ];
-				os << std::setw(2) << (unsigned) byte << ' ';
-			}
-			os << "    ";
-			os.copyfmt( sstate );
-			for ( auto i = 0; i < bytes_per_line; ++i )
-			{
-				auto byte = data[ line_index + i ];
-				if ( isprint( byte ) )
-				{
-					os << (char)byte;
-				}
-				else
-				{
-					os << '.';
-				}
-			}
-			line_index += bytes_per_line;
-			remaining -= bytes_per_line;
-			
-			os << std::endl;
-		}
-		else
-		{
-			os << std::hex << std::setfill( '0' );
-			os << std::setw(8) << line_index << ": ";
-			for ( auto i = 0u; i < remaining; ++i )
-			{
-				auto byte = data[ line_index + i ];
-				os << std::setw(2) << (unsigned)byte << ' ';
-			}
-			for ( auto i = 0u; i < bytes_per_line - remaining; ++i )
-			{
-				os << "   ";
-			}
-			os << "    ";
-			os.copyfmt( sstate );
-			for ( auto i = 0u; i < remaining; ++i )
-			{
-				auto byte = data[ line_index + i ];
-				if ( isprint( byte ) )
-				{
-					os << (char) byte;
-				}
-				else
-				{
-					os << '.';
-				}
-			}
-			os << std::endl;
-			remaining = 0;
-		}
-	
-	}
-	os.copyfmt( sstate ); // just to make sure
-}
 
 void
 nodeoze::buffer::print_state() const
@@ -136,7 +61,7 @@ nodeoze::buffer::print_state() const
 void
 nodeoze::buffer::dump( std::ostream& os ) const
 {
-	dump_impl(m_data, m_size, os);
+	dumpster{}.dump( os, m_data, m_size );
 }
 
 nodeoze::buffer::checksum_type

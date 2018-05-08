@@ -98,10 +98,9 @@ namespace bstream
         static inline T get(ibstream& is)
 		{
 			msgpack::object_handle handle;
-			std::size_t buf_position = is.position();
-			msgpack::unpack(handle, reinterpret_cast<const char*>(is.data()), is.size(), buf_position);
-			is.position(buf_position);
-			return T(handle.get());
+			buffer buf = is.get_msgpack_obj_buf();
+			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+			return T( handle.get() );
 		}
 	};
 
@@ -115,9 +114,8 @@ namespace bstream
         static inline T get(ibstream& is)
 		{
 			msgpack::object_handle handle;
-			std::size_t buf_position = is.position();
-			msgpack::unpack(handle, reinterpret_cast<const char*>(is.data()), is.size(), buf_position);
-			is.position(buf_position);
+			buffer buf = is.get_msgpack_obj_buf();
+			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
 			return msgpack::adaptor::as<T>{}(handle.get());
 		}
 	};
@@ -132,9 +130,8 @@ namespace bstream
 		get(ibstream& is, T& obj)
 		{
 			msgpack::object_handle handle;
-			std::size_t buf_position = is.position();
-			msgpack::unpack(handle, reinterpret_cast<const char*>(is.data()), is.size(), buf_position);
-			is.position(buf_position);
+			buffer buf = is.get_msgpack_obj_buf();
+			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
 			obj.msgpack_unpack(handle.get());
 			return is;
 		}
@@ -154,9 +151,8 @@ namespace bstream
 		get(ibstream& is, T& obj)
 		{
 			msgpack::object_handle handle;
-			std::size_t buf_position = is.position();
-			msgpack::unpack(handle, reinterpret_cast<const char*>(is.data()), is.size(), buf_position);
-			is.position(buf_position);
+			buffer buf = is.get_msgpack_obj_buf();
+			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
 			msgpack::adaptor::convert<T>{}(handle.get(), obj);
 			return is;
 		}
@@ -186,24 +182,46 @@ namespace bstream
 			return os;
 		}
 	};
+
+	inline void 
+	dump_json(std::ostream& os, buffer const& buf)
+	{
+		msgpack::object_handle oh;
+		msgpack::unpack(oh, reinterpret_cast<const char*>(buf.const_data()), buf.size());
+		os << oh.get() << std::endl;		
+	}
 	
+	inline std::string 
+	strdump_json(buffer const& buf)
+	{
+		msgpack::object_handle oh;
+		msgpack::unpack(oh, reinterpret_cast<const char*>(buf.const_data()), buf.size());
+		std::ostringstream oss;
+		oss << oh.get() << std::endl;
+		return oss.str();
+	}
+
+/*
 	template<class Buffer>
 	void dump_json(std::ostream& os, Buffer const& buf)
 	{
-		msgpack::object_handle oh;
-		msgpack::unpack(oh, reinterpret_cast<const char*>(buf.data()), buf.size());
-		os << oh.get() << std::endl;		
+		msgpack::object_handle handle;
+		buffer buf = is.get_msgpack_obj_buf();
+		msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+		os << handle.get() << std::endl;		
 	}
 	
 	template<class Buffer>
 	std::string strdump_json(Buffer const& buf)
 	{
-		msgpack::object_handle oh;
-		msgpack::unpack(oh, reinterpret_cast<const char*>(buf.data()), buf.size());
+		msgpack::object_handle handle;
+		buffer buf = is.get_msgpack_obj_buf();
+		msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
 		std::ostringstream oss;
-		oss << oh.get() << std::endl;
+		oss << handle.get() << std::endl;
 		return oss.str();
 	}
+*/
 	
 } // namespace bstream
 } // namespace nodeoze

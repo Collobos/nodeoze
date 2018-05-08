@@ -38,7 +38,7 @@ bool bstream::obstream_cntxt::maybe_write_shared_ptr(void *ptr)
 	auto it = m_shared_pointers.find(ptr);
 	if (it != m_shared_pointers.end())
 	{
-		put_arithmetic(it->second);
+		put_num(it->second);
 		return true;
 	}
 	else

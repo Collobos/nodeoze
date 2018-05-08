@@ -34,7 +34,7 @@
 
 #include <cstdint>
 #include <vector>
-#include <nodeoze/bstream/in_byte_stream.h>
+#include <nodeoze/bstream/numstream.h>
 #include <nodeoze/bstream/error.h>
 #include <nodeoze/bstream/typecode.h>
 #include <nodeoze/bstream/ibstream.h>
@@ -44,252 +44,460 @@ namespace nodeoze
 {
 namespace bstream
 {
-    class obstream : public out_byte_stream
-    {
-	protected:
+class obstream : public onumstream
+{
+protected:
+
+//	inline obstream() {}
 		
-		inline obstream() {}
-		
-	public:	
+public:	
+/*
+	inline 
+	obstream(bend::order order = bend::order::big ) 
+	:
+	onumstream{ order }
+	{}
+*/
+	inline
+	obstream( std::unique_ptr< std::streambuf > strmbuf, bend::order order = bend::order::big )
+	:
+	onumstream{ std::move( strmbuf ), order }
+	{}
 
-		inline obstream( obstream const& rhs )
-		: 
-		out_byte_stream{ rhs }
-		{}
-	
-		inline obstream( std::size_t capacity, buffer::policy pol = buffer::policy::copy_on_write )
-		: 
-		out_byte_stream{ capacity, pol }
-		{}
-	
-		inline
-		obstream( buffer const& buf )
-		: 
-		out_byte_stream{ buf } 
-		{}
-	
-        inline obstream&
-        write_map_header(std::uint32_t size)
-        {
-			accommodate_put(map_header_size(size));
-			if (size <= 15)
-			{
-				std::uint8_t code = 0x80 | static_cast<std::uint8_t>(size);
-				put(code);
-			}
-			else if (size <= std::numeric_limits<std::uint16_t>::max())
-			{
-				put(typecode::map_16);
-				put_arithmetic(static_cast<std::uint16_t>(size));
-			}
-			else
-			{
-				put(typecode::map_32);
-				put_arithmetic(static_cast<std::uint32_t>(size));
-			}
-            return *this;
-        }
+	inline
+	obstream( std::unique_ptr< omembuf > strmbuf, bend::order order = bend::order::big )
+	:
+	onumstream{ std::move( strmbuf ), order }
+	{}
 
-        inline obstream&
-        write_array_header(std::uint32_t size)
-        {
-			accommodate_put(array_header_size(size));
-			if (size <= 15)
-			{
-				std::uint8_t code = 0x90 | static_cast<std::uint8_t>(size);
-				put(code);
-			}
-			else if (size <= std::numeric_limits<std::uint16_t>::max())
-			{
-				put(typecode::array_16);
-				put_arithmetic(static_cast<std::uint16_t>(size));
-			}
-			else
-			{
-				put(typecode::array_32);
-				put_arithmetic(static_cast<std::uint32_t>(size));
-			}
-            return *this;
-        }      
+	inline
+	obstream( buffer const& buf, bend::order order = bend::order::big )
+	:
+	onumstream{ buf, order }
+	{}
 
-		inline obstream&
-		write_blob_header(std::uint32_t size)
+	inline
+	obstream( buffer&& buf, bend::order order = bend::order::big )
+	:
+	onumstream{ std::move( buf ), order }
+	{}
+
+	inline 
+	obstream( size_type capacity, buffer::policy pol = buffer::policy::copy_on_write, bend::order order = bend::order::big )
+	:
+	onumstream{ capacity, pol, order }
+	{}
+
+	inline obstream&
+	write_map_header(std::uint32_t size)
+	{
+		if (size <= 15)
 		{
-			accommodate_put(blob_header_size(size));
-			if (size <= std::numeric_limits<std::uint8_t>::max())
-			{
-				put(typecode::bin_8);
-				put_arithmetic(static_cast<std::uint8_t>(size));
-			}
-			else if (size <= std::numeric_limits<std::uint16_t>::max())
-			{
-				put(typecode::bin_16);
-				put_arithmetic(static_cast<std::uint16_t>(size));
-			}
-			else
-			{
-				put(typecode::bin_32);
-				put_arithmetic(static_cast<std::uint32_t>(size));
-			}
-			return *this;
+			std::uint8_t code = 0x80 | static_cast<std::uint8_t>(size);
+			put(code);
 		}
-   
-        inline obstream&
-        write_blob_body(const void* p, std::size_t size)
-        {
-			accommodate_put(size);
-            put(p, size);
-            return *this;
-        }
-
-		inline obstream&
-		write_blob_body( nodeoze::buffer const& blob )
+		else if (size <= std::numeric_limits<std::uint16_t>::max())
 		{
-			accommodate_put( blob.size() );
-			put( blob.const_data(), blob.size() );
-			return *this;
+			put(typecode::map_16);
+			put_num(static_cast<std::uint16_t>(size));
 		}
+		else
+		{
+			put(typecode::map_32);
+			put_num(static_cast<std::uint32_t>(size));
+		}
+		return *this;
+	}
+
+	inline obstream&
+	write_array_header(std::uint32_t size)
+	{
+		if (size <= 15)
+		{
+			std::uint8_t code = 0x90 | static_cast<std::uint8_t>(size);
+			put(code);
+		}
+		else if (size <= std::numeric_limits<std::uint16_t>::max())
+		{
+			put(typecode::array_16);
+			put_num(static_cast<std::uint16_t>(size));
+		}
+		else
+		{
+			put(typecode::array_32);
+			put_num(static_cast<std::uint32_t>(size));
+		}
+		return *this;
+	}      
+
+	inline obstream&
+	write_blob_header(std::uint32_t size)
+	{
+		if (size <= std::numeric_limits<std::uint8_t>::max())
+		{
+			put(typecode::bin_8);
+			put_num(static_cast<std::uint8_t>(size));
+		}
+		else if (size <= std::numeric_limits<std::uint16_t>::max())
+		{
+			put(typecode::bin_16);
+			put_num(static_cast<std::uint16_t>(size));
+		}
+		else
+		{
+			put(typecode::bin_32);
+			put_num(static_cast<std::uint32_t>(size));
+		}
+		return *this;
+	}
+
+	inline obstream&
+	write_blob_body(const void* p, std::size_t size)
+	{
+		putn(p, size);
+		return *this;
+	}
+
+	inline obstream&
+	write_blob_body( nodeoze::buffer const& blob )
+	{
+		putn( blob.const_data(), blob.size() );
+		return *this;
+	}
        
-        inline obstream&
-        write_blob(const void* p, std::size_t size)
-        {
-			write_blob_header(size);
-			write_blob_body(p, size);
-            return *this;
-       }
+	inline obstream&
+	write_blob(const void* p, std::size_t size)
+	{
+		write_blob_header(size);
+		write_blob_body(p, size);
+		return *this;
+	}
 
-		inline obstream&
-		write_blob( nodeoze::buffer const& buf )
-		{
-			write_blob_header( buf.size() );
-			write_blob_body( buf );
-			return *this;
-		}
+	inline obstream&
+	write_blob( nodeoze::buffer const& buf )
+	{
+		write_blob_header( buf.size() );
+		write_blob_body( buf );
+		return *this;
+	}
 
-        inline obstream&
-        write_object_header(std::uint32_t size)
-        {
-			return write_array_header(size);
-        }
-		
-		inline obstream&
-		write_null_ptr()
-		{
-			write_array_header(1);
-			put(typecode::nil);
-			return *this;
-		}
+	inline obstream&
+	write_object_header(std::uint32_t size)
+	{
+		return write_array_header(size);
+	}
 
-		inline obstream&
-		write_nil()
-		{
-			put(typecode::nil);
-			return *this;
-		}
+	template< class T >
+	inline typename std::enable_if_t< std::is_arithmetic< T >::value && sizeof( T ) == 1, obstream& >	
+	write_ext( std::uint8_t ext_type, T value )
+	{
+		put_num( typecode::fixext_1 );
+		put_num( ext_type );
+		put_num( value );
+		return *this;
+	}
 
-		template<class T>
-		inline obstream&
-		write_shared_ptr(std::shared_ptr<T> ptr)
+	template< class T >
+	inline typename std::enable_if_t< std::is_arithmetic< T >::value && sizeof( T ) == 2, obstream& >	
+	write_ext( std::uint8_t ext_type, T value )
+	{
+		put_num( typecode::fixext_2 );
+		put_num( ext_type );
+		put_num( value );
+		return *this;
+	}
+
+	template< class T >
+	inline typename std::enable_if_t< std::is_arithmetic< T >::value && sizeof( T ) == 4, obstream& >	
+	write_ext( std::uint8_t ext_type, T value )
+	{
+		put_num( typecode::fixext_4 );
+		put_num( ext_type );
+		put_num( value );
+		return *this;
+	}
+
+	template< class T >
+	inline typename std::enable_if_t< std::is_arithmetic< T >::value && sizeof( T ) == 8, obstream& >	
+	write_ext( std::uint8_t ext_type, T value )
+	{
+		put_num( typecode::fixext_8 );
+		put_num( ext_type );
+		put_num( value );
+		return *this;
+	}
+
+	inline obstream&
+	write_ext( std::uint8_t ext_type, buffer const& buf )
+	{
+		auto size = buf.size();
+		switch ( size )
 		{
-			if (!ptr)
-			{
-				write_null_ptr();
-			}
-			else
-			{
-				if (!maybe_write_shared_ptr(ptr.get()))
+			case 1:
+				put_num( typecode::fixext_1 ).put_num( ext_type ).put_num( buf[ 0 ] );
+				break;
+			case 2:
+				put_num( typecode::fixext_2 ).put_num( ext_type ).put_num( buf[ 0 ] ).put_num( buf[ 1 ] );
+				break;
+			case 4:
+				put_num( typecode::fixext_4 ).put_num( ext_type ).putn( buf.const_data(), 4 );
+				break;
+			case 8:
+				put_num( typecode::fixext_8 ).put_num( ext_type ).putn( buf.const_data(), 8 );
+				break;
+			case 16:
+				put_num( typecode::fixext_16 ).put_num( ext_type ).putn( buf.const_data(), 16 );
+				break;
+			default:
+				if ( size <= std::numeric_limits< std::uint8_t >::max() )
 				{
-					*this << *ptr;
+					put_num( typecode::ext_8 ).put_num( static_cast< std::uint8_t >( size ) ).put_num( ext_type );
 				}
+				else if ( size <= std::numeric_limits< std::uint16_t >::max() )
+				{
+					put_num( typecode::ext_16 ).put_num( static_cast< std::uint16_t >( size ) ).put_num( ext_type );
+				}
+				else if ( size <= std::numeric_limits< std::uint32_t >::max() )
+				{
+					put_num( typecode::ext_32 ).put_num( static_cast< std::uint32_t >( size ) ).put_num( ext_type );
+				}
+				else
+				{
+					throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+				}
+				putn( buf.const_data(), size );
+		}
+		return *this;
+	}
+
+	inline obstream&
+	write_ext( std::uint8_t ext_type, std::vector< std::uint8_t > const& vec )
+	{
+		auto size = vec.size();
+		switch ( size )
+		{
+			case 1:
+				put_num( typecode::fixext_1 ).put_num( ext_type ).put_num( vec[ 0 ] );
+				break;
+			case 2:
+				put_num( typecode::fixext_2 ).put_num( ext_type ).put_num( vec[ 0 ] ).put_num( vec[ 1 ] );
+				break;
+			case 4:
+				put_num( typecode::fixext_4 ).put_num( ext_type ).putn( vec.data(), 4 );
+				break;
+			case 8:
+				put_num( typecode::fixext_8 ).put_num( ext_type ).putn( vec.data(), 8 );
+				break;
+			case 16:
+				put_num( typecode::fixext_16 ).put_num( ext_type ).putn( vec.data(), 16 );
+				break;
+			default:
+				if ( size <= std::numeric_limits< std::uint8_t >::max() )
+				{
+					put_num( typecode::ext_8 ).put_num( static_cast< std::uint8_t >( size ) ).put_num( ext_type );
+				}
+				else if ( size <= std::numeric_limits< std::uint16_t >::max() )
+				{
+					put_num( typecode::ext_16 ).put_num( static_cast< std::uint16_t >( size ) ).put_num( ext_type );
+				}
+				else if ( size <= std::numeric_limits< std::uint32_t >::max() )
+				{
+					put_num( typecode::ext_32 ).put_num( static_cast< std::uint32_t >( size ) ).put_num( ext_type );
+				}
+				else
+				{
+					throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+				}
+				putn( vec.data(), size );
+		}
+		return *this;
+	}
+
+	inline obstream&
+	write_ext_header( std::uint8_t ext_type, std::uint32_t size )
+	{
+		switch ( size )
+		{
+			case 1:
+				put_num( typecode::fixext_1 ).put_num( ext_type );
+				break;
+			case 2:
+				put_num( typecode::fixext_2 ).put_num( ext_type );
+				break;
+			case 4:
+				put_num( typecode::fixext_4 ).put_num( ext_type );
+				break;
+			case 8:
+				put_num( typecode::fixext_8 ).put_num( ext_type );
+				break;
+			case 16:
+				put_num( typecode::fixext_16 ).put_num( ext_type );
+				break;
+			default:
+				if ( size <= std::numeric_limits< std::uint8_t >::max() )
+				{
+					put_num( typecode::ext_8 ).put_num( static_cast< std::uint8_t >( size ) ).put_num( ext_type );
+				}
+				else if ( size <= std::numeric_limits< std::uint16_t >::max() )
+				{
+					put_num( typecode::ext_16 ).put_num( static_cast< std::uint16_t >( size ) ).put_num( ext_type );
+				}
+				else if ( size <= std::numeric_limits< std::uint32_t >::max() )
+				{
+					put_num( typecode::ext_32 ).put_num( static_cast< std::uint32_t >( size ) ).put_num( ext_type );
+				}
+				else
+				{
+					throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+				}
+		}
+		return *this;
+	}
+
+	obstream&
+	write_ext( std::uint8_t ext_type, void* data, std::uint32_t size )
+	{
+		write_ext_header( ext_type, size );
+		putn( data, size );
+		return *this;
+	}
+
+	inline obstream&
+	write_null_ptr()
+	{
+		write_array_header(1);
+		put(typecode::nil);
+		return *this;
+	}
+
+	inline obstream&
+	write_nil()
+	{
+		put(typecode::nil);
+		return *this;
+	}
+
+	template<class T>
+	inline obstream&
+	write_shared_ptr(std::shared_ptr<T> ptr)
+	{
+		if (!ptr)
+		{
+			write_null_ptr();
+		}
+		else
+		{
+			if (!maybe_write_shared_ptr(ptr.get()))
+			{
+				*this << *ptr;
 			}
-			return *this;
 		}
+		return *this;
+	}
 		
-		template<class T>
-		inline obstream&
-		write_as_unique_pointer(T const& obj)
-		{
-			write_array_header(1);
-			*this << obj;
-			return *this;
-		}
+	template<class T>
+	inline obstream&
+	write_as_unique_pointer(T const& obj)
+	{
+		write_array_header(1);
+		*this << obj;
+		return *this;
+	}
 
-	protected:
+	inline obstream&
+	clear()
+	{
+		onumstream::clear();
+		return *this;
+	}
 
-		virtual bool maybe_write_shared_ptr(void *ptr);
+protected:
+
+	virtual bool maybe_write_shared_ptr(void *ptr);
 		
-    private:
+private:
 		
-		static inline std::size_t map_header_size(std::size_t map_size)
-		{
-			if (map_size < 16) 
-				return 1;
-			else if (map_size <= std::numeric_limits<std::uint16_t>::max())
-				return 3;
-			else return 5;
-		}
+	static inline std::size_t map_header_size(std::size_t map_size)
+	{
+		if (map_size < 16) 
+			return 1;
+		else if (map_size <= std::numeric_limits<std::uint16_t>::max())
+			return 3;
+		else return 5;
+	}
 		
-		static inline std::size_t array_header_size(std::size_t array_size)
-		{
-			if (array_size < 16) 
-				return 1;
-			else if (array_size <= std::numeric_limits<std::uint16_t>::max())
-				return 3;
-			else return 5;
-		}
+	static inline std::size_t array_header_size(std::size_t array_size)
+	{
+		if (array_size < 16) 
+			return 1;
+		else if (array_size <= std::numeric_limits<std::uint16_t>::max())
+			return 3;
+		else return 5;
+	}
 		
-		static inline std::size_t blob_header_size(std::size_t blob_size)
-		{
-			if (blob_size < 256) 
-				return 2;
-			else if (blob_size <= std::numeric_limits<std::uint16_t>::max())
-				return 3;
-			else return 5;
-		}
-    };
+	static inline std::size_t blob_header_size(std::size_t blob_size)
+	{
+		if (blob_size < 256) 
+			return 2;
+		else if (blob_size <= std::numeric_limits<std::uint16_t>::max())
+			return 3;
+		else return 5;
+	}
+};
 	
-	class obstream_cntxt : public obstream
-	{		
-	public:	
+class obstream_cntxt : public obstream
+{		
+protected:	
 
-		inline obstream_cntxt() : obstream() {} 
+//	inline obstream_cntxt() : obstream() {} 
 		
-		inline obstream_cntxt(obstream_cntxt const& rhs )	
-		: 
-		obstream{ rhs }, 
-		m_shared_pointers{ rhs.m_shared_pointers }
-		{}
+public:
+/*
+	inline 
+	obstream_cntxt(bend::order order = bend::order::big ) 
+	:
+	obstream{ order }
+	{}
+*/
+	inline
+	obstream_cntxt( std::unique_ptr< std::streambuf > strmbuf, bend::order order = bend::order::big )
+	:
+	obstream{ std::move( strmbuf ), order }
+	{}
+
+	inline
+	obstream_cntxt( std::unique_ptr< omembuf > strmbuf, bend::order order = bend::order::big )
+	:
+	obstream{ std::move( strmbuf ), order }
+	{}
+
+	inline
+	obstream_cntxt( buffer const& buf, bend::order order = bend::order::big )
+	:
+	obstream{ buf, order }
+	{}
+
+	inline
+	obstream_cntxt( buffer&& buf, bend::order order = bend::order::big )
+	:
+	obstream{ std::move( buf ), order }
+	{}
+
+	inline 
+	obstream_cntxt( size_type capacity, buffer::policy pol = buffer::policy::copy_on_write, bend::order order = bend::order::big )
+	:
+	obstream{ capacity, pol, order }
+	{}
+
+protected:
 		
-		inline obstream_cntxt(std::size_t capacity, buffer::policy pol = buffer::policy::copy_on_write )
-		: 
-		obstream{ capacity, pol }
-		{}
+	virtual bool maybe_write_shared_ptr(void *ptr) override;
 		
-		inline obstream_cntxt(obstream_cntxt&& rhs )
-		: 
-		obstream{ std::move( rhs ) }, 
-		m_shared_pointers{ std::move( rhs.m_shared_pointers ) }
-		{}
-		
-		inline
-		obstream_cntxt(buffer const& buf) 
-		: obstream{ buf }
-		{}
-		
-		virtual obstream_cntxt& clear() noexcept override
-		{
-			obstream::clear();
-			m_shared_pointers.clear();
-			return *this;
-		}
-		
-	protected:
-		
-		virtual bool maybe_write_shared_ptr(void *ptr) override;
-		
-	private:
-		std::unordered_map<void*,std::size_t> m_shared_pointers;
-	};
+private:
+
+	std::unordered_map<void*,std::size_t> m_shared_pointers;
+
+};
 	
 	namespace detail
 	{
@@ -375,17 +583,17 @@ namespace bstream
 			else if (value <= std::numeric_limits<std::uint16_t>::max())
 			{
 				os.put(typecode::uint_16);
-				os.put_arithmetic(static_cast<std::uint16_t>(value));
+				os.put_num(static_cast<std::uint16_t>(value));
 			}
 			else if (value <= std::numeric_limits<std::uint32_t>::max())
 			{
 				os.put(typecode::uint_32);
-				os.put_arithmetic(static_cast<std::uint32_t>(value));
+				os.put_num(static_cast<std::uint32_t>(value));
 			}
 			else
 			{
 				os.put(typecode::uint_64);
-				os.put_arithmetic(static_cast<std::uint64_t>(value));
+				os.put_num(static_cast<std::uint64_t>(value));
 			}
 			return os;
 		}
@@ -416,17 +624,17 @@ namespace bstream
 				else if (uvalue <= std::numeric_limits<std::uint16_t>::max())
 				{
 					os.put(typecode::uint_16);
-					os.put_arithmetic(static_cast<std::uint16_t>(uvalue));
+					os.put_num(static_cast<std::uint16_t>(uvalue));
 				}
 				else if (uvalue <= std::numeric_limits<std::uint32_t>::max())
 				{
 					os.put(typecode::uint_32);
-					os.put_arithmetic(static_cast<std::uint32_t>(uvalue));
+					os.put_num(static_cast<std::uint32_t>(uvalue));
 				}
 				else
 				{
 					os.put(typecode::uint_64);
-					os.put_arithmetic(uvalue);
+					os.put_num(uvalue);
 				}
 			}
 			else
@@ -438,22 +646,22 @@ namespace bstream
 				else if (value >= std::numeric_limits<std::int8_t>::min())
 				{
 					os.put(typecode::int_8);
-					os.put_arithmetic(static_cast<std::int8_t>(value));
+					os.put_num(static_cast<std::int8_t>(value));
 				}
 				else if (value >= std::numeric_limits<std::int16_t>::min())
 				{
 					os.put(typecode::int_16);
-					os.put_arithmetic(static_cast<std::int16_t>(value));
+					os.put_num(static_cast<std::int16_t>(value));
 				}
 				else if (value >= std::numeric_limits<std::int32_t>::min())
 				{
 					os.put(typecode::int_32);
-					os.put_arithmetic(static_cast<std::int32_t>(value));
+					os.put_num(static_cast<std::int32_t>(value));
 				}
 				else
 				{
 					os.put(typecode::int_64);
-					os.put_arithmetic(static_cast<std::int64_t>(value));
+					os.put_num(static_cast<std::int64_t>(value));
 				}
 			}
 			return os;
@@ -466,7 +674,7 @@ namespace bstream
 		inline static obstream& put(obstream& os, float value)
 		{
 			os.put(typecode::float_32);
-			os.put_arithmetic(value);
+			os.put_num(value);
 			return os;
 		}
 	};
@@ -477,7 +685,7 @@ namespace bstream
 		inline static obstream& put(obstream& os, double value)
 		{
 			os.put(typecode::float_64);
-			os.put_arithmetic(value);
+			os.put_num(value);
 			return os;
 		}
 	};
@@ -508,25 +716,25 @@ namespace bstream
 			{
 				std::uint8_t code = 0xa0 | static_cast<std::uint8_t>(value.size());
 				os.put(code);
-				os.put(value.data(), value.size());
+				os.putn(value.data(), value.size());
 			}
 			else if (value.size() <= std::numeric_limits<std::uint8_t>::max())
 			{
 				os.put(typecode::str_8);
-				os.put_arithmetic(static_cast<std::uint8_t>(value.size()));
-				os.put(value.data(), value.size());
+				os.put_num(static_cast<std::uint8_t>(value.size()));
+				os.putn(value.data(), value.size());
 			}
 			else if (value.size() <= std::numeric_limits<std::uint16_t>::max())
 			{
 				os.put(typecode::str_16);
-				os.put_arithmetic(static_cast<std::uint16_t>(value.size()));
-				os.put(value.data(), value.size());
+				os.put_num(static_cast<std::uint16_t>(value.size()));
+				os.putn(value.data(), value.size());
 			}
 			else if (value.size() <= std::numeric_limits<std::uint32_t>::max())
 			{
 				os.put(typecode::str_32);
-				os.put_arithmetic(static_cast<std::uint32_t>(value.size()));
-				os.put(value.data(), value.size());
+				os.put_num(static_cast<std::uint32_t>(value.size()));
+				os.putn(value.data(), value.size());
 			}
 			else
 			{
@@ -554,25 +762,25 @@ namespace bstream
 			{
 				std::uint8_t code = 0xa0 | static_cast<std::uint8_t>(value.size());
 				os.put(code);
-				os.put(value.data(), value.size());
+				os.putn(value.data(), value.size());
 			}
 			else if (value.size() <= std::numeric_limits<std::uint8_t>::max())
 			{
 				os.put(typecode::str_8);
-				os.put_arithmetic(static_cast<std::uint8_t>(value.size()));
-				os.put(value.data(), value.size());
+				os.put_num(static_cast<std::uint8_t>(value.size()));
+				os.putn(value.data(), value.size());
 			}
 			else if (value.size() <= std::numeric_limits<std::uint16_t>::max())
 			{
 				os.put(typecode::str_16);
-				os.put_arithmetic(static_cast<std::uint16_t>(value.size()));
-				os.put(value.data(), value.size());
+				os.put_num(static_cast<std::uint16_t>(value.size()));
+				os.putn(value.data(), value.size());
 			}
 			else if (value.size() <= std::numeric_limits<std::uint32_t>::max())
 			{
 				os.put(typecode::str_32);
-				os.put_arithmetic(static_cast<std::uint32_t>(value.size()));
-				os.put(value.data(), value.size());
+				os.put_num(static_cast<std::uint32_t>(value.size()));
+				os.putn(value.data(), value.size());
 			}
 			else
 			{

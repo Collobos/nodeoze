@@ -29,8 +29,8 @@
  * Created on June 29, 2017, 1:35 PM
  */
 
-#ifndef BSTREAM_ERROR_H
-#define BSTREAM_ERROR_H
+#ifndef NODEOZE_BSTREAM_ERROR_H
+#define NODEOZE_BSTREAM_ERROR_H
 
 #include <system_error>
 
@@ -39,17 +39,77 @@ namespace nodeoze
 namespace bstream
 {
         
-    class type_error : public std::logic_error
-    {
-    public:
-        explicit type_error(const std::string& what_arg) 
-        : logic_error{what_arg} {}
-        explicit type_error(const char* what_arg)
-        : logic_error{what_arg} {}
-    };
-    
-} // bstream
-} // nodeoze
+class type_error : public std::logic_error
+{
+public:
+	explicit type_error(const std::string& what_arg) 
+	: 
+	logic_error{what_arg} 
+	{}
 
-#endif /* BSTREAM_ERROR_H */
+	explicit type_error(const char* what_arg)
+	: 
+	logic_error{what_arg} 
+	{}
+};
+    
+enum class errc
+{
+	ok = 0,
+	read_past_end_of_stream,
+	type_error,
+};
+
+class bstream_category_impl : public std::error_category
+{
+public:
+	virtual const char* name() const noexcept override
+	{
+		return "nodeoze::bstream";
+	}
+
+	virtual std::string message(int ev) const noexcept override
+	{
+		switch (static_cast<errc> (ev))
+		{
+		case bstream::errc::ok:
+			return "success";
+		case bstream::errc::read_past_end_of_stream:
+			return "read past end of stream";
+		case bstream::errc::type_error:
+			return "type error";
+		default:
+			return "unknown bstream error";
+		}
+	}
+};
+
+inline std::error_category const& bstream_category() noexcept
+{
+    static bstream_category_impl instance;
+    return instance;
+}
+
+inline std::error_condition 
+make_error_condition( errc e )
+{
+    return std::error_condition( static_cast< int >( e ), bstream_category() );
+}
+
+inline std::error_code 
+make_error_code( errc e )
+{
+    return std::error_code( static_cast< int >( e ), bstream_category() );
+}
+
+} // namespace bstream
+} // namespace nodeoze
+
+namespace std
+{
+  template <>
+  struct is_error_condition_enum< nodeoze::bstream::errc > : public true_type {};
+}
+
+#endif /* NODEOZE_BSTREAM_ERROR_H */
 

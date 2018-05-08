@@ -225,10 +225,11 @@ set(NODEOZE_SRCS
 	include/nodeoze/bstream/typecode.h
 	include/nodeoze/bstream/utils/preprocessor.h
 	include/nodeoze/bstream/utils/traits.h
-	include/nodeoze/bstream/utils/dump.h
-	include/nodeoze/bstream/in_byte_stream.h
-	include/nodeoze/bstream/out_byte_stream.h
-	src/dump.cpp
+	include/nodeoze/dump.h
+	include/nodeoze/membuf.h
+	include/nodeoze/bstream/numstream.h
+	src/numstream.cpp
+	src/membuf.cpp
 	src/ibstream.cpp
 	src/obstream.cpp)
     
