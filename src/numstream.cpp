@@ -2,7 +2,7 @@
 #include <nodeoze/dump.h>
 
 using namespace nodeoze;
-
+/*
 void 
 bstream::inumstream::dump( std::ostream& os, position_type pos, size_type length ) 
 {
@@ -24,6 +24,7 @@ bstream::inumstream::strdump( position_type pos, size_type nbytes )
 	dump( oss, pos, nbytes );
 	return oss.str(); 
 }
+*/
 
 /*
 void 
@@ -34,7 +35,7 @@ bstream::inumstream::dump_state( std::ostream& os )
 	os.flush();
 }
 */
-
+/*
 void 
 bstream::onumstream::dump( std::ostream& os, position_type pos, size_type length ) 
 {
@@ -56,6 +57,7 @@ bstream::onumstream::strdump( position_type pos, size_type length )
 	dump( oss, pos, length );
 	return oss.str(); 
 }
+*/
 /*
 void 
 bstream::onumstream::dump_state( std::ostream& os ) 

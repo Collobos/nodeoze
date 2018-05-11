@@ -26,19 +26,13 @@
 
 using namespace nodeoze;
 
-bool bstream::obstream::maybe_write_shared_ptr(void *)
+bool bstream::obs_ptr_context::maybe_write_shared_ptr( obstream& os, void *ptr)
 {
-	write_array_header(1);
-	return false;
-}
-
-bool bstream::obstream_cntxt::maybe_write_shared_ptr(void *ptr)
-{
-	write_array_header(1);
+	os.write_array_header(1);
 	auto it = m_shared_pointers.find(ptr);
 	if (it != m_shared_pointers.end())
 	{
-		put_num(it->second);
+		os.put_num(it->second);
 		return true;
 	}
 	else

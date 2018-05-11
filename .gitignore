@@ -38,3 +38,6 @@
 .LSOverride
 
 build/
+.vscode/
+
+nodeoze.code-workspace

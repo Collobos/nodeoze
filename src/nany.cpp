@@ -34,6 +34,8 @@
 #include <nodeoze/njson.h>
 #include <nodeoze/ntest.h>
 #include <nodeoze/bstream/msgpack.h>
+#include <nodeoze/bstream/ombstream.h>
+#include <nodeoze/bstream/imbstream.h>
 #include "nany_tests.h"
 #include <cassert>
 #include <sstream>
@@ -1024,9 +1026,9 @@ TEST_CASE( "nodeoze/smoke/any/bstream_blob" )
 	buffer a_blob("some very stringy blob contents");
 	any root(a_blob);
 	REQUIRE(root.is_blob());
-	bstream::obstream os{1024};
+	bstream::ombstream os{1024};
 	os << root;
-	bstream::ibstream is{ os.get_buffer() };
+	bstream::imbstream is{ os.get_buffer() };
 	any copy(is);
 	REQUIRE(copy.type() == any::type_t::blob);
 	REQUIRE(root == copy);
@@ -1047,9 +1049,9 @@ TEST_CASE( "nodeoze/smoke/any/bstream_write_read" )
 	});
 	root["h"] = a_blob;
 	REQUIRE(root["h"].is_blob());
-	bstream::obstream os{1024};
+	bstream::ombstream os{1024};
 	os << root;
-	bstream::ibstream is{ os.get_buffer() };
+	bstream::imbstream is{ os.get_buffer() };
 	any other(is);
 	REQUIRE(other == root);
 }	
@@ -1075,7 +1077,7 @@ TEST_CASE( "nodeoze/smoke/any")
 		CHECK( copy.is_member( "a" ) );
 		CHECK( copy.is_member( "b" ) );
 	}
-/*
+
 	SUBCASE( "blob" )
 	{
 		buffer b( { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 } );
@@ -1088,27 +1090,26 @@ TEST_CASE( "nodeoze/smoke/any")
 		CHECK( b[ 4 ] == 0x5 );
 		CHECK( b[ 5 ] == 0x6 );
 
-		any a = b;
-		CHECK( a.type() == any::type_t::blob );
-		CHECK( a.size() == 6 );
+		any x = b;
+		CHECK( x.type() == any::type_t::blob );
+		
+		any y = codec::base64::encode( x.to_blob() );
+		CHECK( y.type() == any::type_t::string );
 
-		std::string s{ a.to_string() };
+		any z = codec::base64::decode( std::string{ y.to_string() } );
+		CHECK( z.type() == any::type_t::blob );
+		CHECK( z.size() == x.size() );
 
-		any c = s;
-		CHECK( c.type() == any::type_t::string );
-		auto b3 = codec::base64::decode( s );
-		buffer b2( c.to_blob() );
-//		CHECK( c.type() == any::type_t::blob );
-		CHECK( b.size() == b2.size() );
-
-		CHECK( b2[ 0 ] == 0x1 );
-		CHECK( b2[ 1 ] == 0x2 );
-		CHECK( b2[ 2 ] == 0x3 );
-		CHECK( b2[ 3 ] == 0x4 );
-		CHECK( b2[ 4 ] == 0x5 );
-		CHECK( b2[ 5 ] == 0x6 );
+		CHECK( z.to_blob()[ 0 ] == 0x1 );
+		CHECK( z.to_blob()[ 1 ] == 0x2 );
+		CHECK( z.to_blob()[ 2 ] == 0x3 );
+		CHECK( z.to_blob()[ 3 ] == 0x4 );
+		CHECK( z.to_blob()[ 4 ] == 0x5 );
+		CHECK( z.to_blob()[ 5 ] == 0x6 );
+	
+		CHECK( z == x );
 	}
-*/
+
 	SUBCASE( "in-place array" )
 	{
 		auto root = any::build(

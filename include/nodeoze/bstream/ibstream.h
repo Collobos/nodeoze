@@ -80,7 +80,6 @@ namespace bstream
 
 	template<class T>
 	struct has_ref_deserializer : decltype(detail::test_ref_deserializer<T>(0)) {};
-
 	
 	namespace detail
 	{
@@ -524,7 +523,7 @@ namespace bstream
             {
                 std::uint8_t mask = 0x1f;
                 std::size_t length = tcode & mask;
-                return is.getn( length ).to_string();
+                return is.getn( length ).to_string(); // TODO: does this work? construct string?
             }
             else
             {
@@ -600,9 +599,46 @@ namespace bstream
         }
     };	
 	
-	class obstream;
-    
-	class obstream_cntxt;
+    class ibs_context
+    {
+    public:
+
+        using ptr = std::unique_ptr< ibs_context >;
+
+ 		virtual void 
+		save_ptr(std::shared_ptr<void> ptr) = 0;
+
+		virtual std::shared_ptr<void> 
+		get_saved_ptr(std::size_t index) = 0;
+
+        virtual ~ibs_context() {}
+       
+    };
+
+    class ibs_ptr_context : public ibs_context
+    {
+    public:
+        using ptr = std::unique_ptr< ibs_context >;
+
+ 		virtual void 
+		save_ptr(std::shared_ptr<void> ptr) override
+        {
+            m_shared_pointers.push_back(ptr);
+        }
+
+		virtual std::shared_ptr<void> 
+		get_saved_ptr(std::size_t index) override
+        {
+            if (index >= m_shared_pointers.size())
+            {
+                throw std::out_of_range("invalid shared pointer index in stream");
+            }
+            return m_shared_pointers[index];
+        }
+
+    private:
+		std::vector<std::shared_ptr<void>> m_shared_pointers;
+    };
 
 	/*! \class ibstream
 	 *	\brief binary input stream
@@ -621,33 +657,30 @@ namespace bstream
 
 		template<class U, class E> friend struct value_deserializer;
 		
-		/*! \brief null constructor
-		 */
-		inline
-		ibstream() 
-		{}
+		ibstream() = delete;
+        ibstream( ibstream const& ) = delete;
+        ibstream( ibstream&& ) = delete;
 
 		inline
-		ibstream( std::unique_ptr< std::streambuf > strmbuf )
-		: inumstream{ std::move( strmbuf ) }
+		ibstream( std::unique_ptr< std::streambuf > strmbuf, ibs_context::ptr context = nullptr )
+		: 
+        inumstream{ std::move( strmbuf ) },
+        m_context{ std::move( context ) }
 		{}
 
-		inline
-		ibstream( std::unique_ptr< imembuf > strmbuf )
-		: inumstream{ std::move( strmbuf ) }
-		{}
+     	inline void
+        set_context( ibs_context::ptr context )
+        {
+            m_context = std::move( context );
+        }
 
-		inline
-		ibstream( buffer const& buf )
-		: inumstream{ buf }
-		{}
+        inline void
+        set_ptr_context()
+        {
+            m_context = std::make_unique< ibs_ptr_context >();
+        }
 
-		inline
-		ibstream( buffer&& buf )
-		: inumstream{ std::move( buf ) }
-		{}
-
-        template<class T>
+       template<class T>
         inline typename std::enable_if_t<is_ibstream_constructible<T>::value, T>
         read_as()
         {
@@ -840,7 +873,7 @@ namespace bstream
 		nodeoze::buffer
 		read_blob_body(std::size_t nbytes)
 		{
-			return base::getn( nbytes );
+			return getn( nbytes );
 		}
 		
 		nodeoze::buffer
@@ -916,7 +949,7 @@ namespace bstream
 		nodeoze::buffer
 		read_ext_body(std::size_t nbytes)
 		{
-			return base::getn( nbytes );
+			return getn( nbytes );
 		}
 		
 		void
@@ -1008,62 +1041,35 @@ namespace bstream
 			}
 		}
 		
-		virtual std::shared_ptr<void> 
-		get_saved_ptr(std::size_t index);
+		std::shared_ptr<void> 
+		get_saved_ptr(std::size_t index)
+        {
+            if ( ! m_context )
+            {
+	            throw type_error("invalid ptr_info value (saved_pointer) in ibstream");
+            }
+            else
+            {
+                return m_context->get_saved_ptr( index );
+            }
+        }
 		
-		virtual void 
-		save_ptr(std::shared_ptr<void> ptr);
+		void 
+		save_ptr(std::shared_ptr<void> ptr)
+        {
+            if ( m_context )
+            {
+                m_context->save_ptr( ptr );
+            }
+        }
 
 		void 
 		ingest( bufwriter& os );
 
-		std::unique_ptr< bufwriter > m_bufwriter = nullptr;		
+		std::unique_ptr< bufwriter >    m_bufwriter = nullptr;
+        ibs_context::ptr                m_context;
     };
-	
-	class ibstream_cntxt : public ibstream
-	{
-	public:
-
-		inline
-		ibstream_cntxt() : ibstream{} { }
-
-		inline
-		ibstream_cntxt( std::unique_ptr< std::streambuf > strmbuf )
-		: ibstream{ std::move( strmbuf ) }
-		{}
-
-		inline
-		ibstream_cntxt( std::unique_ptr< imembuf > strmbuf )
-		: ibstream{ std::move( strmbuf ) }
-		{}
-
-		inline
-		ibstream_cntxt( buffer const& buf )
-		: ibstream{ buf }
-		{}
-
-		inline
-		ibstream_cntxt( buffer&& buf )
-		: ibstream{ std::move( buf ) }
-		{}
-
-		virtual void 
-		rewind() noexcept override
-		{
-			ibstream::rewind();
-			m_shared_pointers.clear();
-		}
-
-	protected:		
-		virtual void 
-		save_ptr(std::shared_ptr<void> ptr) override;
-
-		virtual std::shared_ptr<void> 
-		get_saved_ptr(std::size_t index) override;
-
-		std::vector<std::shared_ptr<void>> m_shared_pointers;
-	};
-        
+	        
     template<class T>
     struct value_deserializer<T, std::enable_if_t<std::is_enum<T>::value>>
     {
@@ -1092,7 +1098,6 @@ namespace bstream
         obj = T(is);
         return is;
     }
-
 
     template<class T>
     inline typename std::enable_if_t<
@@ -1302,8 +1307,7 @@ namespace bstream
 			});
 		}
 	};
-	
-	
+
 	/*
 	 *	Value deserializers for unique pointer types
 	 */

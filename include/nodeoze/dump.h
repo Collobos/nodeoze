@@ -164,7 +164,7 @@ public:
 private:
 
 	template< class CharT, class Traits >
-	static void 
+	void 
 	dump_line( std::basic_ostream< CharT, Traits >& os, std::size_t line_index, std::vector< uint8_t >& linebuf, std::size_t line_size )
 	{
 
@@ -176,6 +176,16 @@ private:
 			auto byte = linebuf[ i ];
 			os << std::setw(2) << (unsigned) byte << ' ';
 		}
+
+		if ( line_size < m_line_length )
+		{
+			auto fill = m_line_length - line_size;
+			for ( auto i = 0u; i < fill; ++i )
+			{
+				os << "   ";
+			}
+		}
+
 		os << "    ";
 		for ( auto i = 0ul; i < line_size; ++i )
 		{

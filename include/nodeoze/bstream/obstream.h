@@ -29,8 +29,8 @@
  * Created on June 29, 2017, 9:58 PM
  */
 
-#ifndef BSTREAM_OSTREAM_H
-#define BSTREAM_OSTREAM_H
+#ifndef NODEOZE_BSTREAM_OBSTREAM_H
+#define NODEOZE_BSTREAM_OBSTREAM_H
 
 #include <cstdint>
 #include <vector>
@@ -44,11 +44,35 @@ namespace nodeoze
 {
 namespace bstream
 {
+
+class obstream;
+
+class obs_context
+{
+public:
+	using ptr = std::unique_ptr< obs_context >;
+
+	virtual bool maybe_write_shared_ptr( obstream& os, void *ptr) = 0;
+
+	virtual ~obs_context() {}
+};
+
+class obs_ptr_context : public obs_context
+{
+public:
+	using ptr = std::unique_ptr< obs_ptr_context >;
+
+	virtual bool maybe_write_shared_ptr( obstream& os, void *ptr) override;
+
+private:
+	std::unordered_map<void*,std::size_t> 	m_shared_pointers;
+};
+
 class obstream : public onumstream
 {
 protected:
 
-//	inline obstream() {}
+//	inline obstream() {} // TODO: decide whether to delete certain ctors
 		
 public:	
 /*
@@ -59,11 +83,24 @@ public:
 	{}
 */
 	inline
-	obstream( std::unique_ptr< std::streambuf > strmbuf, bend::order order = bend::order::big )
+	obstream( std::unique_ptr< std::streambuf > strmbuf, obs_context::ptr context = nullptr )
 	:
-	onumstream{ std::move( strmbuf ), order }
+	onumstream{ std::move( strmbuf ) },
+	m_context{ std::move( context ) }
 	{}
 
+	inline void
+	set_context( obs_context::ptr context )
+	{
+		m_context = std::move( context );
+	}
+
+	inline void
+	set_ptr_context()
+	{
+		m_context = std::make_unique< obs_ptr_context >();
+	}
+/*
 	inline
 	obstream( std::unique_ptr< omembuf > strmbuf, bend::order order = bend::order::big )
 	:
@@ -87,7 +124,7 @@ public:
 	:
 	onumstream{ capacity, pol, order }
 	{}
-
+*/
 	inline obstream&
 	write_map_header(std::uint32_t size)
 	{
@@ -387,7 +424,7 @@ public:
 		}
 		else
 		{
-			if (!maybe_write_shared_ptr(ptr.get()))
+			if ( !maybe_write_shared_ptr( ptr.get() ) )
 			{
 				*this << *ptr;
 			}
@@ -404,16 +441,20 @@ public:
 		return *this;
 	}
 
-	inline obstream&
-	clear()
-	{
-		onumstream::clear();
-		return *this;
-	}
-
 protected:
 
-	virtual bool maybe_write_shared_ptr(void *ptr);
+	bool maybe_write_shared_ptr( void *ptr )
+	{
+		if ( ! m_context )
+		{
+			write_array_header(1);
+			return false;
+		}
+		else
+		{
+			return m_context->maybe_write_shared_ptr( *this, ptr );
+		}
+	}
 		
 private:
 		
@@ -443,62 +484,10 @@ private:
 			return 3;
 		else return 5;
 	}
+
+	obs_context::ptr						m_context;
 };
-	
-class obstream_cntxt : public obstream
-{		
-protected:	
 
-//	inline obstream_cntxt() : obstream() {} 
-		
-public:
-/*
-	inline 
-	obstream_cntxt(bend::order order = bend::order::big ) 
-	:
-	obstream{ order }
-	{}
-*/
-	inline
-	obstream_cntxt( std::unique_ptr< std::streambuf > strmbuf, bend::order order = bend::order::big )
-	:
-	obstream{ std::move( strmbuf ), order }
-	{}
-
-	inline
-	obstream_cntxt( std::unique_ptr< omembuf > strmbuf, bend::order order = bend::order::big )
-	:
-	obstream{ std::move( strmbuf ), order }
-	{}
-
-	inline
-	obstream_cntxt( buffer const& buf, bend::order order = bend::order::big )
-	:
-	obstream{ buf, order }
-	{}
-
-	inline
-	obstream_cntxt( buffer&& buf, bend::order order = bend::order::big )
-	:
-	obstream{ std::move( buf ), order }
-	{}
-
-	inline 
-	obstream_cntxt( size_type capacity, buffer::policy pol = buffer::policy::copy_on_write, bend::order order = bend::order::big )
-	:
-	obstream{ capacity, pol, order }
-	{}
-
-protected:
-		
-	virtual bool maybe_write_shared_ptr(void *ptr) override;
-		
-private:
-
-	std::unordered_map<void*,std::size_t> m_shared_pointers;
-
-};
-	
 	namespace detail
 	{
 		template<class T>
@@ -1070,5 +1059,5 @@ private:
 } // namespace bstream
 } // namespace nodeoze
 
-#endif /* BSTREAM_OSTREAM_H */
+#endif /* NODEOZE_BSTREAM_OBSTREAM_H */
 

@@ -1,5 +1,7 @@
 #include <nodeoze/ntest.h>
 #include <nodeoze/bstream.h>
+#include <nodeoze/bstream/ombstream.h>
+#include <nodeoze/bstream/imbstream.h>
 #include <nodeoze/bstream/msgpack.h>
 
 using namespace nodeoze;
@@ -165,14 +167,14 @@ TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 	CHECK(!bstream::has_msgpack_as_adaptor<fum>::value);
 
 	{	
-		bstream::obstream os{1024};
+		bstream::ombstream os{1024};
 
 		fee mpc0;
 		mpc0.s = "zoot";
 		mpc0.n = 27;
 
 		os << mpc0;
-		bstream::ibstream is{ os.get_buffer() };
+		bstream::imbstream is{ os.get_buffer() };
 		fee mpc1 = is.read_as<fee>();
 
 		CHECK(mpc1.s == mpc0.s);
@@ -187,14 +189,14 @@ TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 	}
 
 	{	
-		bstream::obstream os{1024};
+		bstream::ombstream os{1024};
 
 		fie mpc0;
 		mpc0.s = "zoot";
 		mpc0.n = 27;
 
 		os << mpc0;
-		bstream::ibstream is{ os.get_buffer() };
+		bstream::imbstream is{ os.get_buffer() };
 		fie mpc1 = is.read_as<fie>();
 
 		CHECK(mpc1.s == mpc0.s);
@@ -209,14 +211,14 @@ TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 	}
 
 	{	
-		bstream::obstream os{1024};
+		bstream::ombstream os{1024};
 
 		foe mpc0;
 		mpc0.s = "zoot";
 		mpc0.n = 27;
 
 		os << mpc0;
-		bstream::ibstream is{ os.get_buffer() };
+		bstream::imbstream is{ os.get_buffer() };
 		foe mpc1 = is.read_as<foe>();
 
 		CHECK(mpc1.s == mpc0.s);
@@ -231,14 +233,14 @@ TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 	}
 
 	{	
-		bstream::obstream os{1024};
+		bstream::ombstream os{1024};
 
 		fum mpc0;
 		mpc0.s = "zoot";
 		mpc0.n = 27;
 
 		os << mpc0;
-		bstream::ibstream is{ os.get_buffer() };
+		bstream::imbstream is{ os.get_buffer() };
 		fum mpc1 = is.read_as<fum>();
 
 		CHECK(mpc1.s == mpc0.s);

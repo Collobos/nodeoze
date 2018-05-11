@@ -5,6 +5,7 @@
 #include <streambuf>
 #include <nodeoze/nbuffer.h>
 #include <functional>
+#include <system_error>
 
 #define SB_DEBUG_ON 0
 
@@ -22,7 +23,6 @@
 #define NODEOZE_BUFFER_OUT_STREAMBUF_MIN_ALLOC_SIZE 8
 #endif
 
-
 namespace nodeoze
 {
 
@@ -32,34 +32,41 @@ public:
 
 	friend class imembuf;
 
-	omembuf( std::streamsize size, buffer::policy pol = buffer::policy::copy_on_write )
-	:
-	m_buf{ static_cast<buffer::size_type>( size ), pol },
-	m_high_water_mark{ 0 }
-	{
-		set_ptrs();
-	}
-
 	omembuf( buffer const& buf )
 	:
 	m_buf{ buf },
-	m_high_water_mark{ 0 }
+	m_high_water_mark{ 0 },
+	m_cached_is_writable{ false }
 	{
+		pubimbue( std::locale::classic() );
 		set_ptrs();
 	}
 
 	omembuf( buffer&& buf )
 	:
 	m_buf{ std::move( buf ) },
-	m_high_water_mark{ 0 }
+	m_high_water_mark{ 0 },
+	m_cached_is_writable{ false }
 	{
+		pubimbue( std::locale::classic() );
+		set_ptrs();
+	}
+
+	template< class... Args >
+	omembuf( Args&&... args )
+	: 
+	m_buf{ std::forward< Args >( args )... },
+	m_high_water_mark{ 0 },
+	m_cached_is_writable{ false }
+	{
+		pubimbue( std::locale::classic() );
 		set_ptrs();
 	}
 
 	omembuf& 
 	clear() noexcept
 	{
-		set_ptrs();
+		reset_ptrs();
 		reset_high_water_mark();
 		return *this;
 	}
@@ -67,6 +74,10 @@ public:
 	buffer 
 	get_buffer( bool force_copy = false ) const
 	{
+		if ( ! force_copy && m_buf.is_copy_on_write() )
+		{
+			m_cached_is_writable = false;
+		}
 		high_water_mark( ppos() );
 		SB_DEBUG( "in omembuf::get_buffer(), ppos() is " << ppos() << ", hwm is " << m_high_water_mark )
 		return m_buf.slice( 0, m_high_water_mark, force_copy );
@@ -93,10 +104,21 @@ public:
 
 protected:
 
+
 	// force a hard lower bound to avoid non-resizing dilemma in accommodate_put, when cushioned == required == 1
 	static constexpr std::streamsize min_alloc_size = 
 		( NODEOZE_BUFFER_OUT_STREAMBUF_MIN_ALLOC_SIZE > 16 ) ? 
 			NODEOZE_BUFFER_OUT_STREAMBUF_MIN_ALLOC_SIZE : 16;
+
+	inline void
+	make_writable()
+	{
+		if ( ! m_cached_is_writable )
+		{
+			m_buf.make_writable();
+			m_cached_is_writable = true;
+		}
+	}
 
 	virtual std::streamsize
 	xsputn( const char_type* bytes, std::streamsize n ) override
@@ -206,14 +228,9 @@ protected:
 				pbump( fill_size );
 				high_water_mark( ppos() );
 			}
-			else if ( pos >= current_pos )
-			{
-				pbump( pos - current_pos);
-			}
 			else
 			{
-				setp( pbase(), pbase() + m_buf.size() );
-				pbump( pos );
+				pbump( pos - current_pos);
 			}
 
 			result = pos;
@@ -232,18 +249,29 @@ protected:
 	}
 
 	inline void
+	reset_ptrs()
+	{
+		auto base = reinterpret_cast< char_type * >( m_buf.rdata() );
+		setp( base, base + m_buf.size() );
+	}
+
+	inline void
 	accommodate_put( std::streamsize n )
 	{
 		assert(std::less_equal<char *>()(pptr(), epptr()));
 		std::streamsize remaining = epptr() - pptr();
 		if ( remaining < n )
 		{
-			off_type pos = pptr() - pbase();
+			off_type pos = ppos();
 			std::streamsize required = pos + n;
 			std::streamsize cushioned_size = ( required * 3 ) / 2;
 			m_buf.size( std::max( min_alloc_size, cushioned_size ) ); 
-			set_ptrs();
+			reset_ptrs();
 			pbump( pos );
+		}
+		else
+		{
+			make_writable();
 		}
 	}
 	
@@ -289,11 +317,21 @@ protected:
 
 	buffer				m_buf;
 	mutable pos_type	m_high_water_mark;
+	mutable bool		m_cached_is_writable;
 };
 
 class imembuf : public std::streambuf
 {
 public:
+
+	template< class... Args >
+	inline
+	imembuf( Args&&... args )
+	:
+	m_buf{ std::forward< Args >( args )... }
+	{
+		set_ptrs();
+	}
 
 	inline 
 	imembuf( buffer const& buf )
@@ -314,14 +352,51 @@ public:
 	inline imembuf& 
 	rewind()
 	{
-		set_ptrs();
+		gbump( - gpos() );
 		return *this;
 	}
-
+/*
 	buffer 
 	get_buffer( bool force_copy = false ) const
 	{
 		return m_buf.slice( 0, m_buf.size(), force_copy );
+	}
+*/
+
+	buffer&
+	get_buffer()
+	{
+		return m_buf;
+	}
+
+	inline buffer::position_type
+	position()
+	{
+		return static_cast< buffer::position_type >( gpos() );
+	}
+
+	inline buffer::position_type
+	advance( buffer::size_type n )
+	{
+		if ( n > remaining() )
+		{
+			throw std::system_error( make_error_code( std::errc::invalid_argument ) );
+		}
+		gbump( static_cast< int >( n ) );
+		return static_cast< buffer::position_type >( gpos() );
+	}
+
+	inline buffer::size_type
+	size()
+	{
+		assert( m_buf.size() == static_cast< std::size_t >( egptr() - eback() ) );
+		return static_cast< std::streamsize >( m_buf.size() );
+	}
+
+	inline buffer::size_type
+	remaining()
+	{
+		return static_cast< std::streamsize>( egptr() - gptr() );
 	}
 
 	void
@@ -334,7 +409,6 @@ public:
 		std::cout.flush();
 	}
 
-
 protected:
 
 	inline void
@@ -343,12 +417,12 @@ protected:
 		char_type *base = reinterpret_cast< char_type* >( const_cast< buffer::elem_type* >( m_buf.const_data() ) );
 		setg( base, base, base + m_buf.size() );
 	} 
-
+	
 	virtual std::streamsize 
 	xsgetn (char_type* s, std::streamsize n) override
 	{
 		std::streamsize result = 0;
-		std::streamsize copy_size = std::min( n, egptr() - gptr() );
+		std::streamsize copy_size = std::min( static_cast< buffer::size_type >( n ), remaining() );
 		if ( copy_size > 0 )
 		{
 			::memcpy( s, gptr(), copy_size );
@@ -369,10 +443,8 @@ protected:
 		{
 			result = set_position( pos );
 		}
-
 		return result;
 	}
-
 
 	inline pos_type
 	gpos() const
@@ -405,7 +477,7 @@ protected:
 
 				case std::ios_base::seekdir::end:
 				{
-					new_pos = ( egptr() - eback() ) + off;
+					new_pos = size() + off;
 				}
 				break;
 			}
@@ -422,11 +494,9 @@ protected:
 		SB_DEBUG( "enter imembuf::set_position( " << pos << " ): " )
 
 		pos_type result = -1;
-
-		if ( pos >=  0 || pos <= ( egptr() - eback() ) )
+		if ( pos >= 0 && static_cast< buffer::size_type >( pos ) <= size() )
 		{
-			set_ptrs();
-			gbump( pos );
+			gbump( pos - gpos() );
 			result = pos;
 		}
 

@@ -41,13 +41,24 @@
 #include <string>
 #include <iomanip>
 #include <iostream>
+#include <vector>
 
 namespace nodeoze {
+
+#ifndef DOCTEST_CONFIG_DISABLE
+namespace detail
+{
+	class buffer_test_probe;
+}
+#endif
 
 class buffer
 {
 public:
 
+#ifndef DOCTEST_CONFIG_DISABLE
+	friend class detail::buffer_test_probe;
+#endif
 	using elem_type = std::uint8_t;
 	using size_type =  std::size_t;
 	using position_type = std::uint64_t;
@@ -71,7 +82,10 @@ private:
 	class _buffer_shared
 	{
 	public:
-	
+
+#ifndef DOCTEST_CONFIG_DISABLE
+		friend class detail::buffer_test_probe;
+#endif
 		friend class buffer;
 
 		_buffer_shared()
@@ -81,7 +95,7 @@ private:
 		m_refs{ 1 },
 		m_dealloc{ default_dealloc },
 		m_realloc{ default_realloc },
-		m_policy{}
+		m_policy{ policy::copy_on_write }
 		{}
 
 		_buffer_shared( policy pol )
@@ -115,7 +129,6 @@ private:
 				}
 			}
 		}
-
 
 		_buffer_shared( const void *src, size_type nbytes, policy pol = policy::copy_on_write )
 		:
@@ -163,6 +176,18 @@ private:
 		m_policy{ pol }
 		{
 			initialize( nullptr );
+		}
+
+		_buffer_shared( std::vector< elem_type > const& vec, policy pol = policy::copy_on_write )
+		:
+		m_data{ nullptr },
+		m_size{ vec.size() },
+		m_refs{ 1 },
+		m_dealloc{ default_dealloc },
+		m_realloc{ default_realloc },
+		m_policy{ pol }
+		{
+			initialize( vec.data() );
 		}
 
 		~_buffer_shared()
@@ -395,10 +420,11 @@ public:
 		m_size{ m_shared->size() }
 	{}
 
+	template< class T, class = typename std::enable_if_t< std::is_integral< T >::value, void > >
 	inline
-	explicit buffer( size_type size, policy pol = policy::copy_on_write )
+	buffer( T size, policy pol = policy::copy_on_write )
 	:
-		m_shared{ new _buffer_shared{ size, pol } },
+		m_shared{ new _buffer_shared{ static_cast< size_type >( size ), pol } },
 		m_data{ m_shared->data() },
 		m_size{ m_shared->size() }
 	{}
@@ -407,15 +433,13 @@ public:
 	buffer( const char *data, policy pol = policy::copy_on_write )
 	:
 		buffer{ data, data ? strlen( data ) : 0, pol }
-	{
-	}
+	{}
 
 	inline
 	buffer( const std::string &data, policy pol = policy::copy_on_write )
 	:
 		buffer{ data.c_str(), data.size(), pol }
-	{
-	}
+	{}
 
 	inline
 	buffer( const void *data, size_type size, policy pol = policy::copy_on_write )
@@ -425,7 +449,7 @@ public:
 		m_size{ m_shared->size() }
 	{}
 
-	inline
+	inline 
 	buffer( void *data, size_type size, policy pol, dealloc_function dealloc, realloc_function realloc )
 	:
 	m_shared{ new _buffer_shared{ data, size, pol, dealloc, realloc } },
@@ -455,7 +479,15 @@ public:
 	{
 		swap( rhs );
 	}
-
+/*
+	inline
+	buffer( std::vector< elem_type > const& vec, policy pol = policy::copy_on_write )
+	:
+	m_shared{ new _buffer_shared{ vec, pol } },
+	m_data{ m_shared->data() },
+	m_size{ m_shared->size() }
+	{}
+*/
 	inline ~buffer()
 	{
 		unshare();
@@ -554,12 +586,7 @@ public:
 	make_no_copy_on_write()
 	{
 		assert( m_shared != nullptr );
-		if ( m_shared->is_exclusive() )
-		{
-			clone();
-			m_shared->set_no_copy_on_write();
-		}
-		else
+		if ( ! is_no_copy_on_write() )
 		{
 			make_unique();
 			m_shared->set_no_copy_on_write();
@@ -981,6 +1008,12 @@ public:
 		{
 			make_unique();
 		}
+		return m_data;
+	}
+
+	inline elem_type*
+	rdata()
+	{
 		return m_data;
 	}
 

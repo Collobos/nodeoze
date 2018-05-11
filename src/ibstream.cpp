@@ -28,30 +28,6 @@
 
 using namespace nodeoze;
 
-void bstream::ibstream::save_ptr(std::shared_ptr<void>)
-{}
-
-std::shared_ptr<void> 
-bstream::ibstream::get_saved_ptr(std::size_t)
-{
-	throw type_error("invalid ptr_info value (saved_pointer) in ibstream");
-}
-
-void bstream::ibstream_cntxt::save_ptr(std::shared_ptr<void> ptr)
-{
-	m_shared_pointers.push_back(ptr);
-}
-
-std::shared_ptr<void> 
-bstream::ibstream_cntxt::get_saved_ptr(std::size_t index)
-{
-	if (index >= m_shared_pointers.size())
-	{
-		throw std::out_of_range("invalid shared pointer index in stream");
-	}
-	return m_shared_pointers[index];
-}
-
 buffer
 bstream::ibstream::get_msgpack_obj_buf()
 {
@@ -63,7 +39,6 @@ bstream::ibstream::get_msgpack_obj_buf()
 
 	m_bufwriter->reset();
 	ingest( *m_bufwriter );
-	sync_position();
 	return m_bufwriter->get_buffer();
 }
 

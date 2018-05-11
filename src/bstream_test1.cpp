@@ -1,5 +1,7 @@
 #include <nodeoze/ntest.h>
 #include <nodeoze/bstream.h>
+#include <nodeoze/bstream/ombstream.h>
+#include <nodeoze/bstream/imbstream.h>
 // #include <bstream/msgpack.h>
 
 using namespace nodeoze;
@@ -64,11 +66,11 @@ private:
 
 TEST_CASE("nodeoze/smoke/bstream/array_base_macro")
 {
-	bstream::obstream os{1024};
+	bstream::ombstream os{1024};
 	foo f0("france is bacon", 27);
 	os << f0;
 	
-	bstream::ibstream is{ os.get_buffer() };
+	bstream::imbstream is{ os.get_buffer() };
 	
 	foo f1 = is.read_as<foo>();
 	CHECK(f1.name() == f0.name());
@@ -77,11 +79,11 @@ TEST_CASE("nodeoze/smoke/bstream/array_base_macro")
 
 TEST_CASE("nodeoze/smoke/bstream/map_base_macro")
 {
-	bstream::obstream os{1024};
+	bstream::ombstream os{1024};
 	far f0("france is bacon", 27);
 	os << f0;
 	
-	bstream::ibstream is{ os.get_buffer() };
+	bstream::imbstream is{ os.get_buffer() };
 	
 	far f1 = is.read_as<far>();
 	CHECK(f1.name() == f0.name());
