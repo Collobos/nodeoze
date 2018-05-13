@@ -49,7 +49,7 @@
 #include <nodeoze/bstream/typecode.h>
 #include <nodeoze/bstream/numstream.h>
 #include <nodeoze/bstream/utils/traits.h>
-#include <nodeoze/nbuffer.h>
+#include <nodeoze/buffer.h>
 
 namespace nodeoze
 {

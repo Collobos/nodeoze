@@ -1,4 +1,4 @@
-#include <nodeoze/ntest.h>
+#include <nodeoze/test.h>
 #include <nodeoze/bstream.h>
 #include <nodeoze/bstream/msgpack.h>
 #include <nodeoze/bstream/ombstream.h>

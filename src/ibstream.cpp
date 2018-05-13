@@ -24,7 +24,7 @@
 
 #include <nodeoze/bstream/ibstream.h>
 #include <nodeoze/bstream/obstream.h>
-#include <nodeoze/ntest.h>
+#include <nodeoze/test.h>
 
 using namespace nodeoze;
 
