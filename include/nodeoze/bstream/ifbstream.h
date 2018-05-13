@@ -20,7 +20,9 @@ public:
     ifbstream( ibs_context::ptr context = nullptr )
     :
     ibstream{ std::make_unique< std::filebuf >(), std::move( context ) }
-    {}
+    {
+        get_filebuf().pubimbue( std::locale::classic() );
+    }
 
     ifbstream( ifbstream const& ) = delete;
     ifbstream( ifbstream&& ) = delete;
@@ -41,10 +43,24 @@ public:
     :
     ibstream{ std::make_unique< std::filebuf >(), std::move( context ) }
     {
-       if ( ! get_filebuf().open( filename, mode ))
-       {
+        get_filebuf().pubimbue( std::locale::classic() );
+        if ( ! get_filebuf().open( filename, mode ))
+        {
            throw std::system_error{ std::error_code{ errno, std::generic_category() } };
-       }
+        }
+    }
+
+    inline
+    ifbstream( std::string const& filename, std::error_code& ec, ibs_context::ptr context = nullptr )
+    :
+    ibstream{ std::make_unique< std::filebuf >(), std::move( context ) }
+    {
+        clear_error( ec );
+        get_filebuf().pubimbue( std::locale::classic() );
+        if ( ! get_filebuf().open( filename, mode ))
+        {
+            ec = std::error_code{ errno, std::generic_category() };
+        }
     }
 
     inline void
@@ -53,6 +69,16 @@ public:
         if ( ! get_filebuf().open( filename, mode ) )
         {
            throw std::system_error{ std::error_code{ errno, std::generic_category() } };
+        }
+    }
+
+    inline void
+    open( std::string const& filename, std::error_code& ec )
+    {
+        clear_error( ec );
+        if ( ! get_filebuf().open( filename, mode ) )
+        {
+           ec = std::error_code{ errno, std::generic_category() };
         }
     }
 
@@ -68,6 +94,16 @@ public:
         if ( ! get_filebuf().close() )
         {
            throw std::system_error{ std::error_code{ errno, std::generic_category() } };
+        }
+    }
+
+    inline void
+    close( std::error_code& ec )
+    {
+        clear_error( ec );
+        if ( ! get_filebuf().close() )
+        {
+           ec = std::error_code{ errno, std::generic_category() };
         }
     }
 

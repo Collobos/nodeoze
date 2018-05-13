@@ -38,7 +38,7 @@ namespace nodeoze
 {
 namespace bstream
 {
-        
+
 class type_error : public std::logic_error
 {
 public:
@@ -52,7 +52,7 @@ public:
 	logic_error{what_arg} 
 	{}
 };
-    
+
 enum class errc
 {
 	ok = 0,
@@ -100,6 +100,13 @@ inline std::error_code
 make_error_code( errc e )
 {
     return std::error_code( static_cast< int >( e ), bstream_category() );
+}
+
+inline void
+clear_error( std::error_code& ec )
+{
+	static const std::error_code good = make_error_code( bstream::errc::ok );
+	ec = good;
 }
 
 } // namespace bstream

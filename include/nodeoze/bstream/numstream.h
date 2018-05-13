@@ -105,19 +105,6 @@ public:
 
 	virtual ~onumstream() {}
 
-	inline void
-	use( std::unique_ptr< std::streambuf > strmbuf )
-	{
-		m_strmbuf = std::move( strmbuf );
-	}
-
-	template< class T, class... Args >
-	inline typename std::enable_if_t< std::is_base_of< std::streambuf, T >::value >
-	use( Args&&... args )
-	{
-		m_strmbuf = std::make_unique< T >( std::forward< Args >( args )... );
-	}
-
 	inline std::streambuf&
 	get_streambuf()
 	{
@@ -140,21 +127,69 @@ public:
 	inline onumstream& 
 	put( std::uint8_t byte )
 	{
-		m_strmbuf->sputc( static_cast< std::streambuf::char_type >( byte ) );
+		auto ch = m_strmbuf->sputc( static_cast< std::streambuf::char_type >( byte ) );
+		if ( ch == std::streambuf::traits_type::eof() )
+		{
+			throw std::system_error{ make_error_code( std::errc::no_stream_resources ) };
+		}
 		return *this;                
 	}
 
 	inline onumstream& 
-	putn( buffer const& buf )
+	put( std::uint8_t byte, std::error_code& ec )
 	{
-		m_strmbuf->sputn( reinterpret_cast< const std::streambuf::char_type* >( buf.const_data() ), buf.size() );
+		clear_error( ec );
+		auto ch = m_strmbuf->sputc( static_cast< std::streambuf::char_type >( byte ) );
+		if ( ch == std::streambuf::traits_type::eof() )
+		{
+			ec = make_error_code( std::errc::no_stream_resources );
+		}
+		return *this;                
+	}
+
+	inline onumstream& 
+	putn( buffer const& buf, bool throw_on_incomplete = true )
+	{
+		auto n = m_strmbuf->sputn( reinterpret_cast< const std::streambuf::char_type* >( buf.const_data() ), buf.size() );
+		if ( throw_on_incomplete && static_cast< buffer::size_type >( n ) != buf.size() )
+		{
+			throw std::system_error{ make_error_code( std::errc::no_stream_resources ) };
+		}
 		return *this;
 	}
 
 	inline onumstream& 
-	putn( const void* src, size_type nbytes )
+	putn( buffer const& buf, std::error_code& ec )
 	{
-		m_strmbuf->sputn( reinterpret_cast< const std::streambuf::char_type* >( src ), nbytes );
+		clear_error( ec );
+		auto n = m_strmbuf->sputn( reinterpret_cast< const std::streambuf::char_type* >( buf.const_data() ), buf.size() );
+		if ( static_cast< buffer::size_type>( n ) != buf.size() )
+		{
+			ec = make_error_code( std::errc::no_stream_resources );
+		}
+		return *this;
+	}
+
+	inline onumstream& 
+	putn( const void* src, size_type nbytes, bool throw_on_incomplete = true )
+	{
+		auto n = m_strmbuf->sputn( reinterpret_cast< const std::streambuf::char_type* >( src ), nbytes );
+		if ( throw_on_incomplete && static_cast< size_type >( n ) != nbytes )
+		{
+			throw std::system_error{ make_error_code( std::errc::no_stream_resources ) };
+		}
+		return *this;                
+	}
+
+	inline onumstream& 
+	putn( const void* src, size_type nbytes, std::error_code& ec )
+	{
+		clear_error( ec );
+		auto n = m_strmbuf->sputn( reinterpret_cast< const std::streambuf::char_type* >( src ), nbytes );
+		if ( static_cast< size_type >( n ) != nbytes )
+		{
+			ec = make_error_code( std::errc::no_stream_resources );
+		}
 		return *this;                
 	}
 
@@ -162,8 +197,14 @@ public:
 	inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof( U ) == 1, onumstream&>::type 
 	put_num( U value )
 	{
-		m_strmbuf->sputc( static_cast< std::streambuf::char_type >( value ) );
-		return *this;                
+		return put( static_cast< std::uint8_t >( value ) );
+	}
+
+	template<class U>
+	inline typename std::enable_if<std::is_arithmetic<U>::value && sizeof( U ) == 1, onumstream&>::type 
+	put_num( U value, std::error_code& ec )
+	{
+		return put( static_cast< std::uint8_t >( value ), ec );
 	}
 
 	template<class U>
@@ -174,7 +215,28 @@ public:
 		using ctype = typename detail::canonical_type< usize >::type;
 
 		ctype cval = m_reverse_order ? bend::endian_reverse( reinterpret_cast< ctype& >( value ) ) : reinterpret_cast< ctype& >( value );
-		m_strmbuf->sputn( reinterpret_cast< std::streambuf::char_type* >( &cval ), usize );
+		auto n = m_strmbuf->sputn( reinterpret_cast< std::streambuf::char_type* >( &cval ), usize );
+		if ( n != usize )
+		{
+			throw std::system_error{ make_error_code( std::errc::no_stream_resources ) };
+		}
+		return *this;
+	}
+
+	template<class U>
+	inline typename std::enable_if< std::is_arithmetic<U>::value && ( sizeof( U ) > 1 ), onumstream& >::type
+	put_num( U value, std::error_code& ec )
+	{
+		constexpr std::size_t usize = sizeof( U );
+		using ctype = typename detail::canonical_type< usize >::type;
+
+		clear_error( ec );
+		ctype cval = m_reverse_order ? bend::endian_reverse( reinterpret_cast< ctype& >( value ) ) : reinterpret_cast< ctype& >( value );
+		auto n = m_strmbuf->sputn( reinterpret_cast< std::streambuf::char_type* >( &cval ), usize );
+		if ( n != usize )
+		{
+			ec = make_error_code( std::errc::no_stream_resources );
+		}
 		return *this;
 	}
 
@@ -199,6 +261,23 @@ public:
 	}
 
 	inline position_type
+	position( std::error_code& ec ) 
+	{
+		clear_error( ec );
+		position_type result = 0;
+		auto seek_result = m_strmbuf->pubseekoff( 0, std::ios_base::cur, std::ios_base::out );
+		if ( seek_result < 0 )
+		{
+			ec = make_error_code( std::errc::invalid_seek );
+		}
+		else
+		{
+			result = static_cast< position_type >( seek_result );
+		}
+		return result;		
+	}
+
+	inline position_type
 	position( position_type pos )
 	{
 		auto seek_result = m_strmbuf->pubseekpos( pos, std::ios_base::out );
@@ -207,6 +286,23 @@ public:
 			throw std::system_error{ make_error_code( std::errc::invalid_seek ) };
 		}
 		return static_cast< position_type >( seek_result );		
+	}
+
+	inline position_type
+	position( position_type pos, std::error_code& ec )
+	{
+		clear_error( ec );
+		position_type result = 0;
+		auto seek_result = m_strmbuf->pubseekpos( pos, std::ios_base::out );
+		if ( seek_result < 0)
+		{
+			ec = make_error_code( std::errc::invalid_seek );
+		}
+		else
+		{
+			result =  static_cast< position_type >( seek_result );
+		}
+		return result;
 	}
 
 	inline position_type
@@ -220,6 +316,23 @@ public:
 		return static_cast< position_type >( pos );
 	}
 
+	inline position_type
+	position( offset_type offset, std::ios_base::seekdir way, std::error_code& ec )
+	{
+		clear_error( ec );
+		position_type result = 0;
+		auto pos = m_strmbuf->pubseekoff( offset, way, std::ios_base::out );
+		if ( pos < 0 )
+		{
+			ec = make_error_code( std::errc::invalid_seek );
+		}
+		else
+		{
+			result = static_cast< position_type >( pos );
+		}
+		return result;
+	}
+
 	inline void 
 	write(const char* src, std::size_t len)
 	{
@@ -227,6 +340,19 @@ public:
 	}
 
 protected:
+
+	inline void
+	use( std::unique_ptr< std::streambuf > strmbuf )
+	{
+		m_strmbuf = std::move( strmbuf );
+	}
+
+	template< class T, class... Args >
+	inline typename std::enable_if_t< std::is_base_of< std::streambuf, T >::value >
+	use( Args&&... args )
+	{
+		m_strmbuf = std::make_unique< T >( std::forward< Args >( args )... );
+	}
 
 	std::unique_ptr< std::streambuf >		m_strmbuf;
 	const bool 								m_reverse_order;
@@ -252,19 +378,6 @@ public:
 
 	virtual ~inumstream() {}
 		
-	inline void
-	use( std::unique_ptr< std::streambuf > strmbuf )
-	{
-		m_strmbuf = std::move( strmbuf );
-	}
-
-	template< class T, class... Args >
-	inline typename std::enable_if_t< std::is_base_of< std::streambuf, T >::value >
-	use( Args&&... args )
-	{
-		m_strmbuf = std::make_unique< T >( std::forward< Args >( args )... );
-	}
-
 	inline std::streambuf&
 	get_streambuf()
 	{
@@ -294,6 +407,23 @@ public:
 		return static_cast< position_type >( seek_result );		
 	}
 
+	inline position_type
+	position( std::error_code& ec )
+	{
+		clear_error( ec );
+		position_type result = 0;
+		auto seek_result = m_strmbuf->pubseekoff( 0, std::ios_base::cur, std::ios_base::in );
+		if ( seek_result < 0 )
+		{
+			ec = make_error_code( std::errc::invalid_seek );
+		}
+		else
+		{
+			result = static_cast< position_type >( seek_result );
+		}
+		return result;
+	}
+
 	inline position_type 
 	position( position_type pos )
 	{
@@ -305,6 +435,23 @@ public:
 		return static_cast< position_type >( seek_result );		
 	}
 
+	inline position_type 
+	position( position_type pos, std::error_code& ec )
+	{
+		clear_error( ec );
+		position_type result = 0;
+		auto seek_result = m_strmbuf->pubseekpos( pos, std::ios_base::in );
+		if ( seek_result < 0)
+		{
+			ec = make_error_code( std::errc::invalid_seek );
+		}
+		else
+		{
+			result = static_cast< position_type >( seek_result );
+		}
+		return result;
+	}
+
 	inline position_type
 	position( offset_type offset, std::ios_base::seekdir way )
 	{
@@ -314,6 +461,23 @@ public:
 			throw std::system_error{ make_error_code( std::errc::invalid_seek ) };
 		}
 		return static_cast< position_type >( seek_result );		
+	}
+
+	inline position_type
+	position( offset_type offset, std::ios_base::seekdir way, std::error_code& ec )
+	{
+		clear_error( ec );
+		position_type result = 0;
+		auto seek_result = m_strmbuf->pubseekoff( offset, way, std::ios_base::in );
+		if ( seek_result < 0 )
+		{
+			ec = make_error_code( std::errc::invalid_seek );
+		}
+		else
+		{
+			result = static_cast< position_type >( seek_result );
+		}
+		return result;
 	}
 
 	inline size_type 
@@ -342,6 +506,23 @@ public:
 		return static_cast< byte_type >( ch );
 	}
 
+	inline byte_type
+	get( std::error_code& ec )
+	{
+		clear_error( ec );
+		byte_type result = 0;
+		auto ch = m_strmbuf->sbumpc();
+		if ( ch == std::streambuf::traits_type::eof() )
+		{
+			ec = make_error_code( bstream::errc::read_past_end_of_stream );
+		}
+		else
+		{
+			result = static_cast< byte_type >( ch );
+		}
+		return result;
+	}
+
 	inline byte_type 
 	peek()
 	{
@@ -354,13 +535,38 @@ public:
 
 	}
 
+	inline byte_type 
+	peek( std::error_code& ec )
+	{
+		clear_error( ec );
+		byte_type result = 0;
+		auto ch = m_strmbuf->sgetc();
+		if ( ch == std::streambuf::traits_type::eof() )
+		{
+			ec = make_error_code( bstream::errc::read_past_end_of_stream );
+		}
+		else
+		{
+			result = static_cast< byte_type >( ch );
+		}
+		return result;
+	}
+
 	template< class U >
 	inline typename std::enable_if< std::is_arithmetic< U >::value && sizeof( U ) == 1, U >::type 
 	get_num()
 	{
 		return static_cast< U >( get() );
 	}
-		
+
+	template< class U >
+	inline typename std::enable_if< std::is_arithmetic< U >::value && sizeof( U ) == 1, U >::type 
+	get_num( std::error_code& ec )
+	{
+		clear_error( ec );
+		return static_cast< U >( get( ec ) );
+	}
+
 	template< class U >
 	inline typename std::enable_if< std::is_arithmetic< U >::value && ( sizeof( U ) > 1 ), U >::type 
 	get_num()
@@ -375,6 +581,27 @@ public:
 			throw std::system_error{ make_error_code( bstream::errc::read_past_end_of_stream ) };
 		}
 		cval = m_reverse_order ? bend::endian_reverse( cval ) : cval;
+		return reinterpret_cast< U& >( cval );
+	}
+
+	template< class U >
+	inline typename std::enable_if< std::is_arithmetic< U >::value && ( sizeof( U ) > 1 ), U >::type 
+	get_num( std::error_code& ec )
+	{
+		clear_error( ec );
+		constexpr std::size_t usize = sizeof( U );
+		using ctype = typename detail::canonical_type< usize >::type;
+
+		ctype cval = 0;
+		auto n = m_strmbuf->sgetn( reinterpret_cast< std::streambuf::char_type* >( &cval ), usize );
+		if ( static_cast< size_type >( n ) < usize )
+		{
+			ec = make_error_code( bstream::errc::read_past_end_of_stream );
+		}
+		else
+		{
+			cval = m_reverse_order ? bend::endian_reverse( cval ) : cval;
+		}
 		return reinterpret_cast< U& >( cval );
 	}
 
@@ -394,6 +621,20 @@ public:
 		return buf;
 	}
 
+	virtual buffer
+	getn( size_type nbytes, std::error_code& ec )
+	{
+		clear_error( ec );
+		buffer buf{ nbytes };
+		auto n = m_strmbuf->sgetn( reinterpret_cast< std::streambuf::char_type* >( buf.mutable_data() ), nbytes );
+		if ( static_cast< size_type >( n ) < nbytes )
+		{
+			ec = make_error_code( bstream::errc::read_past_end_of_stream );
+			buf.size( static_cast< size_type >( n ) );
+		}
+		return buf;
+	}
+
 	size_type
 	getn( byte_type* dst, size_type nbytes, bool throw_on_eof = true  )
 	{
@@ -401,6 +642,18 @@ public:
 		if ( throw_on_eof && static_cast< size_type >( n ) < nbytes )
 		{
 			throw std::system_error{ make_error_code( bstream::errc::read_past_end_of_stream ) };
+		}
+		return static_cast< size_type >( n );
+	}
+
+	size_type
+	getn( byte_type* dst, size_type nbytes, std::error_code& ec  )
+	{
+		clear_error( ec );
+		auto n = m_strmbuf->sgetn( reinterpret_cast< std::streambuf::char_type* >( dst ), nbytes );
+		if ( static_cast< size_type >( n ) < nbytes )
+		{
+			ec = make_error_code( bstream::errc::read_past_end_of_stream );
 		}
 		return static_cast< size_type >( n );
 	}
@@ -423,6 +676,19 @@ public:
 */
 
 protected:
+
+	inline void
+	use( std::unique_ptr< std::streambuf > strmbuf )
+	{
+		m_strmbuf = std::move( strmbuf );
+	}
+
+	template< class T, class... Args >
+	inline typename std::enable_if_t< std::is_base_of< std::streambuf, T >::value >
+	use( Args&&... args )
+	{
+		m_strmbuf = std::make_unique< T >( std::forward< Args >( args )... );
+	}
 
 	std::unique_ptr< std::streambuf >		m_strmbuf;
 	const bool								m_reverse_order;

@@ -34,6 +34,66 @@ public:
     ibstream{ std::make_unique< imembuf >( std::move( buf ) ), std::move( context ) }
     {}
 
+    inline void
+    use( std::unique_ptr< imembuf > strmbuf )
+    {
+        inumstream::use( std::move( strmbuf ) );
+        reset();
+    }
+
+    inline void
+    use( std::unique_ptr< imembuf > strmbuf, std::error_code& ec )
+    {
+        inumstream::use( std::move( strmbuf ) );
+        reset( ec );
+    }
+
+    inline void
+    use ( buffer&& buf )
+    {
+        inumstream::use( std::make_unique< imembuf >( std::move( buf ) ) );
+        reset();
+    }
+
+    inline void
+    use( buffer&& buf, std::error_code& ec )
+    {
+        inumstream::use( std::make_unique< imembuf >( std::move( buf ) ) );
+        reset( ec );
+    }
+
+    inline void
+    use( std::unique_ptr< imembuf > strmbuf, ibs_context::ptr context )
+    {
+        inumstream::use( std::move( strmbuf ) );
+        m_context = std::move( context );
+        reset();
+    }
+
+    inline void
+    use( std::unique_ptr< imembuf > strmbuf, ibs_context::ptr context, std::error_code& ec )
+    {
+        inumstream::use( std::move( strmbuf ) );
+        m_context = std::move( context );
+        reset( ec );
+    }
+
+    inline void
+    use( buffer&& buf, ibs_context::ptr context )
+    {
+        inumstream::use( std::make_unique< imembuf >( std::move( buf ) ) );
+        m_context = std::move( context );
+        reset();
+    }
+
+    inline void
+    use( buffer&& buf, ibs_context::ptr context, std::error_code& ec )
+    {
+        inumstream::use( std::make_unique< imembuf >( std::move( buf ) ) );
+        m_context = std::move( context );
+        reset( ec );
+    }
+
 /*
     inline
     imbstream( buffer const& buf )
