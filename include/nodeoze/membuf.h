@@ -3,7 +3,7 @@
 
 #include <iosfwd>
 #include <streambuf>
-#include <nodeoze/nbuffer.h>
+#include <nodeoze/buffer.h>
 #include <functional>
 #include <system_error>
 

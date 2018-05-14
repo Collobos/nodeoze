@@ -1,5 +1,5 @@
 #include <nodeoze/membuf.h>
-#include <nodeoze/ntest.h>
+#include <nodeoze/test.h>
 #include <vector>
 
 using namespace nodeoze;

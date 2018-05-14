@@ -1,6 +1,6 @@
 #include <nodeoze/bstream/ifbstream.h>
 #include <nodeoze/bstream/ofbstream.h>
-#include <nodeoze/ntest.h>
+#include <nodeoze/test.h>
 
 using namespace nodeoze;
 using bstream::ofbstream;

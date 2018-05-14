@@ -33,7 +33,7 @@
 #define NODEOZE_BSTREAM_NUMSTREAM_H
 
 #include <type_traits>
-#include <nodeoze/nbuffer.h>
+#include <nodeoze/buffer.h>
 // #include <nodeoze/membuf.h>
 #include <nodeoze/bstream/error.h>
 #include <sstream>

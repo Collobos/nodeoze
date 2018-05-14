@@ -92,129 +92,127 @@ set(NODEOZE_SRCS
 	ext/msgpack-c/src/zone.c 
 	ext/msgpack-c/src/unpack.c 
 	include/nodeoze/doctest.h 
-	include/nodeoze/naddress.h 
-	include/nodeoze/nalgorithm.h 
-	include/nodeoze/nany.h 
-	include/nodeoze/napplication.h 
-	include/nodeoze/narp.h 
-	include/nodeoze/nasync_repeater.h 
-	include/nodeoze/nbarrier.h 
-	include/nodeoze/nbase64.h 
-	include/nodeoze/nbuffer.h 
-	include/nodeoze/ncompat.h 
-	include/nodeoze/nconcurrent.h 
-	include/nodeoze/nconnection.h 
-	include/nodeoze/ndatabase.h 
-	include/nodeoze/ndeque.h 
-	include/nodeoze/nencrypt.h 
-	include/nodeoze/nendian.h 
-	include/nodeoze/nendpoint.h 
-	include/nodeoze/nenum.h 
-	include/nodeoze/nevent.h 
-	include/nodeoze/nexpected.h 
-	include/nodeoze/nfs.h 
-	include/nodeoze/nhttp.h 
-	include/nodeoze/njson.h 
-	include/nodeoze/nlimiter.h 
-	include/nodeoze/nlocation.h 
-	include/nodeoze/nlog.h 
-	include/nodeoze/nmac.h 
-	include/nodeoze/nmachine.h 
-	include/nodeoze/nmacros.h 
-	include/nodeoze/nmarkers.h 
-	include/nodeoze/nmime.h 
-	include/nodeoze/nmsgpack.h 
-	include/nodeoze/nnotification.h 
+	include/nodeoze/address.h 
+	include/nodeoze/algorithm.h 
+	include/nodeoze/any.h 
+	include/nodeoze/application.h 
+	include/nodeoze/arp.h 
+	include/nodeoze/async_repeater.h 
+	include/nodeoze/barrier.h 
+	include/nodeoze/base64.h 
+	include/nodeoze/buffer.h 
+	include/nodeoze/compat.h 
+	include/nodeoze/concurrent.h 
+	include/nodeoze/connection.h 
+	include/nodeoze/database.h 
+	include/nodeoze/deque.h 
+	include/nodeoze/encrypt.h 
+	include/nodeoze/endian.h 
+	include/nodeoze/endpoint.h 
+	include/nodeoze/enum.h 
+	include/nodeoze/event.h 
+	include/nodeoze/expected.h 
+	include/nodeoze/fs.h 
+	include/nodeoze/http.h 
+	include/nodeoze/json.h 
+	include/nodeoze/limiter.h 
+	include/nodeoze/location.h 
+	include/nodeoze/log.h 
+	include/nodeoze/mac.h 
+	include/nodeoze/machine.h 
+	include/nodeoze/macros.h 
+	include/nodeoze/markers.h 
+	include/nodeoze/mime.h 
+	include/nodeoze/msgpack.h 
+	include/nodeoze/notification.h 
 	include/nodeoze/nodeoze.h 
-	include/nodeoze/noid.h 
-	include/nodeoze/npath.h 
-	include/nodeoze/nprintf.h 
-	include/nodeoze/nprocess.h 
-	include/nodeoze/npromise.h 
-	include/nodeoze/nproxy.h 
-	include/nodeoze/nrandom.h 
-	include/nodeoze/nrpc.h 
-	include/nodeoze/nrunloop.h 
-	include/nodeoze/nscoped_operation.h 
-	include/nodeoze/nsema.h 
-	include/nodeoze/nsha1.h 
-	include/nodeoze/nshell.h 
-	include/nodeoze/nsingleton.h 
-	include/nodeoze/nsocket.h 
-	include/nodeoze/nstackwalk.h 
-	include/nodeoze/nstate_machine.h 
-	include/nodeoze/nstream.h 
-	include/nodeoze/nstring.h 
-	include/nodeoze/ntest.h 
-	include/nodeoze/nthread.h 
-	include/nodeoze/ntimer.h 
-	include/nodeoze/ntime.h 
-	include/nodeoze/ntls.h 
-	include/nodeoze/ntypes.h 
-	include/nodeoze/ntypestring.h 
-	include/nodeoze/nunicode.h 
-	include/nodeoze/nuri.h 
-	include/nodeoze/nusername.h 
-	include/nodeoze/nuuid.h 
-	include/nodeoze/nws.h 
-	include/nodeoze/nzip.h
+	include/nodeoze/oid.h 
+	include/nodeoze/path.h 
+	include/nodeoze/printf.h 
+	include/nodeoze/process.h 
+	include/nodeoze/promise.h 
+	include/nodeoze/proxy.h 
+	include/nodeoze/random.h 
+	include/nodeoze/rpc.h 
+	include/nodeoze/runloop.h 
+	include/nodeoze/scoped_operation.h 
+	include/nodeoze/sema.h 
+	include/nodeoze/sha1.h 
+	include/nodeoze/shell.h 
+	include/nodeoze/singleton.h 
+	include/nodeoze/socket.h 
+	include/nodeoze/stackwalk.h 
+	include/nodeoze/state_machine.h 
+	include/nodeoze/stream.h 
+	include/nodeoze/string.h 
+	include/nodeoze/test.h 
+	include/nodeoze/thread.h 
+	include/nodeoze/timer.h 
+	include/nodeoze/time.h 
+	include/nodeoze/tls.h 
+	include/nodeoze/types.h 
+	include/nodeoze/typestring.h 
+	include/nodeoze/unicode.h 
+	include/nodeoze/uri.h 
+	include/nodeoze/username.h 
+	include/nodeoze/uuid.h 
+	include/nodeoze/ws.h 
+	include/nodeoze/zip.h
 	include/nodeoze/traits.h
-	src/naddress.cpp 
-	src/nany.cpp 
-	src/napplication.cpp 
-	src/nasync_repeater.cpp 
-	src/nbarrier.cpp 
-	src/nbase64.cpp 
-	src/nbuffer.cpp 
-	src/nconnection.cpp 
-	src/ndatabase.cpp 
-	src/nencrypt.cpp 
-	src/nendpoint.cpp 
-	src/nfs.cpp 
-	src/nhttp.cpp 
-	src/njson.cpp 
-	src/njson.cpp 
-	src/nlimiter.cpp 
-	src/nlocation.cpp 
-	src/nlog.cpp 
-	src/nmachine.cpp 
-	src/nmarkers.cpp 
-	src/nmime.cpp 
-	src/nnotification.cpp 
-	src/npromise.cpp 
-	src/nproxy.cpp 
-	src/nsha1.cpp 
-	src/nsocket.cpp 
-	src/nstream.cpp 
-	src/ntime.cpp 
-	src/nunicode.cpp 
-	src/nuri.cpp 
-	src/nusername.cpp 
-	src/nuuid.cpp 
-	src/nws.cpp 
-	src/nrpc.cpp 
-	src/nmac.cpp 
-	src/nmsgpack.cpp 
-	src/nprocess.cpp 
-	src/nstate_machine.cpp 
-	src/nzip.cpp 
-	src/android/nfs_android.h 
-	src/android/nmachine_android.h 
-	src/apple/narp_apple.h 
-	src/apple/nfs_apple.h 
-	src/apple/nmachine_apple.h 
-	src/libuv/nendpoint_libuv.h 
-	src/libuv/nsocket_libuv.h 
-	src/linux/narp_linux.h 
-	src/linux/nfs_linux.h 
-	src/linux/nmachine_linux.h 
+	src/address.cpp 
+	src/any.cpp 
+	src/application.cpp 
+	src/async_repeater.cpp 
+	src/barrier.cpp 
+	src/base64.cpp 
+	src/buffer.cpp 
+	src/connection.cpp 
+	src/database.cpp 
+	src/encrypt.cpp 
+	src/endpoint.cpp 
+	src/fs.cpp 
+	src/http.cpp 
+	src/json.cpp 
+	src/json.cpp 
+	src/limiter.cpp 
+	src/location.cpp 
+	src/log.cpp 
+	src/machine.cpp 
+	src/markers.cpp 
+	src/mime.cpp 
+	src/notification.cpp 
+	src/promise.cpp 
+	src/proxy.cpp 
+	src/sha1.cpp 
+	src/socket.cpp 
+	src/stream.cpp 
+	src/time.cpp 
+	src/unicode.cpp 
+	src/uri.cpp 
+	src/username.cpp 
+	src/uuid.cpp 
+	src/ws.cpp 
+	src/rpc.cpp 
+	src/mac.cpp 
+	src/msgpack.cpp 
+	src/process.cpp 
+	src/state_machine.cpp 
+	src/zip.cpp 
+	src/apple/arp_apple.h 
+	src/apple/fs_apple.h 
+	src/apple/machine_apple.h 
+	src/net_utils.h 
+	src/socket_libuv.h 
+	src/linux/arp_linux.h 
+	src/linux/fs_linux.h 
+	src/linux/machine_linux.h 
 	src/win32/crc32.h 
 	src/win32/event_log.h 
-	src/win32/narp_win32.h 
-	src/win32/nfs_win32.h 
-	src/win32/nlog_win32.h 
-	src/win32/nmachine_win32.h 
-	src/nevent.cpp 
+	src/win32/arp_win32.h 
+	src/win32/fs_win32.h 
+	src/win32/log_win32.h 
+	src/win32/machine_win32.h 
+	src/event.cpp 
 	include/nodeoze/bstream.h
 	include/nodeoze/bstream/base_classes.h
 	include/nodeoze/bstream/error.h
@@ -233,7 +231,7 @@ set(NODEOZE_SRCS
 	include/nodeoze/dump.h
 	include/nodeoze/membuf.h
 	include/nodeoze/bstream/numstream.h
-	src/numstream.cpp
+	src/umstream.cpp
 	src/membuf.cpp
 	src/ibstream.cpp
 	src/obstream.cpp
@@ -255,12 +253,10 @@ set( NODEOZE_SRCS ${NODEOZE_SRCS}
 	ext/libuv/src/inet.c 
 	ext/libuv/src/threadpool.c 
 	ext/libuv/src/version.c 
-	src/ntls.cpp 
-	src/libuv/nerror_libuv.h 
-	src/libuv/nerror_libuv.cpp 
-	src/libuv/nrunloop_libuv.cpp 
-	src/libuv/nprocess_libuv.cpp 
-	src/libuv/naddress_libuv.cpp)
+	src/tls.cpp 
+	src/error_libuv.h 
+	src/error_libuv.cpp 
+	src/runloop.cpp)
 
 if ( APPLE )
 
@@ -306,13 +302,13 @@ if ( WIN32 )
 	ext/libuv/src/win/timer.c 
 	ext/libuv/src/win/tty.c 
 	ext/libuv/src/win/udp.c 
-	src/win32/narp_win32.cpp 
-	src/win32/nfs_win32.cpp 
-	src/win32/nlog_win32.cpp 
-	src/win32/nmachine_win32.cpp 
-	src/win32/npath_win32.cpp 
-	src/win32/nprocess_win32.cpp 
-	src/win32/nuser.cpp 
+	src/win32/arp_win32.cpp 
+	src/win32/fs_win32.cpp 
+	src/win32/log_win32.cpp 
+	src/win32/machine_win32.cpp 
+	src/win32/path_win32.cpp 
+	src/win32/process_win32.cpp 
+	src/win32/user.cpp 
 	src/win32/crc32.cpp)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOTAN_DLL=")
 
@@ -343,12 +339,12 @@ else()
 			ext/libuv/src/unix/darwin-proctitle.c 
 			ext/libuv/src/unix/kqueue.c 
 			ext/libuv/src/unix/fsevents.c 
-			src/apple/narp_apple.cpp 
-			src/apple/nfs_apple.mm 
-			src/apple/nlog_apple.mm 
-			src/apple/nmachine_apple.mm 
-			src/apple/nprocess_apple.mm 
-			src/apple/npath_apple.mm)
+			src/apple/arp_apple.cpp 
+			src/apple/fs_apple.mm 
+			src/apple/log_apple.mm 
+			src/apple/machine_apple.mm 
+			src/apple/process_apple.mm 
+			src/apple/path_apple.mm)
     
 	elseif (LINUX)
 		
@@ -356,12 +352,12 @@ else()
 			ext/libuv/src/unix/linux-core.c 
 			ext/libuv/src/unix/linux-inotify.c 
 			ext/libuv/src/unix/linux-syscalls.c 
-			src/linux/narp_linux.cpp 
-			src/linux/nfs_linux.cpp 
-			src/linux/nlog_linux.cpp 
-			src/linux/nmachine_linux.cpp 
-			src/linux/npath_linux.cpp 
-			src/linux/nprocess_linux.cpp)
+			src/linux/arp_linux.cpp 
+			src/linux/fs_linux.cpp 
+			src/linux/log_linux.cpp 
+			src/linux/machine_linux.cpp 
+			src/linux/path_linux.cpp 
+			src/linux/process_linux.cpp)
 		
 	endif()
 		

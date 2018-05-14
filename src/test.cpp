@@ -1,6 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <nodeoze/ntest.h>
-#include <nodeoze/nlog.h>
+#include <nodeoze/test.h>
+#include <nodeoze/log.h>
 
 using namespace nodeoze;
 
