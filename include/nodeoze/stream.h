@@ -42,7 +42,7 @@ struct is_writable_stream : public std::integral_constant< bool, false >
 };
 
 template<>
-struct is_writable_stream< writable > : public std::integral_constant< bool, true >
+struct is_writable_stream< std::shared_ptr< writable > > : public std::integral_constant< bool, true >
 {
 };
 
@@ -72,41 +72,62 @@ protected:
 };
 
 
+/*
+ * class readable
+ * 
+ * events:
+ * 
+ * "close"
+ * "data"
+ * "end"
+ * "error"
+ * "readable"
+ *
+ */
+
 class readable : public base
 {
 public:
+
+	using ptr = std::shared_ptr< readable >;
 
 	readable();
 
 	virtual ~readable();
 
 	template< class T >
-	typename std::enable_if< is_writable_stream< T >::value >::type
-	pipe( typename T::ptr dest )
+	typename std::enable_if< is_writable_stream< T >::value, T >::type
+	pipe( T dest )
 	{
+		on( "data", [dest]( buffer buf ) mutable
+		{
+			dest->write( buf );
+		} );
+
 		return dest;
 	}
 
 	template< class T >
-	void
+	typename std::enable_if< is_writable_stream< T >::value >::type
 	unpipe( typename T::ptr /* dest */ )
 	{
-
 	}
 
-	bool
+	void
 	push( buffer b );
 
 protected:
 
 	virtual void
-	really_read() = 0;
+	really_read();
 };
 
 
 class writable : public base
 {
 public:
+
+	using ptr = std::shared_ptr< writable >;
 
 	writable();
 
@@ -118,7 +139,7 @@ public:
 protected:
 
 	virtual promise< void >
-	really_write( buffer b ) = 0;
+	really_write( buffer b );
 };
 
 
