@@ -2116,6 +2116,16 @@ struct value_deserializer<std::pair<T1, T2>,
     }
 };
 
+template<>
+struct value_deserializer< nodeoze::buffer >
+{
+    static inline nodeoze::buffer
+    get( ibstream& is )
+    {
+        return is.read_blob();
+    }
+};
+
 template<class T>
 struct ibstream_initializer<T, 
     typename std::enable_if_t<is_ibstream_constructible<T>::value>>

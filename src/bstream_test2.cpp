@@ -59,7 +59,6 @@ public:
     std::string s;    
 };
 
-
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor 

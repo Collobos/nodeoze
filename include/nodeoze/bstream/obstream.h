@@ -1277,6 +1277,16 @@ private:
 			return os;
 		}
 	};
+
+	template<>
+	struct serializer< nodeoze::buffer >
+	{
+		inline static obstream& put( obstream& os, nodeoze::buffer const& val )
+		{
+			os.write_blob( val );
+			return os;
+		}
+	};
 	
 } // namespace bstream
 } // namespace nodeoze

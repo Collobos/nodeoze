@@ -79,15 +79,11 @@ TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read_ate" )
         bstream::ofbstream os( "fbstream_test_file", ofbstream::open_mode::append );
         auto pos = os.position();
         CHECK( pos == 26);
-        auto fsize = os.size();
-        std::cout << "size before append is " << fsize << std::endl; std::cout.flush();
         buffer outbuf{ "0123456789" };
         os.putn( outbuf );
         auto zpos = os.position( 0 );
-        std::cout << "zpos is " << zpos << std::endl; std::cout.flush();
         os.putn( outbuf );
         zpos = os.position();
-        std::cout << "zpos is " << zpos << std::endl; std::cout.flush();
         os.close();
     }
     {
@@ -100,7 +96,6 @@ TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read_ate" )
         os.putn( outbuf );
         auto zpos = os.position();
         CHECK( zpos == 10 );
-        std::cout << "zpos is " << zpos << std::endl; std::cout.flush();
         os.close();
     }
     {

@@ -44,43 +44,37 @@ namespace bstream
 	template<class Derived>
 	class map_base
 	{
-	public:
+	protected:
 		inline map_base(bstream::ibstream& is)
 		{
 			auto length = is.read_map_header();
-            if (length != item_count())
+            if (length != _item_count())
             {
-				std::ostringstream msg;
-                msg << "invalid element count in map streaming base class, expected " 
-					<< std::to_string(item_count()) << ", found " << std::to_string(length);
-                throw type_error(msg.str());
+                throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
             }
 		}
 
         inline map_base() {};
             
         inline obstream& 
-        serialize(obstream& os) const
+        _serialize(obstream& os) const
         {
-            return os.write_map_header(item_count());
+            return os.write_map_header(_item_count());
         }
         
         inline ibstream&
-        deserialize(ibstream& is)
+        _deserialize(ibstream& is)
         {
             auto length = is.read_map_header();
-            if (length != item_count())
+            if (length != _item_count())
             {
-                std::ostringstream msg;
-				msg << "invalid element count in map streaming base class, expected " 
-					<< std::to_string(item_count()) << ", found " << std::to_string(length);
-                throw type_error(msg.str());
+                throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
             }
             return is;
         }
         
         inline std::size_t
-        item_count() const
+        _item_count() const
         {
             return static_cast<const Derived&>(*this)._streamed_item_count();
         }
@@ -89,43 +83,37 @@ namespace bstream
     template<class Derived>
     class array_base
     {
-    public:
+    protected:
         inline array_base(bstream::ibstream& is)
         {			
             auto length = is.read_array_header();
-            if (length != item_count())
+            if (length != _item_count())
             {
-				std::ostringstream msg;
-                msg << "invalid element count in array streaming base class, expected " 
-					<< std::to_string(item_count()) << ", found " << std::to_string(length);
-                throw type_error(msg.str());
+                throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
             }
         }
 
         inline array_base() {};
             
         inline obstream& 
-        serialize(obstream& os) const
+        _serialize(obstream& os) const
         {
-            return os.write_array_header(item_count());
+            return os.write_array_header(_item_count());
         }
         
         inline ibstream&
-        deserialize(ibstream& is)
+        _deserialize(ibstream& is)
         {
             auto length = is.read_array_header();
-            if (length != item_count())
+            if (length != _item_count())
             {
-				std::ostringstream msg;
-                msg << "invalid element count in array streaming base class, expected " 
-					<< std::to_string(item_count()) << ", found " << std::to_string(length);
-                throw type_error(msg.str());
+                throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
             }
             return is;
         }
         
         inline std::size_t
-        item_count() const
+        _item_count() const
         {
             return static_cast<const Derived&>(*this)._streamed_item_count();
         }

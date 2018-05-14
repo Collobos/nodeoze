@@ -237,7 +237,13 @@ set(NODEOZE_SRCS
 	src/membuf.cpp
 	src/ibstream.cpp
 	src/obstream.cpp
-	src/fbstream.cpp)
+	src/fbstream.cpp
+	include/nodeoze/raft/error.cpp
+	include/nodeoze/raft/error.h
+	include/nodeoze/raft/log.cpp
+	include/nodeoze/raft/log.h
+	include/nodeoze/raft/state_machine.h
+	include/nodeoze/raft/types.h )
     
 
 # set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test3.cpp)

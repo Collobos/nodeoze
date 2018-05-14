@@ -3,6 +3,8 @@
 #include <nodeoze/bstream/msgpack.h>
 #include <nodeoze/bstream/ombstream.h>
 #include <nodeoze/bstream/imbstream.h>
+#include <thread>
+#include <chrono>
 
 using namespace nodeoze;
 
@@ -277,7 +279,7 @@ namespace std
 namespace test_types
 {
 	class foo : BSTRM_MAP_BASE(foo), 
-			public fee, public fie, public foe, public fum
+			protected fee, public fie, public foe, public fum
 	{
 	public:
 		foo() {}
@@ -1753,6 +1755,8 @@ TEST_CASE("nodeoze/smoke/bstream/tuple")
 
 TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 {
+//	std::this_thread::sleep_for (std::chrono::seconds(10));
+
 	{
 		CHECK(!bstream::is_ibstream_constructible<test_types::fee>::value);
 		CHECK(bstream::has_serialize_method<test_types::fee>::value);
@@ -1849,12 +1853,15 @@ TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 		CHECK(bstream::has_ibstream_extraction_operator<test_types::fum>::value);
 		CHECK(bstream::has_obstream_insertion_operator<test_types::fum>::value);
 
+		CHECK(! bstream::has_deserialize_method< test_types::foo >::value );
+
 		test_types::foo obj0{test_types::fee{"shamma", 0}, test_types::fie{"lamma", 1}, 
 				test_types::foe{"ding", 2}, test_types::fum{"dong", 3}, "ooo mau mau" }; 
 		bstream::ombstream os{1024};
 		os << obj0;
 //		bstream::dump_json(std::cout, os);
 		bstream::imbstream is{ os.get_buffer() };
+//		is.get_buffer().dump( std::cout );
 		test_types::foo obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);

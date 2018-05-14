@@ -79,6 +79,8 @@ TEST_CASE("nodeoze/smoke/bstream/array_base_macro")
 
 TEST_CASE("nodeoze/smoke/bstream/map_base_macro")
 {
+	CHECK(! bstream::has_deserialize_method< far >::value );
+
 	bstream::ombstream os{1024};
 	far f0("france is bacon", 27);
 	os << f0;

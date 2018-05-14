@@ -57,12 +57,35 @@ public:
         }
     }
 
+    inline
+    ofbstream( std::string const& filename, open_mode mode, std::error_code& ec, obs_context::ptr context = nullptr )
+    :
+    obstream{ std::make_unique< std::filebuf >(), std::move( context ) }
+    {
+        clear_error( ec );
+        get_filebuf().pubimbue( std::locale::classic() );
+        if ( ! get_filebuf().open( filename, to_flags( mode ) ))
+        {
+           ec = std::error_code{ errno, std::generic_category() };
+        }
+    }
+
     inline void
     open( std::string const& filename, open_mode mode )
     {
         if ( ! get_filebuf().open( filename, to_flags( mode ) ) )
         {
            throw std::system_error{ std::error_code{ errno, std::generic_category() } };
+        }
+    }
+
+    inline void
+    open( std::string const& filename, open_mode mode, std::error_code& ec )
+    {
+        clear_error( ec );
+        if ( ! get_filebuf().open( filename, to_flags( mode ) ) )
+        {
+           ec = std::error_code{ errno, std::generic_category() };
         }
     }
 
@@ -78,6 +101,16 @@ public:
         if ( ! get_filebuf().close() )
         {
            throw std::system_error{ std::error_code{ errno, std::generic_category() } };
+        }
+    }
+
+    inline void
+    close( std::error_code& ec )
+    {
+        clear_error( ec );
+        if ( ! get_filebuf().close() )
+        {
+           ec = std::error_code{ errno, std::generic_category() };
         }
     }
 

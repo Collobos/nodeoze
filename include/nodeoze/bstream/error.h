@@ -58,6 +58,7 @@ enum class errc
 	ok = 0,
 	read_past_end_of_stream,
 	type_error,
+	member_count_error,
 };
 
 class bstream_category_impl : public std::error_category
@@ -70,7 +71,7 @@ public:
 
 	virtual std::string message(int ev) const noexcept override
 	{
-		switch (static_cast<errc> (ev))
+		switch ( static_cast<errc> (ev) )
 		{
 		case bstream::errc::ok:
 			return "success";
@@ -78,6 +79,8 @@ public:
 			return "read past end of stream";
 		case bstream::errc::type_error:
 			return "type error";
+		case bstream::errc::member_count_error:
+			return "member count error";
 		default:
 			return "unknown bstream error";
 		}

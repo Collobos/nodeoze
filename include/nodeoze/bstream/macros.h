@@ -461,7 +461,7 @@
 /**/
 
 #define BSTRM_SERIALIZE_BASE_(name)								\
-    BSTRM_BASE_ALIAS_(name)::serialize(os);								\
+    BSTRM_BASE_ALIAS_(name)::_serialize(os);								\
 /**/
 
 #define BSTRM_SERIALIZE_BASES_(base_array)								\
