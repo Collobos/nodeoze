@@ -9,24 +9,59 @@ namespace net {
 
 namespace tcp {
 
+/*
+ * events:
+ *
+ * "listening"
+ * "connection"
+ * "error"
+ * "close"
+ */
+
 class server : public event::emitter
 {
 public:
 
+	using ptr = std::shared_ptr< server >;
+
 	static ptr
 	create();
 
-	server();
+	virtual void
+	listen( std::uint16_t port, std::uint32_t qsize ) = 0;
 
-	void
-	listen( std::uint16_t port );
+	virtual ip::endpoint
+	address() const = 0;
 
-	void
-	accept( std::uint32_t qsize );
+	virtual void
+	close() = 0;
 };
+
+/*
+ * events:
+ *
+ * "lookup"
+ * "connect"
+ * "ready"
+ * "data"
+ * "drain"
+ * "end"
+ * "close"
+ * "error"
+ * "timeout"
+ */
 
 class socket : public stream::duplex
 {
+public:
+
+	using ptr = std::shared_ptr< socket >;
+
+	static ptr
+	create();
+
+	static ptr
+	create( native_type fd );
 };
 
 }
@@ -35,6 +70,15 @@ namespace udp {
 
 class socket : public stream::duplex
 {
+public:
+
+	using ptr = std::shared_ptr< socket >;
+
+	static ptr
+	create();
+
+	static ptr
+	create( native_type fd );
 };
 
 }

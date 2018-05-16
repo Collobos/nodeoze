@@ -60,6 +60,7 @@ TEST_CASE( "nodeoze/smoke/promise" )
 {
 	SUBCASE( "synchronous chaining" )
 	{
+		auto done = std::make_shared< bool >( false );
 		promise< void > p;
 		
 		p.then( [=]()
@@ -99,13 +100,22 @@ TEST_CASE( "nodeoze/smoke/promise" )
 		{
 			nunused( err );
 			assert( 0 );
+		} )
+		.finally( [=]() mutable
+		{
+			*done = true;
 		} );
 
+		CHECK( !*done );
+
 		p.resolve();
+
+		CHECK( *done );
 	}
 	
 	SUBCASE( "synchronous chaining with error hander" )
 	{
+		auto done = std::make_shared< bool >( false );
 		promise< void > p;
 		
 		p.then( [=]()
@@ -153,9 +163,17 @@ TEST_CASE( "nodeoze/smoke/promise" )
 		{
 			CHECK( err.value() == 42 );
 			CHECK( err.category() == std::generic_category() );
+		} )
+		.finally( [=]() mutable
+		{
+			*done = true;
 		} );
 
+		CHECK( !*done );
+
 		p.resolve();
+
+		CHECK( *done );
 	}
 	
 	SUBCASE( "asynchronous chaining" )

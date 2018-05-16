@@ -29,6 +29,7 @@
 #include <nodeoze/promise.h>
 #include <nodeoze/buffer.h>
 #include <nodeoze/event.h>
+#include <queue>
 
 namespace nodeoze {
 
@@ -140,6 +141,9 @@ protected:
 
 	virtual promise< void >
 	really_write( buffer b );
+
+	bool												m_writing = false;
+	std::queue< std::pair< promise< void >, buffer > > 	m_queue;
 };
 
 

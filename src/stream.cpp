@@ -57,7 +57,34 @@ stream::writable::~writable()
 promise< void >
 stream::writable::write( buffer b )
 {
-	return really_write( b );
+	auto ret = promise< void >();
+
+	if ( !m_writing )
+	{
+		really_write( b )
+		.then( [=]() mutable
+		{
+			ret.resolve();
+		},
+		[=]( auto err ) mutable
+		{
+			ret.reject( err, reject_context );
+		} )
+		.finally( [=]() mutable
+		{
+			m_writing = false;
+
+			if ( m_queue.size() > 0 )
+			{
+			}
+		} );
+	}
+	else
+	{
+		m_queue.emplace( std::make_pair( std::move( ret ), std::move( b ) ) );
+	}
+
+	return ret;
 }
 
 
@@ -67,6 +94,8 @@ stream::writable::really_write( buffer b )
 	promise< void > ret;
 
 	fprintf( stderr, "really_write: %s\n", b.to_string().c_str() );
+
+	ret.resolve();
 
 	return ret;
 }
