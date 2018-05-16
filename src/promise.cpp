@@ -178,8 +178,8 @@ TEST_CASE( "nodeoze/smoke/promise" )
 	
 	SUBCASE( "asynchronous chaining" )
 	{
+		auto count = std::make_shared< std::uint8_t >( 0 );
 		promise< int > p;
-		auto done = std::make_shared< bool >( false );
 
 		p.then( [=]( int i )
 		{
@@ -212,12 +212,16 @@ TEST_CASE( "nodeoze/smoke/promise" )
 		.then( [=]( int i ) mutable
 		{
 			CHECK( i == 42 );
-			*done = true;
+			( *count )++;
 		},
 		[=]( std::error_code err )
 		{
 			nunused( err );
 			assert( 0 );
+		} )
+		.finally( [=]() mutable
+		{
+			( *count )++;
 		} );
 
 		runloop::shared().dispatch( [=]() mutable
@@ -231,13 +235,13 @@ TEST_CASE( "nodeoze/smoke/promise" )
 		runloop::shared().run( runloop::mode_t::nowait );
 		runloop::shared().run( runloop::mode_t::nowait );
 
-		CHECK( *done );
+		CHECK( *count == 2 );
 	}
 
 	SUBCASE( "asynchronous chaining with error hander" )
 	{
+		auto count = std::make_shared< std::uint8_t >( 0 );
 		promise< int > p;
-		auto done = std::make_shared< bool >( false );
 
 		p.then( [=]( int i )
 		{
@@ -284,7 +288,11 @@ TEST_CASE( "nodeoze/smoke/promise" )
 		{
 			CHECK( err.value() == 42 );
 			CHECK( err.category() == std::generic_category() );
-			*done = true;
+			( *count )++;
+		} )
+		.finally( [=]() mutable
+		{
+			( *count )++;
 		} );
 
 		runloop::shared().dispatch( [=]() mutable
@@ -298,12 +306,12 @@ TEST_CASE( "nodeoze/smoke/promise" )
 		runloop::shared().run( runloop::mode_t::nowait );
 		runloop::shared().run( runloop::mode_t::nowait );
 
-		CHECK( *done );
+		CHECK( *count == 2 );
 	}
 	
 	SUBCASE( "synchronous all <void>" )
 	{
-		auto done = std::make_shared< bool >( false );
+		auto count = std::make_shared< std::uint8_t >( 0 );
 
 		promise< void >::all(
 		{
@@ -312,23 +320,29 @@ TEST_CASE( "nodeoze/smoke/promise" )
 			make_v( std::chrono::milliseconds( 100 ) )
 		} ).then( [=]() mutable
 		{
-			*done = true;
+			( *count )++;
 		},
 		[=]( std::error_code err ) mutable
 		{
 			nunused( err );
 			assert( 0 );
+		} )
+		.finally( [=]() mutable
+		{
+			( *count )++;
 		} );
 
-		while ( *done )
+		while ( *count == 0 )
 		{
 			runloop::shared().run( runloop::mode_t::once );
 		}
+
+		CHECK( *count == 2 );
 	}
 
 	SUBCASE( "synchronous all <int>" )
 	{
-		auto done = std::make_shared< bool >( false );
+		auto count = std::make_shared< std::uint8_t >( 0 );
 
 		promise< int >::all(
 		{
@@ -341,23 +355,30 @@ TEST_CASE( "nodeoze/smoke/promise" )
 			CHECK( results[ 0 ] == 10 );
 			CHECK( results[ 1 ] == 20 );
 			CHECK( results[ 2 ] == 30 );
-			*done = true;
+
+			( *count )++;
 		},
 		[=]( std::error_code err ) mutable
 		{
 			nunused( err );
 			assert( 0 );
+		} )
+		.finally( [=]() mutable
+		{
+			( *count )++;
 		} );
 
-		while ( *done )
+		while ( *count == 0 )
 		{
 			runloop::shared().run( runloop::mode_t::once );
 		}
+
+		CHECK( *count == 2 );
 	}
 
 	SUBCASE( "any with no errors" )
 	{
-		auto done = std::make_shared< bool >( false );
+		auto count = std::make_shared< std::uint8_t >( 0 );
 
 		promise< int >::any(
 		{
@@ -367,18 +388,24 @@ TEST_CASE( "nodeoze/smoke/promise" )
 		} ).then( [=]( int val ) mutable
 		{
 			CHECK( val == 20 );
-			*done = true;
+			( *count )++;
 		},
 		[=]( std::error_code err ) mutable
 		{
 			nunused( err );
 			assert( 0 );
+		} )
+		.finally( [=]() mutable
+		{
+			( *count )++;
 		} );
 
-		while ( !*done )
+		while ( *count == 0 )
 		{
 			runloop::shared().run( runloop::mode_t::once );
 		}
+
+		CHECK( *count == 2 );
 	}
 
 	SUBCASE( "any with all errors" )
