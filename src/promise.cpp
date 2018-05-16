@@ -283,8 +283,8 @@ TEST_CASE( "nodeoze/smoke/promise" )
 		{
 			nunused( i );
 			assert( 0 );
-		},
-		[=]( const std::error_code &err )
+		} )
+		.catcher( [=]( auto err ) mutable
 		{
 			CHECK( err.value() == 42 );
 			CHECK( err.category() == std::generic_category() );
@@ -385,12 +385,13 @@ TEST_CASE( "nodeoze/smoke/promise" )
 			make_p( 10, std::chrono::milliseconds( 300 ) ),
 			make_p( 20, std::chrono::milliseconds( 100 ) ),
 			make_p( 30, std::chrono::milliseconds( 200 ) )
-		} ).then( [=]( int val ) mutable
+		} )
+		.then( [=]( int val ) mutable
 		{
 			CHECK( val == 20 );
 			( *count )++;
-		},
-		[=]( std::error_code err ) mutable
+		} )
+		.catcher( [=]( auto err ) mutable
 		{
 			nunused( err );
 			assert( 0 );

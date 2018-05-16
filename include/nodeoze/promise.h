@@ -478,6 +478,25 @@ public:
 
 	template< class F >
 	promise< T >&
+	catcher( F func )
+	{
+		if ( is_finished() )
+		{
+			if ( m_shared->rejected )
+			{
+				func( m_shared->err );
+			}
+		}
+		else
+		{
+			m_shared->reject = std::move( func );
+		}
+
+		return *this;
+	}
+
+	template< class F >
+	promise< T >&
 	finally( F func )
 	{
 		if ( is_finished() )
@@ -515,7 +534,8 @@ private:
 
 		if ( m_shared && !m_shared->resolved && !m_shared->rejected )
 		{
-			m_shared->rejected = true;
+			m_shared->err		= err;
+			m_shared->rejected	= true;
 
 			if ( m_shared->reject )
 			{
