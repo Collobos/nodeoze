@@ -1,7 +1,7 @@
 #pragma once
 
-#include <nodeoze/nprintf.h>
-#include <nodeoze/nmarkers.h>
+#include <nodeoze/printf.h>
+#include <nodeoze/markers.h>
 #include <stdlib.h>
 #include <sstream>
 

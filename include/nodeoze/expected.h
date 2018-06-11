@@ -27,7 +27,7 @@
 #ifndef _nodeoze_expected_h
 #define _nodeoze_expected_h
 
-#include <nodeoze/nlog.h>
+#include <nodeoze/log.h>
 #include <stdexcept>
 #include <typeinfo>
 #include <assert.h>

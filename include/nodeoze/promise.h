@@ -480,16 +480,19 @@ public:
 	promise< T >&
 	catcher( F func )
 	{
-		if ( is_finished() )
+		if ( m_shared )
 		{
-			if ( m_shared->rejected )
+			if ( is_finished() )
 			{
-				func( m_shared->err );
+				if ( m_shared->rejected )
+				{
+					func( m_shared->err );
+				}
 			}
-		}
-		else
-		{
-			m_shared->reject = std::move( func );
+			else
+			{
+				m_shared->reject = std::move( func );
+			}
 		}
 
 		return *this;
@@ -499,13 +502,16 @@ public:
 	promise< T >&
 	finally( F func )
 	{
-		if ( is_finished() )
+		if ( m_shared )
 		{
-			func();
-		}
-		else
-		{
-			m_shared->finally = std::move( func );
+			if ( is_finished() )
+			{
+				func();
+			}
+			else
+			{
+				m_shared->finally = std::move( func );
+			}
 		}
 
 		return *this;
