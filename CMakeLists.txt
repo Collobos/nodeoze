@@ -180,6 +180,7 @@ set(NODEOZE_SRCS
 	src/machine.cpp 
 	src/markers.cpp 
 	src/mime.cpp 
+	src/net.cpp
 	src/notification.cpp 
 	src/promise.cpp 
 	src/proxy.cpp 
