@@ -121,6 +121,9 @@ protected:
 
 	virtual void
 	really_read();
+
+	virtual void
+	really_pause();
 };
 
 

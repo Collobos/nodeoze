@@ -22,18 +22,22 @@ using native_type = int;
 
 namespace tcp {
 
-/*
+/** a tcp socket
+ 
+ * \code
  * events:
  *
- * "lookup"
+ * on( "lookup", []() {} );
  * "connect"
  * "ready"
- * "data"
+ * on( "data", []( buffer b ) {} );
  * "drain"
  * "end"
  * "close"
  * "error"
  * "timeout"
+ * 
+ * \endcode
  */
 
 class socket : public stream::duplex
@@ -74,6 +78,9 @@ protected:
 
 	virtual void
 	really_read();
+
+	virtual void
+	really_pause();
 
 	void
 	on_connect( std::error_code error, promise< void > ret );
@@ -172,6 +179,9 @@ protected:
 
 	virtual void
 	really_read();
+
+	virtual void
+	really_pause();
 
 	void
 	on_bind( std::error_code error, promise< void > ret );

@@ -30,12 +30,12 @@
 #include <nodeoze/random.h>
 #include <nodeoze/macros.h>
 #include <nodeoze/test.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/conf.h>
-#include <openssl/x509v3.h>
+//#include <openssl/ssl.h>
+// #include <openssl/err.h>
+// #include <openssl/conf.h>
+// #include <openssl/x509v3.h>
 #ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
+// #include <openssl/engine.h>
 #endif
 #include <assert.h>
 #include <algorithm>
@@ -122,6 +122,7 @@ public:
 	
 private:
 	
+	/*
 	bool
 	make_self_signed_cert( X509 **x509p, EVP_PKEY **pkeyp, int bits, int serial, int days );
 	
@@ -141,6 +142,7 @@ private:
 	std::vector< std::uint8_t >		m_send_data;
 	std::vector< std::uint8_t >		m_recv_data;
 	static EVP_PKEY					*m_pkey;
+	*/
 	
 protected:
 
@@ -172,14 +174,15 @@ protected:
 	std::queue< buffer >	m_pending_read_list;
 	bool					m_read_required;
 	std::error_code			m_err;
-	SSL						*m_ssl;
-	SSL_CTX					*m_ssl_context;
+	// SSL						*m_ssl;
+	// SSL_CTX					*m_ssl_context;
 };
 
 
 std::error_code
 tls::use_server_cert( const std::vector< nodeoze::buffer > &chain, const nodeoze::buffer &key )
 {
+	/*
 	const std::uint8_t		*data;
 	std::vector< X509* >	certs;
 	X509					*cert;
@@ -219,10 +222,13 @@ tls::use_server_cert( const std::vector< nodeoze::buffer > &chain, const nodeoze
 exit:
 
 	return err;
+*/
+
+	return std::error_code();
 }
 
 
-EVP_PKEY				*tls_filter_impl::m_pkey		= nullptr;
+// EVP_PKEY				*tls_filter_impl::m_pkey		= nullptr;
 
 
 nodeoze::tls::filter*
@@ -240,9 +246,7 @@ tls::filter::~filter()
 tls_filter_impl::tls_filter_impl( role_t r )
 :
 	m_role( r ),
-	m_read_required( false ),
-	m_ssl( nullptr ),
-	m_ssl_context( nullptr )
+	m_read_required( false )
 {
 	setup();
 }
@@ -259,6 +263,7 @@ tls_filter_impl::~tls_filter_impl()
 stream::state_t
 tls_filter_impl::send( buffer &in_buf, buffer &out_buf )
 {
+	/*
 	if ( in_buf.size() > 0 )
 	{
 		std::vector< buffer > dummy;
@@ -269,6 +274,7 @@ tls_filter_impl::send( buffer &in_buf, buffer &out_buf )
 	
 		process( out_buf, dummy );
 	}
+	*/
 	
 	return stream::state_t::connected;
 }
@@ -277,6 +283,7 @@ tls_filter_impl::send( buffer &in_buf, buffer &out_buf )
 stream::state_t
 tls_filter_impl::recv( std::vector< buffer > &in_bufs, buffer &out_send_buf, std::vector< buffer > &out_recv_bufs )
 {
+	/*
 	for ( auto &buf : in_bufs )
 	{
 		if ( buf.size() > 0 )
@@ -286,6 +293,7 @@ tls_filter_impl::recv( std::vector< buffer > &in_bufs, buffer &out_send_buf, std
 	}
 	
 	process( out_send_buf, out_recv_bufs );
+	*/
 	
 	return stream::state_t::connected;
 }
@@ -302,6 +310,7 @@ tls_filter_impl::reset()
 void
 tls_filter_impl::process( buffer &out_send_buf, std::vector< buffer > &out_recv_bufs )
 {
+	/*
 	out_send_buf.clear();
 	out_recv_bufs.clear();
 
@@ -362,12 +371,14 @@ tls_filter_impl::process( buffer &out_send_buf, std::vector< buffer > &out_recv_
 			grab_pending_data( out_send_buf );
 		}
 	}
+	*/
 }
 
 
 std::streamsize
 tls_filter_impl::data_to_write( buffer &buf )
 {
+	/*
 	std::streamsize bytes_used	= 0;
 	std::streamsize result		= SSL_write( m_ssl, buf.const_data(), static_cast< int >( buf.size() ) );
 
@@ -386,12 +397,16 @@ tls_filter_impl::data_to_write( buffer &buf )
 	}
 
 	return bytes_used;
+	*/
+
+return 0;
 }
 
 
 std::streamsize
 tls_filter_impl::data_to_read( buffer &in_buf, std::vector< buffer > &out_bufs )
 {
+	/*
 	std::size_t			bytes_used	= BIO_write( m_ssl->rbio, in_buf.const_data(), ( int ) in_buf.size() );
 	int					bytes_out	= 0;
 	const std::size_t	buf_size	= 8192;
@@ -433,12 +448,16 @@ tls_filter_impl::data_to_read( buffer &in_buf, std::vector< buffer > &out_bufs )
 	}
 
 	return bytes_used;
+	*/
+
+return 0;
 }
 
 
 void
 tls_filter_impl::grab_pending_data( buffer &buf )
 {
+	/*
 	std::size_t pending;
 
 	// TODO: fix -- kludge mods to deal with buffer changes in progress
@@ -474,12 +493,14 @@ tls_filter_impl::grab_pending_data( buffer &buf )
 			}
 		}
 	}
+	*/
 }
 
 
 void
 tls_filter_impl::handle_error( int result )
 {
+	/*
 	if ( result <= 0 )
 	{
 		int error = SSL_get_error(m_ssl, result);
@@ -511,9 +532,11 @@ tls_filter_impl::handle_error( int result )
 			break;
 		}
 	}
+	*/
 }
 
 
+/*
 bool
 tls_filter_impl::make_self_signed_cert( X509 **x509p, EVP_PKEY **pkeyp, int bits, int serial, int days )
 {
@@ -614,8 +637,10 @@ exit:
 
 	return ok;
 }
+*/
 
 
+/*
 int
 tls_filter_impl::add( X509 *cert, int nid, const char *value )
 {
@@ -644,8 +669,10 @@ exit:
 
 	return ret;
 }
+*/
 
 
+/*
 void
 tls_filter_impl::callback(int p, int n, void *arg)
 {
@@ -653,11 +680,13 @@ tls_filter_impl::callback(int p, int n, void *arg)
 	nunused( n );
 	nunused( arg );
 }
+*/
 
 
 void
 tls_filter_impl::setup()
 {
+	/*
 	static bool init = false;
 	
 	if ( !init )
@@ -731,12 +760,14 @@ tls_filter_impl::setup()
 		break;
 	}
 	
+	*/
 }
 
 
 void
 tls_filter_impl::teardown()
 {
+	/*
 	if ( m_ssl )
 	{
 		SSL_free( m_ssl );
@@ -758,6 +789,7 @@ tls_filter_impl::teardown()
 	{
 		m_pending_read_list.pop();
 	}
+	*/
 }
 
 
@@ -765,6 +797,7 @@ tls_filter_impl::teardown()
 #	pragma clang diagnostic pop
 #endif
 
+/*
 TEST_CASE( "nodeoze/smoke/tls" )
 {
 	SUBCASE( "was_consumed" )
@@ -820,3 +853,4 @@ TEST_CASE( "nodeoze/smoke/tls" )
 		CHECK( tls_filter_impl::is_buffer_valid( tls_filter_impl::pending_write_list_name(), &b ) );
 	}
 }
+*/

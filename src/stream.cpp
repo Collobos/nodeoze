@@ -11,6 +11,10 @@ const char nodeoze::ostream::m_digits[] =
     "6061626364656667686970717273747576777879"
     "8081828384858687888990919293949596979899";
 
+#if defined( __APPLE__ )
+#	pragma mark stream::base
+#endif
+
 stream::base::base()
 {
 }
@@ -20,9 +24,32 @@ stream::base::~base()
 {
 }
 
+#if defined( __APPLE__ )
+#	pragma mark stream::readable
+#endif
 
 stream::readable::readable()
 {
+	on( "newListener", [=]( const char *key, std::size_t num_listeners ) mutable
+	{
+		fprintf( stderr, "new listener %s (%d)\n", key, num_listeners );
+
+		if ( ( num_listeners == 1 ) && ( strcmp( key, "data" ) == 0 ) )
+		{
+			really_read();
+		}
+
+	} );
+
+	on( "removeListener", [=]( const char *key, std::size_t num_listeners ) mutable
+	{
+		fprintf( stderr, "remove listener %s (%d)\n", key, num_listeners );
+
+		if ( ( num_listeners == 0 ) && ( strcmp( key, "data" ) == 0 ) )
+		{
+			really_pause();
+		}
+	} );
 }
 
 
@@ -43,6 +70,15 @@ stream::readable::really_read()
 {
 }
 
+
+void
+stream::readable::really_pause()
+{
+}
+
+#if defined( __APPLE__ )
+#	pragma mark stream::writable
+#endif
 
 stream::writable::writable()
 {

@@ -149,6 +149,14 @@ struct string
 	bool		del;
 };
 
+/*
+ * events
+ * 
+ * "newListener"
+ * "removeListener"
+ * 
+ */
+
 template< class Key = string, class Table = std::unordered_map< Key, std::vector< std::shared_ptr< detail::listener_base > > > >
 class emitter
 {
@@ -195,6 +203,8 @@ public:
 			assert( it != m_listeners.end() );
 
 			it->second.emplace_back( std::make_shared< listener<> >( listener_id, std::move( handler ) ) );
+
+			emit( "newListener", it->first.str, it->second.size() );
 		}
 
 		return listener_id;        
@@ -220,6 +230,8 @@ public:
 			assert( it != m_listeners.end() );
 
 			it->second.emplace_back( std::make_shared< listener< Args... > >( listener_id, std::move( handler ) ) );
+
+			emit( "newListener", it->first.str, it->second.size() );
 		}
 
 		return listener_id;        
@@ -265,6 +277,8 @@ public:
 			} );
 
 			it->second.erase( new_end, it->second.end() );
+
+			emit( "removeListener", id.str, it->second.size() );
 		}
 	}
 
@@ -276,6 +290,7 @@ public:
 		if ( it != m_listeners.end() )
 		{
 			it->second.clear();
+			emit( "removeListener", id.str, it->second.size() );
 		}
 	}
 

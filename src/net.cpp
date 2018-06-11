@@ -71,6 +71,8 @@ public:
 	{
 		auto err = uv_tcp_init( uv_default_loop(), this );
 		ncheck_error_quiet( err == 0, exit );
+
+		m_recv_buf.make_no_copy_on_write();
 		
 		this->data = owner;
 
@@ -348,6 +350,8 @@ private:
 		if ( nread > 0 )
 		{
 			self->m_recv_buf.size( nread );
+
+	fprintf( stderr, "size of buf: %d\n", self->m_recv_buf.size() );
 			owner->emit( "data", self->m_recv_buf );
 		}
 		else if ( nread < 0 )
@@ -439,6 +443,8 @@ public:
 		
 		auto err = std::error_code( uv_listen( reinterpret_cast< uv_stream_t* >( this ), static_cast< int >( qsize ), reinterpret_cast< uv_connection_cb >( on_accept ) ), libuv::error_category() );
 		ncheck_error_action( !err, owner()->emit( "error", err ), exit, "uv_listen() on % failed (%)", m_name.to_string(), err );
+
+		owner()->emit( "listening" );
 		
 	exit:
 
@@ -858,7 +864,7 @@ net::tcp::socket::really_write( buffer b )
 
 	if ( m_handle )
 	{
-		m_handle->write( std::move( b ), std::move( ret ) );
+		m_handle->write( std::move( b ), ret );
 	}
 	else
 	{
@@ -877,6 +883,22 @@ net::tcp::socket::really_read()
 	if ( m_handle )
 	{
 		m_handle->read_start();
+	}
+	else
+	{
+		emit( "error", std::error_code( UV_EFAULT, libuv::error_category() ) );
+	}
+}
+
+
+void
+net::tcp::socket::really_pause()
+{
+	assert( m_handle );
+
+	if ( m_handle )
+	{
+		m_handle->read_stop();
 	}
 	else
 	{
@@ -910,50 +932,96 @@ net::udp::socket::really_read()
 }
 
 
+void
+net::udp::socket::really_pause()
+{
+	assert( m_handle );
+
+	if ( m_handle )
+	{
+		// m_handle->read_stop();
+	}
+	else
+	{
+		emit( "error", std::error_code( UV_EFAULT, libuv::error_category() ) );
+	}
+}
+
 TEST_CASE( "nodeoze/smoke/net/tcp")
 {
+	auto message									= std::string( "this is one small step for man" );
+	auto server_events 								= std::vector< std::string >();
+	auto client_events 								= std::vector< std::string >();
+	auto name										= ip::endpoint( "127.0.0.1", 5000 );
 	net::tcp::server								server;
 	deque< std::shared_ptr< net::tcp::socket > >	connections;
 	net::tcp::socket								sock;
 	bool											done = false;
 
-	server.listen( ip::endpoint( "127.0.0.1", 0 ), 5 )
-	.then( [&]() mutable
+	server.on( "listening", [&]() mutable
 	{
-		sock.connect( server.name() );
-
-		sock.on( "connect", [&]() mutable
-		{
-			CHECK( true );
-			done = true;
-		} );
-
-		sock.on( "error", [&]( std::error_code err ) mutable
-		{
-			CHECK( !err );
-			done = true;
-		} );
-	} )
-	.catcher( [&]( auto err ) mutable
-	{
-		CHECK( !err );
+		server_events.push_back( "listening" );
 	} );
 
 	server.on( "connection", [&]( std::shared_ptr< net::tcp::socket > sock ) mutable
 	{
+		server_events.push_back( "connection" );
+
 		connections.emplace_back( std::move( sock ) );
 
 		connections.back()->on( "data", [&]( buffer buf ) mutable
 		{
+			server_events.push_back( "data" );
+
+	fprintf( stderr, "size: %d\n", buf.size() );
+	fprintf( stderr, "buf: %s\n", buf.to_string().c_str() );
+
+			REQUIRE( buf.to_string() == message );
+
+			done = true;
 		} );
 
 		connections.back()->on( "error", [&]( std::error_code err ) mutable
 		{
+			REQUIRE( !err );
 		} );
 	} );
+
+	server.on( "error", [&]( std::error_code err ) mutable
+	{
+		CHECK( !err );
+	} );
+
+	server.listen( name, 5 );
+
+	sock.on( "connect", [&]() mutable
+	{
+		client_events.push_back( "connect" );
+
+		sock.write( message );
+	} );
+
+	sock.on( "drain", [&]() mutable
+	{
+		client_events.push_back( "drain" );
+	} );
+
+	sock.on( "error", [&]( std::error_code err ) mutable
+	{
+		CHECK( !err );
+		done = true;
+	} );
+
+	sock.connect( name );
 
 	while ( !done )
 	{
 		runloop::shared().run( runloop::mode_t::once );
 	}
+
+	REQUIRE( server_events.size() == 2 );
+	REQUIRE( server_events[ 0 ] == "listening" );
+	REQUIRE( server_events[ 1 ] == "connection" );
+	REQUIRE( client_events.size() == 1 );
+	REQUIRE( client_events[ 0 ] == "connect" );
 }
