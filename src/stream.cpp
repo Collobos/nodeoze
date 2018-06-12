@@ -93,36 +93,56 @@ stream::writable::write( buffer b )
 
 	if ( !m_writing )
 	{
-		really_write( b )
-		.then( [=]() mutable
-		{
-			ret.resolve();
-		},
-		[=]( auto err ) mutable
-		{
-			ret.reject( err, reject_context );
-		} )
-		.finally( [=]() mutable
-		{
-			m_writing = false;
-
-			if ( m_queue.size() > 0 )
-			{
-			}
-		} );
+		start_write( b, ret );
 	}
 	else
 	{
-		m_queue.emplace( std::make_pair( std::move( ret ), std::move( b ) ) );
+		m_queue.emplace( std::make_pair( std::move( b ), ret ) );
 	}
 
 	return ret;
 }
 
 
+void
+stream::writable::start_write( buffer b, promise< void > ret )
+{
+	m_writing = true;
+
+	really_write( b )
+	.then( [=]() mutable
+	{
+		ret.resolve();
+	},
+	[=]( auto err ) mutable
+	{
+		ret.reject( err, reject_context );
+	} )
+	.finally( [=]() mutable
+	{
+		if ( m_queue.size() > 0 )
+		{
+			auto pair = m_queue.front();
+
+			m_queue.pop();
+
+			start_write( pair.first, pair.second );
+		}
+		else
+		{
+			m_writing = false;
+
+			emit( "drain" );
+		}
+	} );
+}
+
+
 promise< void >
 stream::writable::really_write( buffer b )
 {
+	nunused( b );
+
 	promise< void > ret;
 
 	ret.resolve();

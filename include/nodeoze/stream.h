@@ -142,11 +142,14 @@ public:
 
 protected:
 
+	void
+	start_write( buffer b, promise< void > ret );
+
 	virtual promise< void >
 	really_write( buffer b );
 
 	bool												m_writing = false;
-	std::queue< std::pair< promise< void >, buffer > > 	m_queue;
+	std::queue< std::pair< buffer, promise< void > > > 	m_queue;
 };
 
 

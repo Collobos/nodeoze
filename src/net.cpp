@@ -980,7 +980,7 @@ TEST_CASE( "nodeoze/smoke/net/tcp")
 
 			REQUIRE( buf.to_string() == message );
 
-			done = true;
+			connections.back()->write( buf );
 		} );
 
 		connections.back()->on( "error", [&]( std::error_code err ) mutable
@@ -1002,6 +1002,13 @@ TEST_CASE( "nodeoze/smoke/net/tcp")
 		client_events.push_back( "connect" );
 
 		sock.write( message );
+
+		sock.on( "data", [&]( buffer b ) mutable
+		{
+			client_events.push_back( "data" );
+			CHECK( b.to_string() == message );
+			done = true;
+		} );
 	} );
 
 	sock.on( "drain", [&]() mutable
@@ -1026,6 +1033,8 @@ TEST_CASE( "nodeoze/smoke/net/tcp")
 	REQUIRE( server_events[ 0 ] == "listening" );
 	REQUIRE( server_events[ 1 ] == "connection" );
 	REQUIRE( server_events[ 2 ] == "data" );
-	REQUIRE( client_events.size() == 1 );
+	REQUIRE( client_events.size() == 3 );
 	REQUIRE( client_events[ 0 ] == "connect" );
+	REQUIRE( client_events[ 1 ] == "drain" );
+	REQUIRE( client_events[ 2 ] == "data" );
 }
