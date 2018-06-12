@@ -116,12 +116,14 @@ struct __promise_shared
 {
 	typedef std::function< void ( T&& ) >				resolve_f;
 	typedef std::function< void ( std::error_code ) >	reject_f;
+	typedef std::function< void () >					finally_f;
 	typedef deque< T >									maybe_array_type;
 	
 	bool				resolved;
 	bool				rejected;
 	resolve_f			resolve;
 	reject_f			reject;
+	finally_f			finally;
 	runloop::event		timer;
 	std::uint32_t		refs;
 	T					val;
@@ -133,12 +135,14 @@ struct __promise_shared< void >
 {
 	typedef std::function< void () >					resolve_f;
 	typedef std::function< void ( std::error_code ) >	reject_f;
+	typedef std::function< void () >					finally_f;
 	typedef void										maybe_array_type;
 	
 	bool				resolved;
 	bool				rejected;
 	resolve_f			resolve;
 	reject_f			reject;
+	finally_f			finally;
 	runloop::event		timer;
 	std::uint32_t		refs;
 	std::error_code		err;
@@ -283,6 +287,12 @@ public:
 				m_shared->resolve();
 				m_shared->resolve	= nullptr;
 				m_shared->reject	= nullptr;
+
+				if ( m_shared->finally )
+				{
+					m_shared->finally();
+					m_shared->finally = nullptr;
+				}
 			}
 		}
 	}
@@ -302,6 +312,12 @@ public:
 				m_shared->resolve( std::move( val ) );
 				m_shared->resolve	= nullptr;
 				m_shared->reject	= nullptr;
+
+				if ( m_shared->finally )
+				{
+					m_shared->finally();
+					m_shared->finally = nullptr;
+				}
 			}
 			else
 			{
@@ -325,6 +341,12 @@ public:
 				m_shared->resolve( val );
 				m_shared->resolve	= nullptr;
 				m_shared->reject	= nullptr;
+
+				if ( m_shared->finally )
+				{
+					m_shared->finally();
+					m_shared->finally = nullptr;
+				}
 			}
 			else
 			{
@@ -454,6 +476,47 @@ public:
 		}
 	}
 
+	template< class F >
+	promise< T >&
+	catcher( F func )
+	{
+		if ( m_shared )
+		{
+			if ( is_finished() )
+			{
+				if ( m_shared->rejected )
+				{
+					func( m_shared->err );
+				}
+			}
+			else
+			{
+				m_shared->reject = std::move( func );
+			}
+		}
+
+		return *this;
+	}
+
+	template< class F >
+	promise< T >&
+	finally( F func )
+	{
+		if ( m_shared )
+		{
+			if ( is_finished() )
+			{
+				func();
+			}
+			else
+			{
+				m_shared->finally = std::move( func );
+			}
+		}
+
+		return *this;
+	}
+
 	void
 	reset()
 	{
@@ -477,13 +540,20 @@ private:
 
 		if ( m_shared && !m_shared->resolved && !m_shared->rejected )
 		{
-			m_shared->rejected = true;
+			m_shared->err		= err;
+			m_shared->rejected	= true;
 
 			if ( m_shared->reject )
 			{
 				m_shared->reject( err );
 				m_shared->resolve	= nullptr;
 				m_shared->reject	= nullptr;
+
+				if ( m_shared->finally )
+				{
+					m_shared->finally();
+					m_shared->finally = nullptr;
+				}
 			}
 			else
 			{
@@ -499,13 +569,15 @@ private:
 		typename ResolveResult = typename std::result_of< Resolve() >::type,
 		typename std::enable_if< !is_promise< ResolveResult >::value && std::is_void< Q >::value && std::is_void< ResolveResult >::value >::type* = nullptr
 	>
-	void
+	promise< T >&
 	really_then( Resolve &&resolve_func, Reject &&reject_func )
 	{
 		m_shared->resolve = std::move( resolve_func );
 		m_shared->reject = std::move( reject_func );
     
     	maybe_direct_resolve_reject();
+
+		return *this;
 	}
 
 	template<
@@ -515,13 +587,15 @@ private:
 		typename ResolveResult = typename std::result_of< Resolve( Q&& )>::type,
 		typename std::enable_if< !is_promise< ResolveResult >::value && !std::is_void< Q >::value && std::is_void< ResolveResult >::value >::type* = nullptr
 	>
-	void
+	promise< T >&
 	really_then( Resolve &&resolve_func, Reject &&reject_func )
 	{
 		m_shared->resolve = std::move( resolve_func );
 		m_shared->reject = std::move( reject_func );
     
     	maybe_direct_resolve_reject();
+
+		return *this;
 	}
 
 	template<
@@ -737,12 +811,24 @@ private:
 			{
 				m_shared->reject( m_shared->err );
 			}
+
+			if ( m_shared->finally )
+			{
+				m_shared->finally();
+				m_shared->finally = nullptr;
+			}
 		}
 		else if ( is_resolved() )
 		{
 			if ( m_shared->resolve )
 			{
 				m_shared->resolve();
+			}
+
+			if ( m_shared->finally )
+			{
+				m_shared->finally();
+				m_shared->finally = nullptr;
 			}
 		}
 	}

@@ -180,6 +180,7 @@ set(NODEOZE_SRCS
 	src/machine.cpp 
 	src/markers.cpp 
 	src/mime.cpp 
+	src/net.cpp
 	src/notification.cpp 
 	src/promise.cpp 
 	src/proxy.cpp 
@@ -267,14 +268,10 @@ if ( APPLE )
 	find_library(IOKIT_FRAMEWORK IOKit)
 	find_library(SECURITY_FRAMEWORK Security)
 	set(LIBRESOLV			"${CMAKE_OSX_SYSROOT_LIB}/libresolv.tbd") 
-	set(LIBSSL				"${CMAKE_CURRENT_SOURCE_DIR}/../openssl/lib/mac/libssl.a")
-	set(LIBCRYPTO			"${CMAKE_CURRENT_SOURCE_DIR}/../openssl/lib/mac/libcrypto.a")
 	list(APPEND LIB_LIST ${COCOA_FRAMEWORK})
 	list(APPEND LIB_LIST ${IOKIT_FRAMEWORK})
 	list(APPEND LIB_LIST ${SECURITY_FRAMEWORK})
 	list(APPEND LIB_LIST ${LIBRESOLV})
-	list(APPEND LIB_LIST ${LIBSSL})
-	list(APPEND LIB_LIST ${LIBCRYPTO})
 endif()
 
 if ( WIN32 )

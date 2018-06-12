@@ -1,31 +1,17 @@
 #ifndef _nodeoze_file_h
 #define _nodeoze_file_h
 
-#include <nodeoze/nevent.h>
+#include <nodeoze/event.h>
 
 namespace nodeoze {
 
 namespace fs {
 
-class reader : public stream::readable
-{
-public:
+stream::readable::ptr
+create_read_stream( path p );
 
-	reader::ptr
-	create( const nodeoze::path &p );
-
-	reader();
-};
-
-class writer : public stream::writable
-{
-public:
-
-	writer::ptr
-	create( const nodeoze::path &p );
-
-	writer();
-};
+stream::writable::ptr
+create_write_stream( path p );
 
 }
 
