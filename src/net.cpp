@@ -351,8 +351,7 @@ private:
 		{
 			self->m_recv_buf.size( nread );
 
-	fprintf( stderr, "size of buf: %d\n", self->m_recv_buf.size() );
-			owner->emit( "data", self->m_recv_buf );
+			owner->push( self->m_recv_buf );
 		}
 		else if ( nread < 0 )
 		{
@@ -958,7 +957,7 @@ TEST_CASE( "nodeoze/smoke/net/tcp")
 	auto message									= std::string( "this is one small step for man" );
 	auto server_events 								= std::vector< std::string >();
 	auto client_events 								= std::vector< std::string >();
-	auto name										= ip::endpoint( "127.0.0.1", 5000 );
+	auto name										= ip::endpoint( "127.0.0.1", 5555 );
 	net::tcp::server								server;
 	deque< std::shared_ptr< net::tcp::socket > >	connections;
 	net::tcp::socket								sock;
@@ -966,7 +965,6 @@ TEST_CASE( "nodeoze/smoke/net/tcp")
 
 	server.on( "listening", [&]() mutable
 	{
-fprintf( stderr, "listening\n" );
 		server_events.push_back( "listening" );
 	} );
 
@@ -979,9 +977,6 @@ fprintf( stderr, "listening\n" );
 		connections.back()->on( "data", [&]( buffer buf ) mutable
 		{
 			server_events.push_back( "data" );
-
-	fprintf( stderr, "size: %d\n", buf.size() );
-	fprintf( stderr, "buf: %s\n", buf.to_string().c_str() );
 
 			REQUIRE( buf.to_string() == message );
 
@@ -1004,7 +999,6 @@ fprintf( stderr, "listening\n" );
 
 	sock.on( "connect", [&]() mutable
 	{
-fprintf( stderr, "connect\n" );
 		client_events.push_back( "connect" );
 
 		sock.write( message );
@@ -1028,9 +1022,10 @@ fprintf( stderr, "connect\n" );
 		runloop::shared().run( runloop::mode_t::once );
 	}
 
-	REQUIRE( server_events.size() == 2 );
+	REQUIRE( server_events.size() == 3 );
 	REQUIRE( server_events[ 0 ] == "listening" );
 	REQUIRE( server_events[ 1 ] == "connection" );
+	REQUIRE( server_events[ 2 ] == "data" );
 	REQUIRE( client_events.size() == 1 );
 	REQUIRE( client_events[ 0 ] == "connect" );
 }

@@ -32,8 +32,6 @@ stream::readable::readable()
 {
 	on( "newListener", [=]( const char *key, std::size_t num_listeners ) mutable
 	{
-		fprintf( stderr, "new listener %s (%d)\n", key, num_listeners );
-
 		if ( ( num_listeners == 1 ) && ( strcmp( key, "data" ) == 0 ) )
 		{
 			really_read();
@@ -43,8 +41,6 @@ stream::readable::readable()
 
 	on( "removeListener", [=]( const char *key, std::size_t num_listeners ) mutable
 	{
-		fprintf( stderr, "remove listener %s (%d)\n", key, num_listeners );
-
 		if ( ( num_listeners == 0 ) && ( strcmp( key, "data" ) == 0 ) )
 		{
 			really_pause();
@@ -128,8 +124,6 @@ promise< void >
 stream::writable::really_write( buffer b )
 {
 	promise< void > ret;
-
-	fprintf( stderr, "really_write: %s\n", b.to_string().c_str() );
 
 	ret.resolve();
 
