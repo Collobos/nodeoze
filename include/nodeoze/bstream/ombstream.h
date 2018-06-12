@@ -2,7 +2,7 @@
 #define NODEOZE_BSTREAM_OMBSTREAM_H
 
 #include <nodeoze/bstream/obstream.h>
-#include <nodeoze/membuf.h>
+#include <nodeoze/bstream/bstreambuf.h>
 
 namespace nodeoze
 {
@@ -17,26 +17,20 @@ public:
     ombstream( ombstream&& ) = delete;
 
     inline
-    ombstream( std::unique_ptr< omembuf > strmbuf, obs_context::ptr context = nullptr )
+    ombstream( std::unique_ptr< obmembuf > strmbuf, obs_context::ptr context = nullptr )
     : obstream{ std::move( strmbuf ), std::move( context ) }
-    {}
-
-    inline
-    ombstream( buffer const& buf, obs_context::ptr context = nullptr )
-    :
-    obstream( std::make_unique< omembuf >( buf ), std::move( context ) )
     {}
 
     inline
     ombstream( buffer&& buf, obs_context::ptr context = nullptr )
     :
-    obstream{ std::make_unique< omembuf >( std::move( buf ) ), std::move( context ) }
+    obstream{ std::make_unique< obmembuf >( std::move( buf ) ), std::move( context ) }
     {}
-
+ 
     inline
     ombstream( size_type size, obs_context::ptr context = nullptr )
     :
-    ombstream( buffer{ size }, std::move( context ) )
+    ombstream( std::make_unique< obmembuf >( size ), std::move( context ) )
     {}
 
     inline buffer
@@ -57,12 +51,10 @@ public:
         get_membuf().clear();
     }
 
-protected:
-
-    inline omembuf&
+    inline obmembuf&
     get_membuf()
     {
-        return reinterpret_cast< omembuf& >( * m_strmbuf );
+        return reinterpret_cast< obmembuf& >( * m_strmbuf );
     }
 
 };

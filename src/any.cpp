@@ -186,6 +186,7 @@ any::any(bstream::ibstream& is)
 	else if (typecode::is_string(code))
 	{
 		m_type = type_t::string;
+		// auto save_pos = is.position();
 		auto save_pos = is.position();
 		auto string_size = is.read_string_header();
 		is.position( save_pos );

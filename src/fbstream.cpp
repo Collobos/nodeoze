@@ -3,17 +3,18 @@
 #include <nodeoze/test.h>
 
 using namespace nodeoze;
+using namespace bstream;
 using bstream::ofbstream;
 
 TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read" )
 {
-    bstream::ofbstream os( "fbstream_test_file", ofbstream::open_mode::truncate );
+    bstream::ofbstream os( "fbstream_test_file", bstream::open_mode::truncate );
     buffer outbuf{ "abcdefghijklmnop" };
     os.putn( outbuf );
     os.close();
 
     bstream::ifbstream is( "fbstream_test_file" );
-    auto fsize = is.size();
+    auto fsize = is.tell( seek_anchor::end );
     buffer inbuf = is.getn( fsize );
     is.close();
     CHECK( outbuf == inbuf );
@@ -22,24 +23,24 @@ TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read" )
 TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read_ate" )
 {
     {
-        bstream::ofbstream os( "fbstream_test_file", ofbstream::open_mode::truncate );
+        bstream::ofbstream os( "fbstream_test_file", bstream::open_mode::truncate );
         buffer outbuf{ "abcdefghijklmnop" };
         os.putn( outbuf );
         os.close();
     }
     {
         bstream::ifbstream is( "fbstream_test_file" );
-        auto fsize = is.size();
+        auto fsize = is.tell( seek_anchor::end );
         buffer inbuf = is.getn( fsize );
         is.close();
         buffer expected{ "abcdefghijklmnop" };
         CHECK( expected == inbuf );
     }
     {
-        bstream::ofbstream os( "fbstream_test_file", ofbstream::open_mode::at_end );
-        auto pos = os.position();
+        bstream::ofbstream os( "fbstream_test_file", bstream::open_mode::at_end );
+        auto pos = os.tell( seek_anchor::current );
         CHECK( pos == 16 );
-        auto fsize = os.size();
+        auto fsize = os.tell( seek_anchor::end );
         CHECK( fsize == 16 );
         buffer outbuf{ "qrstuvwxyz" };
         os.putn( outbuf );
@@ -47,7 +48,7 @@ TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read_ate" )
     }
     {
         bstream::ifbstream is( "fbstream_test_file" );
-        auto fsize = is.size();
+        auto fsize = is.tell( seek_anchor::end );
         CHECK( fsize == 26 );
         buffer inbuf = is.getn( fsize );
         is.close();
@@ -56,9 +57,9 @@ TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read_ate" )
     }
     {
         bstream::ifbstream is( "fbstream_test_file" );
-        auto fsize = is.size();
+        auto fsize = is.tell( seek_anchor::end );
         CHECK( fsize == 26 );
-        is.position(16);
+        is.seek( seek_anchor::begin, 16 );
         buffer inbuf = is.getn( 10 );
         bool caught_exception = false;
         try
@@ -76,31 +77,31 @@ TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read_ate" )
         CHECK( expected == inbuf );
     }
     {
-        bstream::ofbstream os( "fbstream_test_file", ofbstream::open_mode::append );
-        auto pos = os.position();
+        bstream::ofbstream os( "fbstream_test_file", bstream::open_mode::append );
+        auto pos = os.tell( seek_anchor::current );
         CHECK( pos == 26);
         buffer outbuf{ "0123456789" };
         os.putn( outbuf );
-        auto zpos = os.position( 0 );
+        auto zpos = os.seek( seek_anchor::begin, 0 );
         os.putn( outbuf );
-        zpos = os.position();
+        zpos = os.tell( seek_anchor::current );
         os.close();
     }
     {
-        bstream::ofbstream os( "fbstream_test_file", ofbstream::open_mode::at_begin );
-        auto pos = os.position();
+        bstream::ofbstream os( "fbstream_test_file" );
+        auto pos = os.tell( bstream::seek_anchor::current );
         CHECK( pos == 0 );
-        auto fsize = os.size();
+        auto fsize = os.tell( bstream::seek_anchor::end );
         CHECK( fsize == 46 );
         buffer outbuf{ "0123456789" };
         os.putn( outbuf );
-        auto zpos = os.position();
+        auto zpos = os.tell( bstream::seek_anchor::current );
         CHECK( zpos == 10 );
         os.close();
     }
     {
         bstream::ifbstream is( "fbstream_test_file" );
-        auto fsize = is.size();
+        auto fsize = is.tell( seek_anchor::end );
         CHECK( fsize == 46 );
         buffer inbuf = is.getn( fsize );
         is.close();
@@ -108,13 +109,13 @@ TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read_ate" )
         CHECK( expected == inbuf );
     }
     {
-        bstream::ofbstream os( "fbstream_test_file", ofbstream::open_mode::truncate );
+        bstream::ofbstream os( "fbstream_test_file", bstream::open_mode::truncate );
         buffer outbuf{ "abcdefghijklmnop" };
         os.putn( outbuf );
-        os.position( 36 );
+        os.seek( seek_anchor::begin, 36 );
         buffer outbuf2{ "0123456789" };
         os.putn( outbuf2 );
-        auto zpos = os.position();
+        auto zpos = os.tell( seek_anchor::current );
         CHECK( zpos == 46 );
         os.close();
     }

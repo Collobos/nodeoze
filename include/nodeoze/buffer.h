@@ -54,6 +54,69 @@ namespace detail
 }
 #endif
 
+/**	A managed block of memory
+ * 
+ * 	The buffer class encapsulates a contiguous region of memory, providing configurable
+ *  policies that control allocation and sharing of buffer space, as well as a number of
+ * 	utility operations that are roughly analogous to C library functions such as memcpy, 
+ * 	memset, etc. Buffers will automatically resize as necessary to accomodate certain operations,
+ * 	or in respnse to explicit resizing requests (see size(size_type)).
+ * 
+ *  ### Sharing policies
+ * 
+ * 	An instance of the class buffer holds a pointer to an internal *memory object*. This
+ * 	object is reference-counted, and may be shared by other instances of buffer. The 
+ * 	circumstances under which a memory object may be shared, and the manner of that sharing,
+ * 	are controlled by *sharing policies*.
+ * 
+ * 	There are three sharing policies: *copy_on_write*, *exclusive*, and *no_copy_on_write*.
+ * 	By default, buffers are copy_on_write. Policy can be set at construction time, and
+ * 	modified subsequently queried (is_copy_on_write(), is_exclusive(), is_no_copy_on_write()),
+ * 	or modified (make_copy_on_write(), make_exclusive(), make_no_copy_on_write()). The
+ * 	current state of a buffer with regards to sharing can be queried (is_unique()).
+ * 	Although copy_on_write policy is enforced transparently when a buffeer is modified, 
+ * 	it make be forced (make_unique()).
+ * 
+ *	#### copy_on_write 
+ *	
+ *	Buffers are internally reference-counted. The copy constructor and copy assignment operator
+ *	copy a pointer to a shared buffer and increment its reference count. If an operation 
+ *	that modifies the buffer is performed, and the reference count is greater than one, 
+ *	a new buffer is allocated and the contents of the current buffer are copied to the
+ *	new buffer before the modification is made.
+ *	
+ *  #### exclusive
+ * 
+ * 	If the buffer's policy is exclusive, the buffer is not shared--the reference count
+ *  will never be greater than one. The copy constructor and copy assignment operator
+ *  always allocate new buffer space and copy the currnent buffer contents into the
+ * 	the new space.
+ * 
+ * 	#### no_copy_on_write
+ * 
+ * 	If the buffer's policy is no_copy_on_write, the buffer is shared and reference counted,
+ *  but the buffer is not copied when modifications are made. A buffer whose policy is set
+ * 	to no_copy_on_write must be handled with care. In particular, modifications that 
+ * 	cause a buffer to undergo reallocation (e.g., resizing ) may invalidate addresses
+ * 	obtained from certain accessors ( see const_data(), mutable_data(), and rdata() ).
+ * 
+ *  ### Custom allocators
+ *  
+ *  The buffer class performs its own allocation, reallocation and deallocation 
+ * 	internally by default. The application may impose different memory management
+ * 	policies by supplying custom (re)allocators and deallocators at construction
+ *  time (see the constructor buffer( void*, size_type, policy, dealloc_function, realloc_function)
+ * 	for details.)
+ * 
+ * 	### Error handling
+ * 	
+ * 	Almost all of the member functions that potentially need to report error condiions have
+ * 	two forms--one that may throw exceptions, and one that passes std::error_code values 
+ *  by side-effecting a reference parameter. In general, the exceptions thrown will be 
+ * 	of type std::system_error, containing std::error_code values identical to those
+ * 	returned by corresponding form of the same member function.
+ */
+
 class buffer
 {
 public:
@@ -67,16 +130,62 @@ public:
 	using offset_type = std::int64_t;
 	using checksum_type = std::uint32_t;
 
+	/** Custom deallocation functor
+	 * 
+	 * 	A custom deallocator is invoked when the reference count for a 
+	 * 	buffer's internal allocation goes to zero. An implementation should
+	 * 	deallocate the memory region indicated by the \c data parameter.
+	 * 
+	 * 	\param data the address of the memory region to be deallocated
+	 * 
+	 */
 	using dealloc_function =  std::function< void ( elem_type *data ) >;
+
+	/** Custom allocation/reallocation functor 
+	 * 	
+	 * 	A custom (re)allocator is invoked for both initial allocation
+	 * 	and subsequent reallocation in the event of resizing. Am implementation
+	 *	must provide the following behaviors:
+	 *	
+	 * 	If the value of the data parameter is \c nullptr, the implementation
+	 * 	must return the address of a contiguous region of memory 
+	 * 	at least new_size bytes in length; the current_size parameter
+	 * 	should be ignored.
+	 * 
+	 * 	If the value of the data parameter is not \c nullptr, it points the
+	 * 	a region of memory (previously allocated by this implementation )
+	 * 	that was in use by the instance of buffer with which the allocator
+	 * 	was associated at construction. The \c current_size parameter indicates
+	 * 	the number of bytes in that region ( starting at the address in \c data)
+	 * 	that have been used by the buffer instance. Their contents must be preserved
+	 * 	in the buffer returned by the implementation. The implementation must
+	 * 	return a region of memory with at least \c new_size bytes long, 
+	 *  the allocator, such that the first \c current_size bytes have the same
+	 * 	values as the corresponding bytes in the original buffer (at \c data).
+	 * 	An implementation may return the address provided in the data parameter,
+	 * 	provided that the block of memory at that address is at least 
+	 * 	new_size bytes in length, and the contents of the first current_size bytes
+	 * 	are unchanged. If a new region of memory is allocated, the previous memory
+	 * 	should be deallocated.
+	 * 
+	 * 	\param data the address of the existing memory region; \c nullptr on initial allocation
+	 *	\param current_size	the number of bytes in the existing buffer (at \c data) that must be preserved
+	 *	\param new_size	the requested size of the new memory region
+	 *	\return the address of a region of memory at least new_size bytes long, with contents from the previous memory (if any) preserved
+	 */
 	using realloc_function =  std::function< elem_type* ( elem_type *data, size_type current_size, size_type new_size ) >;
 	static dealloc_function default_dealloc;
 	static realloc_function default_realloc;
 
+	/** Denote the sharing policy applied to an instance 
+	 * 
+	 * 
+	 */
 	enum class policy
 	{
-		copy_on_write,
-		no_copy_on_write,
-		exclusive
+		copy_on_write, /*!< buffer is shared, copied on modification */
+		no_copy_on_write, /*!< buffer is shared unconditionally */
+		exclusive /*!< buffer is never shared */
 	};
 
 private:
@@ -144,16 +253,52 @@ private:
 			initialize( src );
 		}
 
-		_buffer_shared( void* data, size_type nbytes, policy pol, dealloc_function dealloc, realloc_function realloc )
+		_buffer_shared( void* data, size_type size, policy pol, dealloc_function dealloc, realloc_function realloc )
 		:
-		m_data{ reinterpret_cast< elem_type* >( data ) },
-		m_size{ nbytes },
+		m_data{ nullptr },
+		m_size{ size },
 		m_refs{ 1 },
 		m_dealloc{ dealloc },
 		m_realloc{ realloc },
 		m_policy{ pol }
 		{
-			initialize( nullptr );
+			if ( m_size > 0 )
+			{
+				if ( data )
+				{
+					if ( realloc )
+					{
+						if ( ! dealloc )
+						{
+							throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+						}
+						m_data = m_realloc( nullptr, 0, m_size );
+						::memcpy( m_data, data, m_size );
+					}
+					else
+					{
+						m_data = reinterpret_cast< elem_type* >( data );
+					}
+				}
+				else
+				{
+					if ( realloc )
+					{
+						if ( ! dealloc )
+						{
+							throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+						}
+						m_data = m_realloc( nullptr, 0, m_size );
+					}
+				}
+			}
+			else
+			{
+				if ( ! realloc || ! dealloc )
+				{
+					throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
+				}
+			}
 		}
 
 		_buffer_shared( _buffer_shared const& rhs, policy pol = policy::copy_on_write )
@@ -415,6 +560,10 @@ public:
 		std::cout.flush();
 	}
 	
+	/** Default constructor
+	 * 
+	 * 	The constructed instance has no allocation, size is zero.
+	 */
 	inline
 	buffer()
 	:
@@ -423,6 +572,14 @@ public:
 		m_size{ m_shared->size() }
 	{}
 
+	/** Construct with allocation of specified size and policy
+	 * 
+	 *  The constructed instance has at least size bytes allocated. The
+	 * 	allocated memory may be uninitialized.
+	 * 
+	 * 	\param size number of bytes to allocate
+	 * 	\param pol sharing policy of the constructed instance, defaults to copy_on_write
+	 */
 	template< class T, class = typename std::enable_if_t< std::is_integral< T >::value, void > >
 	inline
 	buffer( T size, policy pol = policy::copy_on_write )
@@ -432,18 +589,43 @@ public:
 		m_size{ m_shared->size() }
 	{}
 
+	/** Construct from C-style string
+	 * 
+	 * 	Construct a buffer instance, copying the contents from a C-style string. The
+	 *  size of the resulting instance is strlen( data ); it does not include the 
+	 * 	terminating null character.
+	 * 
+	 * 	\param data a null-terminiated character string
+	 * 	\param pol sharing policy of the constructed instance, defaults to copy_on_write
+	 */
 	inline
 	buffer( const char *data, policy pol = policy::copy_on_write )
 	:
 		buffer{ data, data ? strlen( data ) : 0, pol }
 	{}
 
+	/** Construct from std::string
+	 * 
+	 * 	Construct a buffer instance, copying the contents from the 
+	 * 	string parameter.
+	 * 
+	 * 	\param data string whose contents are copied to the constucted instance
+	 */
 	inline
 	buffer( const std::string &data, policy pol = policy::copy_on_write )
 	:
 		buffer{ data.c_str(), data.size(), pol }
 	{}
 
+	/** Construct from memory
+	 * 
+	 * 	Construct a buffer instance, copying the specified number of bytes
+	 * 	from the specified location.
+	 * 
+	 * 	\param data the address of a region of memory to be copied into the constructed buffer
+	 * 	\parap size the number of bytes to copy
+	 * 	\param pol sharing policy of the constructed instance, defaults to copy_on_write
+	 */
 	inline
 	buffer( const void *data, size_type size, policy pol = policy::copy_on_write )
 	:
@@ -452,6 +634,60 @@ public:
 		m_size{ m_shared->size() }
 	{}
 
+	/** Constructor of limitless power and great peril
+	 * 
+	 * 	"This is a highly sophistimacated doo-whacky. If you don't use it responsibly,
+	 * 	KA-BLAMMO!" -- Homer Simpson
+	 * 	
+	 * 	This constructor allows the caller to customize memory allocation and deallocation,
+	 * 	by providing functors that implement those operations (see \link dealloc_function \endlink and \link realloc_function \endlink).
+	 * 	
+	 * 	With the exception of the pol parameter, all of the parameters may take null or zero
+	 *	value arguments at run time. Some combinations of parameter values are invalid, and will 
+	 *	cause an exception to be thrown. The value of \c pol is orthogonal to the behaviors
+	 *	associated with other parameter combinations.
+	 *
+	 * 	data	|	size	|	dealloc	|	realloc	|	result
+	 * ---------|-----------|-----------|-----------|-----------
+	 *  nullptr	|	0		|	nullptr	|	?		|	invalid
+	 * 	P		|	0		|	?		|	?		|	invalid
+	 * 	nullptr	|	0		|	D		|	R		|	1
+	 * 	P		|	N		|	nullptr	|	nullptr	|	2
+	 * 	P		|	N		|	nullptr	|	R		|	3
+	 * 	P		|	N		|	D		|	R		|	4
+	 *
+	 * 	P = valid, non-null memory address
+	 * 
+	 * 	N = integer value > 0
+	 * 
+	 * 	D = dealloc functor
+	 * 
+	 * 	R = realloc functor
+	 * 
+	 * 	? = any value
+	 * 
+	 * 	1. No initial allocation is made, buffer size is zero. Subsequent operations
+	 * 	that assign to the buffer or cause its size to be non-zero will cause the realloc
+	 * 	functor to be invoked. The dealloc functor will be invoked when the buffer is destroyed.
+	 * 
+	 * 	2. The address passed to the data parameter is used directly by the buffer, the size being
+	 * 	fixed by the \c size parameter value. Any operations that would reqiure re-allocation will
+	 * 	result in an exception being thrown. No deallocator will be called when the buffer is destroyed.
+	 * 	The calling context is responsible for ensuring the validity of the address passed in \c data 
+	 * 	over the lifetime of the buffer being used. It should be noted that, if the constructed buffer's
+	 * 	sharing policy is \c copy_on_write, it is possible for other instances of buffer to share this 
+	 * 	memory. To ensure that there are no outstanding references after the constructed instance is destroyed,
+	 * 	the policy should be set to \c exclusive.
+	 * 
+	 * 	3. Identical to case 2, except that the provided dealloc functor will be called when the 
+	 * 	reference count associated with the memory object goes to zero.
+	 * 
+	 * 	4. On construction, the realloc functor will be invoked to allocate a memory region of
+	 * 	\c size bytes in length. The contents of memory at the address \c data ( of length size )
+	 * 	are copied to the allocated memory. The realloc and dealloc functors are used as necessary for
+	 * 	subsequent operations that require reallocation or deallocation.
+	 * 
+	 */ 
 	inline 
 	buffer( void *data, size_type size, policy pol, dealloc_function dealloc, realloc_function realloc )
 	:
@@ -460,15 +696,22 @@ public:
 	m_size{ m_shared->size() }
 	{}
 
+	/** Copy constructor
+	 * 
+	 * 
+	 */
 	inline
 	buffer( const buffer &rhs )
 	:
-	m_shared{ share( rhs ) },
-	m_data{ m_shared->data() },
-	m_size{ m_shared->size() }
-	{}
+	m_shared{ nullptr },
+	m_data{ nullptr },
+	m_size{ 0 }
+	{
+		adopt( rhs );
+	}
 
-	/*
+	/** Move constructor
+	 * 
 	 *	The move ctor avoids ref-count arithmetic and 
 	 *	potentially hastens freeing the memory because
 	 *	one fewer reference is extant.
@@ -496,6 +739,12 @@ public:
 		unshare();
 	}
 
+	/** Determine whether this instance can be modified without copying.
+	 * 
+	 * 
+	 * 
+	 * 
+	 */
 	inline bool
 	is_writable()
 	{
@@ -503,6 +752,9 @@ public:
 		return is_unique() || is_no_copy_on_write();
 	}
 
+	/** Force this instance to be unique (non-shared).
+	 * 
+	 */
 	inline buffer&
 	make_writable()
 	{
@@ -518,10 +770,21 @@ public:
 	clone()
 	{
 		assert( m_shared != nullptr );
-		unshare( new _buffer_shared{ m_data, m_size } );
+		auto cloned = new _buffer_shared{ m_data, m_size };
+		unshare();
+		m_shared = cloned;
+		m_data = m_shared->data();
+		m_size = m_shared->size();
+//		unshare( new _buffer_shared{ m_data, m_size } );
 		return *this;
 	}
 
+	/** Determine whether this instance is current shared.
+	 * 
+	 * 
+	 * 
+	 * 
+	 */ 
 	inline bool
 	is_unique() const
 	{
@@ -529,6 +792,9 @@ public:
 		return  m_shared->refs() == 1;
 	}
 
+	/** Force this instance to be unique (non-shared).
+	 * 
+	 */
 	inline buffer&
 	make_unique()
 	{
@@ -540,6 +806,9 @@ public:
 		return *this;
 	}
 
+	/** Determine whether this instance's current sharing policy is exclusive
+	 * 
+	 */
 	inline bool
 	is_exclusive() const
 	{
@@ -547,6 +816,9 @@ public:
 		return m_shared->is_exclusive();
 	}
 
+	/** Set this instance's sharing policy to exclusive
+	 * 
+	 */
 	inline buffer&
 	make_exclusive()
 	{
@@ -559,6 +831,9 @@ public:
 		return *this;
 	}
 
+	/** Determine whether this instance's current sharing policy is copy_on_write
+	 * 
+	 */
 	inline bool
 	is_copy_on_write() const
 	{
@@ -566,6 +841,9 @@ public:
 		return m_shared->is_copy_on_write();
 	}
 	
+	/** Set this instance's sharing policy to copy_on_write
+	 * 
+	 */
 	inline buffer&
 	make_copy_on_write()
 	{
@@ -578,6 +856,9 @@ public:
 		return *this;
 	}
 
+	/** Determine whether this instance's current sharing policy is no_copy_on_write
+	 * 
+	 */
 	inline bool
 	is_no_copy_on_write() const
 	{
@@ -585,6 +866,9 @@ public:
 		return m_shared->is_no_copy_on_write();
 	}
 	
+	/** Set this instance's sharing policy to no_copy_on_write
+	 * 
+	 */
 	inline buffer&
 	make_no_copy_on_write()
 	{
@@ -626,14 +910,15 @@ public:
 			{
 				if ( m_shared->is_exclusive() || force_copy )
 				{
-					_buffer_shared *tmp = new _buffer_shared{ m_data + offset, slice_size };
-					result.m_shared = tmp;
-					result.m_data = tmp->data();
-					result.m_size = tmp->size();
+//					_buffer_shared *tmp = new _buffer_shared{ m_data + offset, slice_size };
+					result.m_shared = new _buffer_shared{ m_data + offset, slice_size };
+					result.m_data = result.m_shared->data();
+					result.m_size = result.m_shared->size();
 				}
 				else
 				{
-					result.m_shared = share(*this);
+					result.m_shared = m_shared;
+					result.m_shared->increment_refs();
 					result.m_data = m_data + offset;
 					result.m_size = slice_size;
 				}
@@ -655,8 +940,10 @@ public:
 	{
 		if ( this != &rhs )
 		{
-			unshare( share( rhs ) );
+			unshare();
+			adopt( rhs );
 		}
+
 		assert( invariants() );
 		return *this;
 	}
@@ -770,7 +1057,10 @@ public:
 			}
 			else
 			{
-				unshare( new _buffer_shared{data, length} );
+				unshare();
+				m_shared = new _buffer_shared{data, length};
+				m_data = m_shared->data();
+				m_size = m_shared->size();
 			}
 		}
 		else
@@ -809,7 +1099,8 @@ public:
 	inline buffer&
 	clear()
 	{
-		unshare( new _buffer_shared{} );
+		unshare();
+		m_shared = new _buffer_shared{};
 		return *this;
 	}
 
@@ -872,7 +1163,10 @@ public:
 				_buffer_shared *tmp = new _buffer_shared{ m_size + nbytes };
 				std::memmove( tmp->data(), m_data, m_size );
 				std::memmove( tmp->data() + m_size, src, nbytes );
-				unshare( tmp );
+				unshare();
+				m_shared = tmp;
+				m_data = m_shared->data();
+				m_size = m_shared->size();
 			}
 		}
 		assert(invariants());
@@ -902,34 +1196,64 @@ public:
 			if ( ! is_writable() )
 			{
 				// don't make_unique() -- it copies the buffer, which is just going to be overwritten by the fill
-				unshare( new _buffer_shared{ m_size } );
+				auto tmp = new _buffer_shared{ m_size };
+				unshare();
+				m_shared = tmp;
+				m_data = m_shared->data();
+				m_size = m_shared->size();
+				std::memset( m_data, value, m_size );
+				// unshare( new _buffer_shared{ m_size } );
 			}
-			if ( m_shared->data() == nullptr )
+			else
 			{
-				auto alloc_size = m_size;
-				m_size = 0;
-				m_shared->reallocate( alloc_size, ec );
-				if ( ec ) goto exit;
+				assert( m_shared->data() != nullptr && m_data != nullptr );
+				std::memset( m_data, value, m_size );
 			}
-			std::memset( m_data, value, m_size );
 		}
-
-	exit:
 		return *this;
 	}
 
+	/**	size of the instance's memory object
+	 * 
+	 * 	\return the size of the instance's memory object, in bytes.
+	 */
 	inline size_type
 	size() const
 	{
 		return m_size;
 	}
 
+	/** \deprecated (see size() )
+	 * 
+	 */
 	inline size_type
 	capacity() const
 	{
 		return m_size;
 	}
 
+	/**	Modify the size of the instance's memory object.
+	 * 
+	 * 	If the previous value of size() was zero, this member function
+	 * 	will cause a memory object of length \c nbytes to be allocated.
+	 * 	If the previous size was non-zero, this operation will cause the buffer to be resized, which
+	 * 	may cause a new memory object to be allocated. The contents of the buffer prior to this operation
+	 * 	are preserved. If the value of \c nbytes is less than the previous size, the buffer's memory object 
+	 * 	is effectively truncated; previous contents at offsets greater than \c nbytes will not be preserved.
+	 * 
+	 * 	If memory object addresses were obtained by calling const_data(), mutable_data(), or rdata() prior 
+	 * 	to this operation, those adresses may not be valid after this operation in invoked (the memory objects may have
+	 * 	been deallocated).
+	 * 
+	 * 	If the memory object used by this instance is shared with other buffer instances and the policy
+	 * 	associated with the memory object is copy_on_write, this operation is treated as a write operation--
+	 * 	the refernce count for the shared memory object is decremented, a new memory object is allocated, 
+	 * 	and the contents of the shared object are copied to the new memory object, which will be uniquely
+	 * 	owned by this instance.
+	 * 
+	 *	\param nbytes the requested size of this instances memory object, in bytes.
+	 *	\return a reference to this instance of buffer
+	 */
 	inline buffer&
 	size( size_type nbytes )
 	{
@@ -973,7 +1297,10 @@ public:
 				size_type move_size = std::min( m_size, nbytes );
 				_buffer_shared *tmp = new _buffer_shared{ nbytes };
 				std::memcpy( tmp->data(), m_data, move_size );
-				unshare( tmp );
+				unshare();
+				m_shared = tmp;
+				m_data = m_shared->data();
+				m_size = m_shared->size();
 			}
 		}
 		assert( invariants() );
@@ -1068,16 +1395,6 @@ public:
 	inline elem_type
 	at( size_type index ) const
 	{
-		if ( m_data == nullptr )
-		{
-			throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
-		}
-
-		if ( index >= m_size )
-		{
-			throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
-		}
-
 		return *(m_data + index);
 	}
 	
@@ -1120,19 +1437,14 @@ public:
 		return *this;
 	}
 
+	/*
+	 *	put to a buffer with no allocation (size == 0 )
+	 *	or put outside of buffer bounds results in undefined behavior
+	 * 
+	 */
 	inline buffer&
 	put( size_type index, elem_type value )
 	{
-		if ( m_data == nullptr )
-		{
-			throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
-		}
-
-		if ( index >= m_size )
-		{
-			throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
-		}
-
 		if ( ! is_writable() )
 		{
 			make_unique();
@@ -1170,19 +1482,14 @@ public:
 		return *this;
 	}
 
+	/*
+	 *	put to a buffer with no allocation (size == 0 )
+	 *	or put outside of buffer bounds results in undefined behavior
+	 * 
+	 */
 	inline buffer&
 	put( size_type index, const void* data, size_type length )
 	{
-		if ( m_data == nullptr )
-		{
-			throw std::system_error{ make_error_code( std::errc::no_buffer_space ) };
-		}
-
-		if ( index + length >= m_size )
-		{
-			throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
-		}
-
 		if ( ! is_writable() )
 		{
 			make_unique();
@@ -1398,6 +1705,26 @@ private:
 	}
 
 	inline void
+	adopt( buffer const& rhs )
+	{
+		assert( m_shared == nullptr );
+		if ( rhs.is_exclusive() )
+		{
+			m_shared = new _buffer_shared{ rhs.m_data, rhs.m_size };
+			m_data = m_shared->data();
+			m_size = m_shared->size();
+		}
+		else
+		{
+			m_shared = rhs.m_shared;
+			m_shared->increment_refs();
+			m_data = rhs.m_data;
+			m_size = rhs.m_size;
+		}
+	}
+
+/*
+	inline void
 	unshare( _buffer_shared* replacement )
 	{
 		assert( replacement != nullptr );
@@ -1412,6 +1739,7 @@ private:
 		m_data = m_shared->data();
 		m_size = m_shared->size();
 	}
+*/
 
 	inline void
 	unshare()

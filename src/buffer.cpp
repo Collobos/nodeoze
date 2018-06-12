@@ -70,7 +70,7 @@ nodeoze::buffer::checksum( size_type offset, size_type length ) const
 {
 	
 	boost::crc_32_type crc;
-	if ( ( m_data != nullptr ) && ( offset < length ) && ( ( offset + length ) < m_size ) )
+	if ( ( m_data != nullptr ) && ( offset < length ) && ( ( offset + length ) <= m_size ) )
 	{
 		crc.process_bytes( m_data + offset, length );
 	}

@@ -635,8 +635,9 @@ namespace test_types
 
 TEST_CASE("nodeoze/smoke/bstream/numeric_representation")
 {
+//	std::this_thread::sleep_for (std::chrono::seconds(10));
+
 	bstream::ombstream os{1024};
-	
 	os << (std::uint8_t)0;
 	CHECK_0(os);
 	os << (std::int8_t)0;
@@ -729,7 +730,7 @@ TEST_CASE("nodeoze/smoke/bstream/numeric_representation")
 	CHECK_int_8_min_minus_1(os);
 	os << (std::int64_t)-129;
 	CHECK_int_8_min_minus_1(os);
-	
+
 	os << (std::uint8_t)255;
 	CHECK_uint_8_max(os);	
 	os << (std::uint16_t)255;

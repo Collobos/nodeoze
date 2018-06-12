@@ -15,71 +15,47 @@ class ifbstream : public ibstream
 {
 public:
 
-    static constexpr std::ios::openmode mode = std::ios::in | std::ios::binary;
-
     ifbstream( ibs_context::ptr context = nullptr )
     :
-    ibstream{ std::make_unique< std::filebuf >(), std::move( context ) }
-    {
-        get_filebuf().pubimbue( std::locale::classic() );
-    }
+    ibstream{ std::make_unique< ibfilebuf >(), std::move( context ) }
+    {}
 
     ifbstream( ifbstream const& ) = delete;
     ifbstream( ifbstream&& ) = delete;
 
     inline
-    ifbstream( std::unique_ptr< std::filebuf > fbuf, ibs_context::ptr context = nullptr )
+    ifbstream( std::unique_ptr< ibfilebuf > fbuf, ibs_context::ptr context = nullptr )
     : ibstream{ std::move( fbuf ), std::move( context ) }
     {}
 
     inline
-    ifbstream( std::filebuf&& fbuf, ibs_context::ptr context = nullptr )
+    ifbstream( ibfilebuf&& fbuf, ibs_context::ptr context = nullptr )
     :
-    ibstream{ std::make_unique< std::filebuf >( std::move( fbuf ) ), std::move( context ) }
+    ibstream{ std::make_unique< ibfilebuf >( std::move( fbuf ) ), std::move( context ) }
     {}
 
     inline
     ifbstream( std::string const& filename, ibs_context::ptr context = nullptr )
     :
-    ibstream{ std::make_unique< std::filebuf >(), std::move( context ) }
-    {
-        get_filebuf().pubimbue( std::locale::classic() );
-        if ( ! get_filebuf().open( filename, mode ))
-        {
-           throw std::system_error{ std::error_code{ errno, std::generic_category() } };
-        }
-    }
+    ibstream{ std::make_unique< ibfilebuf >( filename ), std::move( context ) }
+    {}
 
     inline
-    ifbstream( std::string const& filename, std::error_code& ec, ibs_context::ptr context = nullptr )
+    ifbstream( std::string const& filename, std::error_code& err, ibs_context::ptr context = nullptr )
     :
-    ibstream{ std::make_unique< std::filebuf >(), std::move( context ) }
-    {
-        clear_error( ec );
-        get_filebuf().pubimbue( std::locale::classic() );
-        if ( ! get_filebuf().open( filename, mode ))
-        {
-            ec = std::error_code{ errno, std::generic_category() };
-        }
-    }
+    ibstream{ std::make_unique< ibfilebuf >( filename, err ), std::move( context ) }
+    {}
 
     inline void
     open( std::string const& filename )
     {
-        if ( ! get_filebuf().open( filename, mode ) )
-        {
-           throw std::system_error{ std::error_code{ errno, std::generic_category() } };
-        }
+        get_filebuf().open( filename );
     }
 
     inline void
-    open( std::string const& filename, std::error_code& ec )
+    open( std::string const& filename, std::error_code& err )
     {
-        clear_error( ec );
-        if ( ! get_filebuf().open( filename, mode ) )
-        {
-           ec = std::error_code{ errno, std::generic_category() };
-        }
+        get_filebuf().open( filename, err );
     }
 
     inline bool
@@ -91,38 +67,31 @@ public:
     inline void
     close()
     {
-        if ( ! get_filebuf().close() )
-        {
-           throw std::system_error{ std::error_code{ errno, std::generic_category() } };
-        }
+        get_filebuf().close();
     }
 
     inline void
-    close( std::error_code& ec )
+    close( std::error_code& err )
     {
-        clear_error( ec );
-        if ( ! get_filebuf().close() )
-        {
-           ec = std::error_code{ errno, std::generic_category() };
-        }
+        get_filebuf().close( err );
     }
 
-    inline std::filebuf&
+    inline ibfilebuf&
     get_filebuf()
     {
-        return reinterpret_cast< std::filebuf& >( get_streambuf() );
+        return reinterpret_cast< ibfilebuf& >( get_streambuf() );
     }
 
-    inline std::filebuf const&
+    inline ibfilebuf const&
     get_filebuf() const
     {
-        return reinterpret_cast< std::filebuf const& >( get_streambuf() );
+        return reinterpret_cast< ibfilebuf const& >( get_streambuf() );
     }
 
-    inline std::unique_ptr< std::filebuf >
+    inline std::unique_ptr< ibfilebuf >
     release_filebuf()
     {
-        return bstream::utils::static_unique_ptr_cast< std::filebuf >( release_streambuf() );
+        return bstream::utils::static_unique_ptr_cast< ibfilebuf >( release_streambuf() );
     }
 
 };

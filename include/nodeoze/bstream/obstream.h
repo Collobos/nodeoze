@@ -84,7 +84,7 @@ public:
 	{}
 */
 	inline
-	obstream( std::unique_ptr< std::streambuf > strmbuf, obs_context::ptr context = nullptr )
+	obstream( std::unique_ptr< bstream::obstreambuf > strmbuf, obs_context::ptr context = nullptr )
 	:
 	onumstream{ std::move( strmbuf ) },
 	m_context{ std::move( context ) }
@@ -148,16 +148,16 @@ public:
 	}
 
 	inline obstream&
-	write_map_header(std::uint32_t size, std::error_code& ec )
+	write_map_header(std::uint32_t size, std::error_code& err )
 	{
-		clear_error( ec );
+		clear_error( err );
 		try
 		{
 			write_map_header( size );
 		}
 		catch ( std::system_error const& e )
 		{
-			ec = e.code();
+			err = e.code();
 		}
 		return *this;
 	}
@@ -184,16 +184,16 @@ public:
 	}      
 
 	inline obstream&
-	write_array_header(std::uint32_t size, std::error_code& ec )
+	write_array_header(std::uint32_t size, std::error_code& err )
 	{
-		clear_error( ec );
+		clear_error( err );
 		try
 		{
 			write_array_header( size );
 		}
 		catch ( std::system_error const& e )
 		{
-			ec = e.code();
+			err = e.code();
 		}
 		return *this;
 	}
@@ -220,16 +220,16 @@ public:
 	}
 
 	inline obstream&
-	write_blob_header(std::uint32_t size, std::error_code& ec )
+	write_blob_header(std::uint32_t size, std::error_code& err )
 	{
-		clear_error( ec );
+		clear_error( err );
 		try
 		{
 			write_blob_header( size );
 		}
 		catch ( std::system_error const& e )
 		{
-			ec = e.code();
+			err = e.code();
 		}
 		return *this;
 	}
@@ -237,14 +237,14 @@ public:
 	inline obstream&
 	write_blob_body(const void* p, std::size_t size)
 	{
-		putn(p, size);
+		putn( reinterpret_cast< const byte_type * >( p ), size);
 		return *this;
 	}
 
 	inline obstream&
-	write_blob_body(const void* p, std::size_t size, std::error_code& ec )
+	write_blob_body( const void* p, std::size_t size, std::error_code& err )
 	{
-		putn(p, size, ec );
+		putn( reinterpret_cast< const byte_type * >( p ), size, err );
 		return *this;
 	}
 
@@ -256,9 +256,9 @@ public:
 	}
 
 	inline obstream&
-	write_blob_body( nodeoze::buffer const& blob, std::error_code& ec )
+	write_blob_body( nodeoze::buffer const& blob, std::error_code& err )
 	{
-		putn( blob.const_data(), blob.size(), ec );
+		putn( blob.const_data(), blob.size(), err );
 		return *this;
 	}
 
@@ -271,12 +271,12 @@ public:
 	}
 
 	inline obstream&
-	write_blob( const void* p, std::size_t size, std::error_code& ec )
+	write_blob( const void* p, std::size_t size, std::error_code& err )
 	{
-		write_blob_header( size, ec );
-		if ( ec ) goto exit;
+		write_blob_header( size, err );
+		if ( err ) goto exit;
 
-		write_blob_body( p, size, ec );
+		write_blob_body( p, size, err );
 
 	exit:
 		return *this;
@@ -291,12 +291,12 @@ public:
 	}
 
 	inline obstream&
-	write_blob( nodeoze::buffer const& buf, std::error_code& ec )
+	write_blob( nodeoze::buffer const& buf, std::error_code& err )
 	{
-		write_blob_header( buf.size(), ec );
-		if ( ec ) goto exit;
+		write_blob_header( buf.size(), err );
+		if ( err ) goto exit;
 
-		write_blob_body( buf, ec );
+		write_blob_body( buf, err );
 
 	exit:
 		return *this;
@@ -309,9 +309,9 @@ public:
 	}
 
 	inline obstream&
-	write_object_header( std::uint32_t size, std::error_code& ec )
+	write_object_header( std::uint32_t size, std::error_code& err )
 	{
-		return write_array_header(size, ec );
+		return write_array_header(size, err );
 	}
 
 	template< class T >
@@ -326,15 +326,15 @@ public:
 
 	template< class T >
 	inline typename std::enable_if_t< std::is_arithmetic< T >::value, obstream& >	
-	write_ext( std::uint8_t ext_type, T value, std::error_code& ec )
+	write_ext( std::uint8_t ext_type, T value, std::error_code& err )
 	{
-		put_num( detail::fixext_typecode< sizeof( T ) >::value, ec );
-		if ( ec ) goto exit;
+		put_num( detail::fixext_typecode< sizeof( T ) >::value, err );
+		if ( err ) goto exit;
 
-		put_num( ext_type, ec );
-		if ( ec ) goto exit;
+		put_num( ext_type, err );
+		if ( err ) goto exit;
 
-		put_num( value, ec );
+		put_num( value, err );
 
 	exit:
 		return *this;
@@ -425,16 +425,16 @@ public:
 	}
 
 	inline obstream&
-	write_ext( std::uint8_t ext_type, buffer const& buf, std::error_code& ec )
+	write_ext( std::uint8_t ext_type, buffer const& buf, std::error_code& err )
 	{
-		clear_error( ec );
+		clear_error( err );
 		try
 		{
 			write_ext( ext_type, buf );
 		}
 		catch ( std::system_error const& e )
 		{
-			ec = e.code();
+			err = e.code();
 		}
 		return *this;
 	}
@@ -483,16 +483,16 @@ public:
 	}
 
 	inline obstream&
-	write_ext( std::uint8_t ext_type, std::vector< std::uint8_t > const& vec, std::error_code& ec )
+	write_ext( std::uint8_t ext_type, std::vector< std::uint8_t > const& vec, std::error_code& err )
 	{
-		clear_error( ec );
+		clear_error( err );
 		try
 		{
 			write_ext( ext_type, vec );
 		}
 		catch( std::system_error const& e )
 		{
-			ec = e.code();
+			err = e.code();
 		}
 		return *this;
 	}
@@ -539,16 +539,16 @@ public:
 	}
 
 	inline obstream&
-	write_ext_header( std::uint8_t ext_type, std::uint32_t size, std::error_code& ec  )
+	write_ext_header( std::uint8_t ext_type, std::uint32_t size, std::error_code& err  )
 	{
-		clear_error( ec );
+		clear_error( err );
 		try
 		{
 			write_ext_header( ext_type, size );
 		}
 		catch( std::system_error const& e )
 		{
-			ec = e.code();
+			err = e.code();
 		}
 		return *this;
 	}	
@@ -562,11 +562,11 @@ public:
 	}
 
 	obstream&
-	write_ext( std::uint8_t ext_type, void* data, std::uint32_t size, std::error_code& ec )
+	write_ext( std::uint8_t ext_type, void* data, std::uint32_t size, std::error_code& err )
 	{
-		write_ext_header( ext_type, size, ec );
-		if ( ec ) goto exit;
-		putn( data, size, ec );
+		write_ext_header( ext_type, size, err );
+		if ( err ) goto exit;
+		putn( data, size, err );
 	exit:
 		return *this;
 	}
@@ -580,11 +580,11 @@ public:
 	}
 
 	inline obstream&
-	write_null_ptr( std::error_code& ec )
+	write_null_ptr( std::error_code& err )
 	{
-		write_array_header( 1, ec );
-		if ( ec ) goto exit;
-		put( typecode::nil, ec );
+		write_array_header( 1, err );
+		if ( err ) goto exit;
+		put( typecode::nil, err );
 	exit:
 		return *this;
 	}
@@ -597,9 +597,9 @@ public:
 	}
 
 	inline obstream&
-	write_nil( std::error_code& ec )
+	write_nil( std::error_code& err )
 	{
-		put( typecode::nil, ec );
+		put( typecode::nil, err );
 		return *this;
 	}
 
@@ -624,16 +624,16 @@ public:
 
 	template<class T>
 	inline obstream&
-	write_shared_ptr( std::shared_ptr<T> ptr, std::error_code& ec )
+	write_shared_ptr( std::shared_ptr<T> ptr, std::error_code& err )
 	{
-		clear_error( ec );
+		clear_error( err );
 		try
 		{
 			write_shared_ptr( ptr );
 		}
 		catch ( std::system_error const& e )
 		{
-			ec = e.code();
+			err = e.code();
 		}
 		return *this;
 	}
@@ -649,16 +649,16 @@ public:
 
 	template<class T>
 	inline obstream&
-	write_as_unique_pointer( T const& obj, std::error_code& ec )
+	write_as_unique_pointer( T const& obj, std::error_code& err )
 	{
-		clear_error( ec );
+		clear_error( err );
 		try
 		{
 			write_as_unique_pointer( obj );
 		}
 		catch ( std::system_error const& e )
 		{
-			ec = e.code();
+			err = e.code();
 		}
 		return *this;
 	}

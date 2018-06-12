@@ -71,7 +71,7 @@ public:
 		return *this;
 	}
 
-	buffer 
+	inline buffer 
 	get_buffer( bool force_copy = false ) const
 	{
 		if ( ! force_copy && m_buf.is_copy_on_write() )
@@ -83,7 +83,13 @@ public:
 		return m_buf.slice( 0, m_high_water_mark, force_copy );
 	}
 
-	buffer
+	inline buffer&
+	get_buffer_ref()
+	{
+		return m_buf;
+	}
+
+	inline buffer
 	release_buffer()
 	{
 		high_water_mark( ppos() );
@@ -92,7 +98,7 @@ public:
 		return std::move( m_buf );
 	}
 
-	void
+	inline void
 	print_state() const
 	{
 		pos_type endpos = epptr() - pbase();
@@ -363,8 +369,14 @@ public:
 	}
 */
 
-	buffer&
+	inline buffer&
 	get_buffer()
+	{
+		return m_buf;
+	}
+
+	inline buffer&
+	get_buffer_ref()
 	{
 		return m_buf;
 	}

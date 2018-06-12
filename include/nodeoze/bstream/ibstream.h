@@ -57,8 +57,31 @@ namespace bstream
 {
 class ibstream;
 
+template< class T >
+class array_base;
+
+template< class T >
+class map_base;
+
+template< class T >
+struct ibstream_ctor_detected : public std::is_constructible< T, ibstream& > {};
+
+template< class T, class Enable = void >
+struct has_streaming_base : public std::false_type {};
+
+template< class T >
+struct has_streaming_base< T,
+    typename std::enable_if_t< std::is_base_of< bstream::array_base< T >, T >::value
+                            || std::is_base_of< bstream::map_base< T >, T >::value > >
+: public std::true_type {};
+
+template< class T, class Enable = void >
+struct is_ibstream_constructible : public std::false_type {};
+
 template<class T> 
-struct is_ibstream_constructible : public std::is_constructible<T, ibstream&> {};
+struct is_ibstream_constructible< T, 
+    typename std::enable_if_t< ibstream_ctor_detected< T >::value || has_streaming_base< T>::value > > 
+    : public std::true_type {};
 
 template<class T, class Enable = void>
 struct value_deserializer;
@@ -671,7 +694,7 @@ public:
     ibstream( ibstream&& ) = delete;
 
     inline
-    ibstream( std::unique_ptr< std::streambuf > strmbuf, ibs_context::ptr context = nullptr )
+    ibstream( std::unique_ptr< bstream::ibstreambuf > strmbuf, ibs_context::ptr context = nullptr )
     : 
     inumstream{ std::move( strmbuf ) },
     m_context{ std::move( context ) }
@@ -1273,10 +1296,10 @@ public:
     }
 
     virtual void
-    reset( std::error_code& ec )
+    reset( std::error_code& err )
     {
         if ( m_context ) m_context->clear();
-        position( 0, ec );
+        position( 0, err );
     }
 
     virtual void 
@@ -1286,9 +1309,9 @@ public:
     }
 
     virtual void 
-    rewind( std::error_code& ec )
+    rewind( std::error_code& err )
     {
-        position( 0, ec );
+        position( 0, err );
     }
 
     buffer

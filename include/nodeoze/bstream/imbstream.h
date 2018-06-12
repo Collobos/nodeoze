@@ -18,52 +18,52 @@ public:
     imbstream( imbstream&& ) = delete;
 
     inline
-    imbstream( std::unique_ptr< imembuf > strmbuf, ibs_context::ptr context = nullptr )
+    imbstream( std::unique_ptr< ibmembuf > strmbuf, ibs_context::ptr context = nullptr )
     : ibstream{ std::move( strmbuf ), std::move( context ) }
     {}
 
     inline
     imbstream( buffer const& buf, ibs_context::ptr context = nullptr )
     :
-    ibstream( std::make_unique< imembuf >( buf ), std::move( context ) )
+    ibstream( std::make_unique< ibmembuf >( buf ), std::move( context ) )
     {}
 
     inline
     imbstream( buffer&& buf, ibs_context::ptr context = nullptr )
     :
-    ibstream{ std::make_unique< imembuf >( std::move( buf ) ), std::move( context ) }
+    ibstream{ std::make_unique< ibmembuf >( std::move( buf ) ), std::move( context ) }
     {}
 
     inline void
-    use( std::unique_ptr< imembuf > strmbuf )
+    use( std::unique_ptr< ibmembuf > strmbuf )
     {
         inumstream::use( std::move( strmbuf ) );
         reset();
     }
 
     inline void
-    use( std::unique_ptr< imembuf > strmbuf, std::error_code& ec )
+    use( std::unique_ptr< ibmembuf > strmbuf, std::error_code& err )
     {
         inumstream::use( std::move( strmbuf ) );
-        reset( ec );
+        reset( err );
     }
 
     inline void
     use ( buffer&& buf )
     {
-        inumstream::use( std::make_unique< imembuf >( std::move( buf ) ) );
+        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ) ) );
         reset();
     }
 
     inline void
-    use( buffer&& buf, std::error_code& ec )
+    use( buffer&& buf, std::error_code& err )
     {
-        inumstream::use( std::make_unique< imembuf >( std::move( buf ) ) );
-        reset( ec );
+        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ) ) );
+        reset( err );
     }
 
     inline void
-    use( std::unique_ptr< imembuf > strmbuf, ibs_context::ptr context )
+    use( std::unique_ptr< ibmembuf > strmbuf, ibs_context::ptr context )
     {
         inumstream::use( std::move( strmbuf ) );
         m_context = std::move( context );
@@ -71,40 +71,40 @@ public:
     }
 
     inline void
-    use( std::unique_ptr< imembuf > strmbuf, ibs_context::ptr context, std::error_code& ec )
+    use( std::unique_ptr< ibmembuf > strmbuf, ibs_context::ptr context, std::error_code& err )
     {
         inumstream::use( std::move( strmbuf ) );
         m_context = std::move( context );
-        reset( ec );
+        reset( err );
     }
 
     inline void
     use( buffer&& buf, ibs_context::ptr context )
     {
-        inumstream::use( std::make_unique< imembuf >( std::move( buf ) ) );
+        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ) ) );
         m_context = std::move( context );
         reset();
     }
 
     inline void
-    use( buffer&& buf, ibs_context::ptr context, std::error_code& ec )
+    use( buffer&& buf, ibs_context::ptr context, std::error_code& err )
     {
-        inumstream::use( std::make_unique< imembuf >( std::move( buf ) ) );
+        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ) ) );
         m_context = std::move( context );
-        reset( ec );
+        reset( err );
     }
 
 /*
     inline
     imbstream( buffer const& buf )
     : 
-    ibstream{ std::unique_ptr< imembuf >( new imembuf( buf ) ) }
+    ibstream{ std::unique_ptr< ibmembuf >( new ibmembuf( buf ) ) }
     {}
 
     inline
     imbstream( buffer&& buf )
     : 
-    ibstream{ std::unique_ptr< imembuf>( new imembuf( std::move( buf ) ) }
+    ibstream{ std::unique_ptr< ibmembuf>( new ibmembuf( std::move( buf ) ) }
     {}
 */
     inline buffer
@@ -114,29 +114,32 @@ public:
     }
 
 	virtual buffer
-	getn( size_type nbytes, bool throw_on_eof = true ) override
+	getn( size_type nbytes, bool throw_on_incomplete = true ) override
 	{
-        auto remaining = get_membuf().remaining();
-        auto pos = get_membuf().position();
-        if ( nbytes > remaining )
+        buffer buf = get_membuf().get_slice( nbytes );
+        if ( buf.size() < nbytes && throw_on_incomplete )
         {
-            if ( throw_on_eof )
-            {
-                throw std::system_error{ make_error_code( bstream::errc::read_past_end_of_stream ) };
-            }
-
-            nbytes = remaining;
+            throw std::system_error{ make_error_code( bstream::errc::read_past_end_of_stream ) };
         }
-        get_membuf().advance( nbytes );
-        return get_buffer().slice( pos, nbytes );
+        return buf;
 	}
 
-protected:
+    virtual buffer
+    getn( size_type nbytes, std::error_code& err, bool error_on_incomplete = true ) override
+    {
+        clear_error( err );
+        buffer buf = get_membuf().get_slice( nbytes );
+        if ( buf.size() < nbytes && error_on_incomplete )
+        {
+            err = make_error_code( bstream::errc::read_past_end_of_stream );
+        }
+        return buf;
+    }
 
-    inline imembuf&
+    inline ibmembuf&
     get_membuf()
     {
-        return reinterpret_cast< imembuf& >( * m_strmbuf );
+        return reinterpret_cast< ibmembuf& >( * m_strmbuf );
     }
 
 };
