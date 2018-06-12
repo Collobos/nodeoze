@@ -765,7 +765,13 @@ net::tcp::server::listen( ip::endpoint endpoint, std::size_t qsize )
 	m_handle = new net::tcp::server::handle( this );
 
 	auto err = m_handle->bind( endpoint );
-	ncheck_error_action_quiet( !err, ret.reject( err, reject_context ), exit );
+
+	if ( err )
+	{
+		emit( "error", err );
+		ret.reject( err, reject_context );
+		goto exit;
+	}
 
 	m_handle->listen( qsize );
 
@@ -960,6 +966,7 @@ TEST_CASE( "nodeoze/smoke/net/tcp")
 
 	server.on( "listening", [&]() mutable
 	{
+fprintf( stderr, "listening\n" );
 		server_events.push_back( "listening" );
 	} );
 
@@ -990,12 +997,14 @@ TEST_CASE( "nodeoze/smoke/net/tcp")
 	server.on( "error", [&]( std::error_code err ) mutable
 	{
 		CHECK( !err );
+		done = true;
 	} );
 
 	server.listen( name, 5 );
 
 	sock.on( "connect", [&]() mutable
 	{
+fprintf( stderr, "connect\n" );
 		client_events.push_back( "connect" );
 
 		sock.write( message );
