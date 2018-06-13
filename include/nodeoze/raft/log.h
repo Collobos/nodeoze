@@ -6,7 +6,7 @@
 #include <system_error>
 #include <unistd.h>
 #include <cerrno>
-#include <nodeoze/fs2.h>
+#include <nodeoze/filesystem.h>
 #include <nodeoze/bstream/ifbstream.h>
 #include <nodeoze/bstream/ofbstream.h>
 #include <nodeoze/bstream/imbstream.h>
@@ -413,10 +413,12 @@ public:
 		m_state.clear( self );
 		m_log.clear();
 
-		path tmp_path{ m_log_temp_pathname };
-		if (fs::shared().exists( path{ tmp_path } ) )
+		filesystem::path tmp_path{ m_log_temp_pathname };
+
+		// YO:FS if (fs::shared().exists( path{ tmp_path } ) )
+		if ( 1 )
 		{
-			err = fs::shared().unlink( tmp_path );
+			// YO:FS err = fs::shared().unlink( tmp_path );
 			if ( err ) goto exit;
 		}
 
@@ -439,10 +441,11 @@ public:
 		m_state.update( current_term, voted_for );
 		m_log.clear();
 
-		path tmp_path{ m_log_temp_pathname };
-		if (fs::shared().exists( path{ tmp_path } ) )
+		filesystem::path tmp_path{ m_log_temp_pathname };
+
+		// YO:FS if (fs::shared().exists( path{ tmp_path } ) )
 		{
-			err = fs::shared().unlink( tmp_path );
+			// YO:FS err = fs::shared().unlink( tmp_path );
 			if ( err ) goto exit;
 		}
 	
@@ -605,7 +608,8 @@ public:
 	void
 	recover( std::error_code& err )
 	{
-		if ( !fs::shared().exists( path( m_log_pathname ) ) )
+		// YO:FS if ( !fs::shared().exists( filesystem::path( m_log_pathname ) ) )
+		if ( 1 )
 		{
 			err = make_error_code( std::errc::no_such_file_or_directory );
 		}
@@ -773,7 +777,8 @@ public:
 					write_frame( m_state );
 					m_os.close();
 
-					auto ecode = fs::shared().move( path{ m_log_temp_pathname }, path{ m_log_pathname } );
+					// YO:FS auto ecode = fs::shared().move( path{ m_log_temp_pathname }, path{ m_log_pathname } );
+					auto ecode = std::error_code();
 					if ( ecode )
 					{
 						throw std::system_error{ ecode };

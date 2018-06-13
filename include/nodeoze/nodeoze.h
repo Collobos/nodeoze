@@ -45,6 +45,7 @@
 #include <nodeoze/enum.h>
 #include <nodeoze/event.h>
 #include <nodeoze/expected.h>
+#include <nodeoze/filesystem.h>
 #include <nodeoze/fs.h>
 #include <nodeoze/notification.h>
 #include <nodeoze/uuid.h>

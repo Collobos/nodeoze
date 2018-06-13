@@ -22,6 +22,9 @@ using native_type = int;
 
 namespace tcp {
 
+stream::duplex::ptr 
+create_connection( ip::endpoint endpoint );
+
 /** a tcp socket
  
  * \code

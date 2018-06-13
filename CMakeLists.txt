@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 
-	set (CMAKE_CXX_STANDARD 14)
+	set (CMAKE_CXX_STANDARD 17)
 	set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
 	if (APPLE)
@@ -48,7 +48,6 @@ include_directories( include src/win32
 	ext/libuv/src 
 	ext/rapidjson/include 
 	ext/botan 
-	../openssl/include-darwin 
 	ext/sqlite 
 	ext/http-parser 
 	ext/yajl/src/api 
