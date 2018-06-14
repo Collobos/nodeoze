@@ -23,6 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#if 0
 
 #include "fs_apple.h"
 #include <Foundation/Foundation.h>
@@ -31,6 +32,7 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <sys/file.h>
+
 
 
 using namespace nodeoze;
@@ -315,3 +317,5 @@ fs_apple::unlock( marker m )
 	
 
 
+
+#endif

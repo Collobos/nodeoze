@@ -32,8 +32,6 @@ stream::readable::readable()
 {
 	on( "newListener", [=]( const char *key, std::size_t num_listeners ) mutable
 	{
-		fprintf( stderr, "new listener %s (%d)\n", key, num_listeners );
-
 		if ( ( num_listeners == 1 ) && ( strcmp( key, "data" ) == 0 ) )
 		{
 			really_read();
@@ -43,8 +41,6 @@ stream::readable::readable()
 
 	on( "removeListener", [=]( const char *key, std::size_t num_listeners ) mutable
 	{
-		fprintf( stderr, "remove listener %s (%d)\n", key, num_listeners );
-
 		if ( ( num_listeners == 0 ) && ( strcmp( key, "data" ) == 0 ) )
 		{
 			really_pause();
@@ -97,39 +93,57 @@ stream::writable::write( buffer b )
 
 	if ( !m_writing )
 	{
-		really_write( b )
-		.then( [=]() mutable
-		{
-			ret.resolve();
-		},
-		[=]( auto err ) mutable
-		{
-			ret.reject( err, reject_context );
-		} )
-		.finally( [=]() mutable
-		{
-			m_writing = false;
-
-			if ( m_queue.size() > 0 )
-			{
-			}
-		} );
+		start_write( b, ret );
 	}
 	else
 	{
-		m_queue.emplace( std::make_pair( std::move( ret ), std::move( b ) ) );
+		m_queue.emplace( std::make_pair( std::move( b ), ret ) );
 	}
 
 	return ret;
 }
 
 
+void
+stream::writable::start_write( buffer b, promise< void > ret )
+{
+	m_writing = true;
+
+	really_write( b )
+	.then( [=]() mutable
+	{
+		ret.resolve();
+	},
+	[=]( auto err ) mutable
+	{
+		ret.reject( err, reject_context );
+	} )
+	.finally( [=]() mutable
+	{
+		if ( m_queue.size() > 0 )
+		{
+			auto pair = m_queue.front();
+
+			m_queue.pop();
+
+			start_write( pair.first, pair.second );
+		}
+		else
+		{
+			m_writing = false;
+
+			emit( "drain" );
+		}
+	} );
+}
+
+
 promise< void >
 stream::writable::really_write( buffer b )
 {
-	promise< void > ret;
+	nunused( b );
 
-	fprintf( stderr, "really_write: %s\n", b.to_string().c_str() );
+	promise< void > ret;
 
 	ret.resolve();
 

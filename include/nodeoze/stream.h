@@ -29,6 +29,8 @@
 #include <nodeoze/promise.h>
 #include <nodeoze/buffer.h>
 #include <nodeoze/event.h>
+#include <nodeoze/deque.h>
+#include <unordered_map>
 #include <queue>
 
 namespace nodeoze {
@@ -39,6 +41,11 @@ class writable;
 
 template< typename T >
 struct is_writable_stream : public std::integral_constant< bool, false >
+{
+};
+
+template<>
+struct is_writable_stream< writable > : public std::integral_constant< bool, true >
 {
 };
 
@@ -73,6 +80,31 @@ protected:
 };
 
 
+class writable : public base
+{
+public:
+
+	using ptr = std::shared_ptr< writable >;
+
+	writable();
+
+	virtual ~writable();
+
+	promise< void >
+	write( buffer b );
+
+protected:
+
+	void
+	start_write( buffer b, promise< void > ret );
+
+	virtual promise< void >
+	really_write( buffer b );
+
+	bool												m_writing = false;
+	std::queue< std::pair< buffer, promise< void > > > 	m_queue;
+};
+
 /*
  * class readable
  * 
@@ -97,21 +129,51 @@ public:
 	virtual ~readable();
 
 	template< class T >
-	typename std::enable_if< is_writable_stream< T >::value, T >::type
-	pipe( T dest )
+	typename std::enable_if< is_writable_stream< T >::value, typename T::ptr >::type
+	pipe( typename std::shared_ptr< T > dest )
 	{
-		on( "data", [dest]( buffer buf ) mutable
+		auto it = m_pipes.find( dest );
+
+		if ( it == m_pipes.end() )
+		{
+			m_pipes[ dest ] = listeners();
+			it = m_pipes.find( dest );
+		}
+
+		it->second.emplace_back( std::make_pair( "data", on( "data", [dest]( buffer buf ) mutable
 		{
 			dest->write( buf );
-		} );
+		} ) ) );
+
+		it->second.emplace_back( std::make_pair( "error", on( "error", [dest]( std::error_code err ) mutable
+		{
+			dest->emit( "error", err );
+		} ) ) );
+
+		it->second.emplace_back( std::make_pair( "end", on( "end", [dest]() mutable
+		{
+			dest->emit( "end" );
+		} ) ) );
 
 		return dest;
 	}
 
 	template< class T >
 	typename std::enable_if< is_writable_stream< T >::value >::type
-	unpipe( typename T::ptr /* dest */ )
+	unpipe( typename T::ptr dest )
 	{
+		auto it = m_pipes.find( dest );
+		assert( it != m_pipes.end() );
+
+		if ( it != m_pipes.end() )
+		{
+			for ( auto &id : it->second )
+			{
+				remove_listener( it->second->first, it->second->second );
+			}
+
+			m_pipes.erase( it );
+		}
 	}
 
 	void
@@ -124,35 +186,19 @@ protected:
 
 	virtual void
 	really_pause();
+
+	using listeners = deque< std::pair< std::string, listener_id_type > >;
+
+	std::unordered_map< writable::ptr, listeners > m_pipes;
 };
 
-
-class writable : public base
-{
-public:
-
-	using ptr = std::shared_ptr< writable >;
-
-	writable();
-
-	virtual ~writable();
-
-	promise< void >
-	write( buffer b );
-
-protected:
-
-	virtual promise< void >
-	really_write( buffer b );
-
-	bool												m_writing = false;
-	std::queue< std::pair< promise< void >, buffer > > 	m_queue;
-};
 
 
 class duplex : public readable, public writable
 {
 public:
+
+	using ptr = std::shared_ptr< duplex >;
 
 	duplex();
 

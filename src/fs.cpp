@@ -24,107 +24,216 @@
  *
  */
 
-#include <nodeoze/fs2.h>
+#include <nodeoze/fs.h>
 #include <nodeoze/unicode.h>
 #include <nodeoze/macros.h>
 #include <nodeoze/log.h>
-#include <iostream>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#if defined( WIN32 )
-#	include <io.h>
-#endif
-
+#include <nodeoze/test.h>
+#include <fstream>
+#include "error_libuv.h"
+#include <uv.h>
 
 using namespace nodeoze;
 
-fs::~fs()
+class read_file : public stream::readable
 {
-}
+public:
 
-
-fs::marker
-fs::open( const path &p, const char *mode )
-{
-	FILE *fp;
-	
-	fp = fopen( p.to_string().c_str(), mode );
-	
-	if ( !fp )
+	read_file( filesystem::path path )
+	:
+		m_path( std::move( path ) ),
+		m_read_buf( 16384 ),
+		m_paused( true )
 	{
-		goto exit;
+		memset( &m_open_req, 0, sizeof( m_open_req ) );
+		memset( &m_read_req, 0, sizeof( m_open_req ) );
+
+		uv_fs_open( uv_default_loop(), &m_open_req, m_path.c_str(), O_RDONLY, 0, on_open );
+		m_open_req.ptr = this;
 	}
-	
-exit:
 
-	return std::shared_ptr< void >( fp, []( void *data )
+	virtual ~read_file()
 	{
-		FILE *fp = reinterpret_cast< FILE* >( data );
-
-		if ( fp )
-		{
-			fclose( fp );
-		}
-	} );
-}
-
-
-fs::marker
-fs::create_only( const path &p )
-{
-	FILE	*fp = nullptr;
-	int		fd;
-
-	fd = ::open( p.to_string().c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0660 );
-
-	ncheck_error( fd != -1, exit, "exclusive open failed" );
-
-#if defined( WIN32 )
-	fp = ::_fdopen( fd, "wb" );
-#else
-	fp = ::fdopen( fd, "wb" );
-#endif
-
-exit:
-	
-	return std::shared_ptr< void >( fp, []( void *data )
-	{
-		FILE *fp = reinterpret_cast<FILE*>(data);
-
-		if (fp)
-		{
-			fclose( fp );
-		}
-	} );
-}
-	
-
-
-void
-fs::write( fs::marker marker, const std::uint8_t *buf, std::size_t len )
-{
-	assert( marker );
-	
-	FILE *fp = reinterpret_cast< FILE* >( marker.get() );
-	
-	if ( fp )
-	{
-		fwrite( buf, 1, len, fp );
+		// uv_fs_req_cleanup( &m_open_req );
+		// uv_fs_req_cleanup( &m_read_req );
 	}
+
+protected:
+
+	virtual void
+	really_read()
+	{
+		m_paused = false;
+
+		really_really_read();
+	}
+
+	virtual void
+	really_pause()
+	{
+		m_paused = true;
+	}
+
+	inline void
+	really_really_read()
+	{
+		uv_buf_t iov = { reinterpret_cast< char* >( m_read_buf.rdata() ), m_read_buf.size() };
+		uv_fs_read( uv_default_loop(), &m_read_req, m_open_req.result, &iov, 1, -1, on_read );
+		m_read_req.ptr = this;
+	}
+
+private:
+
+	static void
+	on_open( uv_fs_t *req )
+	{
+		assert( req );
+
+		auto self = reinterpret_cast< read_file* >( req->ptr );
+
+		assert( self );
+
+		if ( req->result < 0 )
+		{
+			self->emit( "error", std::error_code( req->result, libuv::error_category() ) );
+		}
+	}
+
+	static void
+	on_read( uv_fs_t *req )
+	{
+		assert( req );
+
+		auto self = reinterpret_cast< read_file* >( req->ptr );
+
+		assert( self );
+
+	fprintf( stderr, "on read %d\n", req->result );
+
+		if ( req->result > 0 )
+		{
+			self->m_read_buf.size( req->result );
+
+			self->push( self->m_read_buf );
+			//iov.len = req->result;
+			// uv_fs_write(uv_default_loop(), &write_req, 1, &iov, 1, -1, on_write);
+
+			if ( !self->m_paused )
+			{
+				self->really_really_read();
+			}
+		}
+		else if ( req->result == 0 )
+		{
+			uv_fs_close( uv_default_loop(), &self->m_close_req, self->m_open_req.result, nullptr );
+
+			self->emit( "end" );
+		}
+		else
+		{
+			fprintf(stderr, "read error: %s\n", uv_strerror((int)req->result));
+			self->emit( "error", std::error_code( req->result, libuv::error_category() ) );
+		}
+	}
+
+	filesystem::path	m_path;
+	uv_fs_t				m_open_req;
+	uv_fs_t				m_read_req;
+	uv_fs_t				m_close_req;
+	buffer				m_read_buf;
+	bool				m_paused;
+	// *buf = uv_buf_init((char*) malloc(suggested_size), suggested_size);
+	// iov = uv_buf_init(buffer, sizeof(buffer));k
+};
+
+
+class write_file : public stream::writable
+{
+public:
+
+	write_file( filesystem::path path )
+	:
+		m_path( std::move( path ) )
+	{
+	}
+
+	virtual ~write_file()
+	{
+	}
+
+private:
+
+	virtual promise< void >
+	really_write( buffer b )
+	{
+		auto ret = promise< void >();
+
+		fprintf( stderr, "writing buffer of size %d\n", b.size() );
+
+		ret.resolve();
+
+		return ret;
+	}
+
+	filesystem::path m_path;
+};
+
+
+stream::readable::ptr
+fs::create_read_stream( filesystem::path path )
+{
+	return std::make_shared< read_file >( std::move( path ) );
 }
 
 
-void
-fs::read( fs::marker marker, read_f func )
+stream::writable::ptr
+fs::create_write_stream( filesystem::path path )
 {
-	const std::size_t	buf_len	= 32767;
-	std::uint8_t		buf[ buf_len ];
-	std::streamsize		bytes;
-	FILE				*fp = reinterpret_cast< FILE* >( marker.get() );
-	
-	while ( ( bytes = fread( buf, 1, buf_len, fp ) ) > 0 )
+	return std::make_shared< write_file >( std::move( path ) );
+}
+
+
+TEST_CASE( "nodeoze/smoke/fs")
+{
+	filesystem::path in( "/tmp/in.txt" );
+	filesystem::path out( "/tmp/out.txt" );
+	auto done = false;
+
+	std::ofstream ofs( in.c_str() );
+
+	for ( auto i = 0u; i < 1000000; i++ )
 	{
-		func( buf, bytes );
+		ofs << "all work and no play make jack a dull boy";
+	}
+
+	ofs.close();
+
+	auto rstream = fs::create_read_stream( in.c_str() );
+	REQUIRE( rstream );
+
+	rstream->on( "error", [&]( std::error_code err ) mutable
+	{
+		REQUIRE( !err );
+	} );
+
+	auto wstream = fs::create_write_stream( out.c_str() );
+	REQUIRE( wstream );
+
+	wstream->on( "end", [&]() mutable
+	{
+		done = true;
+	} );
+
+	wstream->on( "error", [&]( std::error_code err ) mutable
+	{
+		REQUIRE( !err );
+		done = true;
+	} );
+
+	rstream->pipe( wstream );
+
+	while ( !done )
+	{
+		runloop::shared().run( runloop::mode_t::once );
 	}
 }
