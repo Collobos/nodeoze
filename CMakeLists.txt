@@ -111,6 +111,7 @@ set(NODEOZE_SRCS
 	include/nodeoze/enum.h 
 	include/nodeoze/event.h 
 	include/nodeoze/expected.h 
+	include/nodeoze/filesystem.h
 	include/nodeoze/fs.h 
 	include/nodeoze/http.h 
 	include/nodeoze/json.h 
@@ -238,6 +239,7 @@ set(NODEOZE_SRCS
 	src/ibstream.cpp
 	src/obstream.cpp
 	src/fbstream.cpp
+	src/filesystem.cpp
 	include/nodeoze/raft/error.cpp
 	include/nodeoze/raft/error.h
 	include/nodeoze/raft/rlog.cpp

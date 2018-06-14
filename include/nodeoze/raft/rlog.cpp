@@ -75,7 +75,7 @@ TEST_CASE("nodeoze/smoke/raft/payload")
 		buffer load = oak.back().as< raft::state_machine_update >().payload();
 		CHECK( load.to_string() == "even more update payload" );
 		std::cout << "back index is " << index << ", payload:" << std::endl;
-		load.dump( std::cout ); std::cout.flush();
+//		load.dump( std::cout ); std::cout.flush();
 		oak.close( ec );
 		CHECK( ! ec );
 	}

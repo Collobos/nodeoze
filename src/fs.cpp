@@ -108,7 +108,7 @@ private:
 
 		assert( self );
 
-	fprintf( stderr, "on read %d\n", req->result );
+//	fprintf( stderr, "on read %d\n", req->result );
 
 		if ( req->result > 0 )
 		{
@@ -168,7 +168,7 @@ private:
 	{
 		auto ret = promise< void >();
 
-		fprintf( stderr, "writing buffer of size %d\n", b.size() );
+	//	fprintf( stderr, "writing buffer of size %d\n", b.size() );
 
 		ret.resolve();
 
