@@ -92,7 +92,7 @@ public:
     }
 
     void
-    on_timeout()
+    on_election_timeout()
     {
         if ( m_role != role::leader )
         {
@@ -113,6 +113,18 @@ public:
     {
         start_election_timer();
         schedule_request_vote_messages();
+    }
+
+    void
+    schedule_request_vote_messages()
+    {
+        for ( replicant_id : m_active_replicants )
+        {
+            if ( replicant_id != m_self_id )
+            {
+                
+            }
+        }
     }
 
     void

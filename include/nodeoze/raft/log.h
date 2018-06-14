@@ -647,10 +647,10 @@ public:
 					frame_position = is.position();
 				}
 
-				if ( ! m_state.is_dirty() )
-				{
-					throw std::system_error{ make_error_code( raft::errc::log_recovery_error ) };
-				}
+				// if ( ! m_state.is_dirty() )
+				// {
+				// 	throw std::system_error{ make_error_code( raft::errc::log_recovery_error ) };
+				// }
 				is.close();
 			}
 			catch ( std::system_error const& e )
