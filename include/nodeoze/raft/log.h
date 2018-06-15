@@ -415,10 +415,12 @@ public:
 
 		filesystem::path tmp_path{ m_log_temp_pathname };
 
-		// YO:FS if (fs::shared().exists( path{ tmp_path } ) )
-		if ( 1 )
+		auto found = filesystem::exists( tmp_path, err );
+		if ( err ) goto exit;
+
+		if ( found )
 		{
-			// YO:FS err = fs::shared().unlink( tmp_path );
+			filesystem::remove( tmp_path, err );
 			if ( err ) goto exit;
 		}
 
@@ -443,9 +445,12 @@ public:
 
 		filesystem::path tmp_path{ m_log_temp_pathname };
 
-		// YO:FS if (fs::shared().exists( path{ tmp_path } ) )
+		auto found = filesystem::exists( tmp_path, err );
+		if ( err ) goto exit;
+
+		if ( found )
 		{
-			// YO:FS err = fs::shared().unlink( tmp_path );
+			filesystem::remove( tmp_path, err );
 			if ( err ) goto exit;
 		}
 	
@@ -608,8 +613,11 @@ public:
 	void
 	recover( std::error_code& err )
 	{
-		// YO:FS if ( !fs::shared().exists( filesystem::path( m_log_pathname ) ) )
-		if ( 1 )
+
+		auto found = filesystem::exists( filesystem::path{ m_log_pathname }, err );
+		if ( err ) return;
+
+		if ( !found )
 		{
 			err = make_error_code( std::errc::no_such_file_or_directory );
 		}
@@ -651,10 +659,10 @@ public:
 					frame_position = is.position();
 				}
 
-				if ( ! m_state.is_dirty() )
-				{
-					throw std::system_error{ make_error_code( raft::errc::log_recovery_error ) };
-				}
+				// if ( ! m_state.is_dirty() )
+				// {
+				// 	throw std::system_error{ make_error_code( raft::errc::log_recovery_error ) };
+				// }
 				is.close();
 			}
 			catch ( std::system_error const& e )
@@ -777,12 +785,7 @@ public:
 					write_frame( m_state );
 					m_os.close();
 
-					// YO:FS auto ecode = fs::shared().move( path{ m_log_temp_pathname }, path{ m_log_pathname } );
-					auto ecode = std::error_code();
-					if ( ecode )
-					{
-						throw std::system_error{ ecode };
-					}
+					filesystem::rename( filesystem::path{ m_log_temp_pathname }, filesystem::path{ m_log_pathname } );
 
 					m_os.open( m_log_pathname, bstream::open_mode::append );
 				}
