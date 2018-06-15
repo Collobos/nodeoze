@@ -90,19 +90,23 @@ public:
 
 	virtual ~writable();
 
-	promise< void >
-	write( buffer b );
+	bool
+	write( buffer b, std::function< void () > cb = nullptr );
+
+	void
+	end();
 
 protected:
 
 	void
-	start_write( buffer b, promise< void > ret );
+	start_write( buffer b );
 
 	virtual promise< void >
 	really_write( buffer b );
 
-	bool												m_writing = false;
-	std::queue< std::pair< buffer, promise< void > > > 	m_queue;
+	bool					m_writing	= false;
+	std::queue< buffer >	m_queue;
+	bool					m_ended		= false;
 };
 
 /*
@@ -140,9 +144,17 @@ public:
 			it = m_pipes.find( dest );
 		}
 
-		it->second.emplace_back( std::make_pair( "data", on( "data", [dest]( buffer buf ) mutable
+		it->second.emplace_back( std::make_pair( "data", on( "data", [this,dest]( buffer buf ) mutable
 		{
-			dest->write( buf );
+			if ( !dest->write( buf ) )
+			{
+				really_pause();
+
+				dest->once( "drain", [=]() mutable
+				{
+					really_read();
+				} );
+			}
 		} ) ) );
 
 		it->second.emplace_back( std::make_pair( "error", on( "error", [dest]( std::error_code err ) mutable
@@ -152,7 +164,7 @@ public:
 
 		it->second.emplace_back( std::make_pair( "end", on( "end", [dest]() mutable
 		{
-			dest->emit( "end" );
+			dest->end();
 		} ) ) );
 
 		return dest;
@@ -191,7 +203,6 @@ protected:
 
 	std::unordered_map< writable::ptr, listeners > m_pipes;
 };
-
 
 
 class duplex : public readable, public writable

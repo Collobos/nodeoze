@@ -77,6 +77,8 @@ stream::readable::really_pause()
 #endif
 
 stream::writable::writable()
+:
+	m_ended( false )
 {
 }
 
@@ -86,53 +88,75 @@ stream::writable::~writable()
 }
 
 
-promise< void >
-stream::writable::write( buffer b )
+bool
+stream::writable::write( buffer b, std::function< void () > cb )
 {
-	auto ret = promise< void >();
+	auto ok = true;
 
 	if ( !m_writing )
 	{
-		start_write( b, ret );
+		start_write( b );
+
+		once( "drain", cb );
 	}
 	else
 	{
-		m_queue.emplace( std::make_pair( std::move( b ), ret ) );
+		m_queue.emplace( std::move( b ) );
+
+		if ( m_queue.size() > 5 )
+		{
+			ok = false;
+		}
 	}
 
-	return ret;
+	return ok;
 }
 
 
 void
-stream::writable::start_write( buffer b, promise< void > ret )
+stream::writable::end()
+{
+	m_ended = true;
+
+	if ( !m_writing )
+	{
+		emit( "finish" );
+	}
+}
+
+
+void
+stream::writable::start_write( buffer b )
 {
 	m_writing = true;
 
 	really_write( b )
 	.then( [=]() mutable
 	{
-		ret.resolve();
 	},
 	[=]( auto err ) mutable
 	{
-		ret.reject( err, reject_context );
 	} )
 	.finally( [=]() mutable
 	{
 		if ( m_queue.size() > 0 )
 		{
-			auto pair = m_queue.front();
+			auto buf = m_queue.front();
 
 			m_queue.pop();
 
-			start_write( pair.first, pair.second );
+			start_write( buf );
 		}
 		else
 		{
 			m_writing = false;
 
 			emit( "drain" );
+
+			if ( m_ended )
+			{
+				emit( "finish" );
+			}
 		}
 	} );
 }

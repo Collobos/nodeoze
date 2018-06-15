@@ -284,14 +284,14 @@ public:
 
 			if ( m_shared->resolve )
 			{
-				m_shared->resolve();
-				m_shared->resolve	= nullptr;
-				m_shared->reject	= nullptr;
+				auto resolve = std::move( m_shared->resolve );
+				resolve();
+				m_shared->reject = nullptr;
 
 				if ( m_shared->finally )
 				{
-					m_shared->finally();
-					m_shared->finally = nullptr;
+					auto finally = std::move( m_shared->finally );
+					finally();
 				}
 			}
 		}
@@ -309,14 +309,14 @@ public:
 		
 			if ( m_shared->resolve )
 			{
-				m_shared->resolve( std::move( val ) );
-				m_shared->resolve	= nullptr;
+				auto resolve = std::move( m_shared->resolve );
+				resolve( std::move( val ) );
 				m_shared->reject	= nullptr;
 
 				if ( m_shared->finally )
 				{
-					m_shared->finally();
-					m_shared->finally = nullptr;
+					auto finally = std::move( m_shared->finally );
+					finally();
 				}
 			}
 			else
@@ -338,14 +338,14 @@ public:
 			
 			if ( m_shared->resolve )
 			{
-				m_shared->resolve( val );
-				m_shared->resolve	= nullptr;
-				m_shared->reject	= nullptr;
+				auto resolve = std::move( m_shared->resolve );
+				resolve( val );
+				m_shared->reject = nullptr;
 
 				if ( m_shared->finally )
 				{
-					m_shared->finally();
-					m_shared->finally = nullptr;
+					auto finally = std::move( m_shared->finally );
+					finally();
 				}
 			}
 			else
@@ -528,6 +528,7 @@ public:
 		m_shared->rejected	= false;
 		m_shared->resolve	= nullptr;
 		m_shared->reject	= nullptr;
+		m_shared->finally	= nullptr;
 		m_shared->refs		= 1;
 	}
 
@@ -545,14 +546,14 @@ private:
 
 			if ( m_shared->reject )
 			{
-				m_shared->reject( err );
-				m_shared->resolve	= nullptr;
-				m_shared->reject	= nullptr;
+				auto reject = std::move( m_shared->reject );
+				reject( err );
+				m_shared->resolve = nullptr;
 
 				if ( m_shared->finally )
 				{
-					m_shared->finally();
-					m_shared->finally = nullptr;
+					auto finally = std::move( m_shared->finally );
+					finally();
 				}
 			}
 			else
@@ -814,8 +815,8 @@ private:
 
 			if ( m_shared->finally )
 			{
-				m_shared->finally();
-				m_shared->finally = nullptr;
+				auto finally = std::move( m_shared->finally );
+				finally();
 			}
 		}
 		else if ( is_resolved() )
@@ -827,8 +828,8 @@ private:
 
 			if ( m_shared->finally )
 			{
-				m_shared->finally();
-				m_shared->finally = nullptr;
+				auto finally = std::move( m_shared->finally );
+				finally();
 			}
 		}
 	}

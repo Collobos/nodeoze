@@ -48,7 +48,7 @@ public:
 		memset( &m_open_req, 0, sizeof( m_open_req ) );
 		memset( &m_read_req, 0, sizeof( m_open_req ) );
 
-		uv_fs_open( uv_default_loop(), &m_open_req, m_path.c_str(), O_RDONLY, 0, on_open );
+		uv_fs_open( uv_default_loop(), &m_open_req, m_path.c_str(), O_RDONLY, 0, nullptr );
 		m_open_req.ptr = this;
 	}
 
@@ -108,8 +108,6 @@ private:
 
 		assert( self );
 
-	fprintf( stderr, "on read %d\n", req->result );
-
 		if ( req->result > 0 )
 		{
 			self->m_read_buf.size( req->result );
@@ -131,7 +129,6 @@ private:
 		}
 		else
 		{
-			fprintf(stderr, "read error: %s\n", uv_strerror((int)req->result));
 			self->emit( "error", std::error_code( req->result, libuv::error_category() ) );
 		}
 	}
@@ -155,6 +152,12 @@ public:
 	:
 		m_path( std::move( path ) )
 	{
+		memset( &m_open_req, 0, sizeof( m_open_req ) );
+		memset( &m_write_req, 0, sizeof( m_write_req ) );
+
+		uv_fs_open( uv_default_loop(), &m_open_req, m_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0, nullptr );
+
+		m_open_req.ptr = this;
 	}
 
 	virtual ~write_file()
@@ -166,16 +169,65 @@ private:
 	virtual promise< void >
 	really_write( buffer b )
 	{
-		auto ret = promise< void >();
+		m_write_promise = promise< void >();
 
-		fprintf( stderr, "writing buffer of size %d\n", b.size() );
+		uv_buf_t iov = { reinterpret_cast< char* >( b.rdata() ), b.size() };
 
-		ret.resolve();
+		uv_fs_write( uv_default_loop(), &m_write_req, m_open_req.result, &iov, 1, -1, on_write );
 
-		return ret;
+		m_write_req.ptr = this;
+
+		return m_write_promise;
 	}
 
-	filesystem::path m_path;
+	static void
+	on_open( uv_fs_t *req )
+	{
+		assert( req );
+
+		fprintf( stderr, "open result: %d\n", req->result );
+
+		auto self = reinterpret_cast< write_file* >( req->ptr );
+
+		assert( self );
+
+		if ( req->result < 0 )
+		{
+			self->emit( "error", std::error_code( req->result, libuv::error_category() ) );
+		}
+	}
+
+	static void
+	on_write( uv_fs_t *req )
+	{
+		assert( req );
+
+		auto self = reinterpret_cast< write_file* >( req->ptr );
+
+		assert( self );
+
+		if ( req->result > 0 )
+		{
+			self->m_write_promise.resolve();
+		}
+		else if ( req->result == 0 )
+		{
+			fprintf( stderr, "result is 0\n" );
+		}
+		else
+		{
+			auto err = std::error_code( req->result, libuv::error_category() );
+
+			self->m_write_promise.reject( err, reject_context );
+
+			self->emit( "error", err );
+		}
+	}
+
+	filesystem::path	m_path;
+	uv_fs_t				m_open_req;
+	uv_fs_t				m_write_req;
+	promise< void >		m_write_promise;
 };
 
 
@@ -219,18 +271,20 @@ TEST_CASE( "nodeoze/smoke/fs")
 	auto wstream = fs::create_write_stream( out.c_str() );
 	REQUIRE( wstream );
 
-	wstream->on( "end", [&]() mutable
-	{
-		done = true;
-	} );
-
 	wstream->on( "error", [&]( std::error_code err ) mutable
 	{
+		fprintf( stderr, "err: %d\n", err.value() );
+		fprintf( stderr, "err: %s\n", err.message().c_str() );
 		REQUIRE( !err );
 		done = true;
 	} );
 
 	rstream->pipe( wstream );
+
+	wstream->on( "finish", [&]() mutable
+	{
+		done = true;
+	} );
 
 	while ( !done )
 	{

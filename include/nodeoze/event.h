@@ -46,7 +46,7 @@ namespace detail {
 
 struct listener_base
 {
-	typedef std::uint64_t id_type;
+	typedef std::int64_t id_type;
 
 	listener_base()
 	{
@@ -60,6 +60,12 @@ struct listener_base
 
 	virtual ~listener_base()
 	{
+	}
+
+	inline bool
+	is_once() const
+	{
+		return ( m_id < 0 );
 	}
 
 	id_type m_id;
@@ -185,7 +191,7 @@ public:
 	operator=( emitter&& ) = delete;
 
 	inline listener_id_type
-	add_listener( key_type id, std::function< void ()> handler )
+	add_listener( key_type id, std::function< void ()> handler, bool once = false )
 	{
 		auto listener_id = listener_id_type( 0 );
 
@@ -193,7 +199,7 @@ public:
 		{
 			auto it	= m_listeners.find( id );
 
-			listener_id = ++m_last_listener;
+			listener_id = ++m_last_listener * ( once ? -1 : 1 );
 
 			if ( it == m_listeners.end() )
 			{
@@ -212,7 +218,7 @@ public:
 
     template <typename... Args>
 	inline listener_id_type
-	add_listener( key_type id, std::function< void ( Args... )> handler )
+	add_listener( key_type id, std::function< void ( Args... )> handler, bool once = false )
 	{
 		auto listener_id = listener_id_type( 0 );
 
@@ -220,7 +226,7 @@ public:
 		{
 			auto it	= m_listeners.find( id );
 
-			listener_id = ++m_last_listener;
+			listener_id = ++m_last_listener * ( once ? -1 : 1 );
 
 			if ( it == m_listeners.end() )
 			{
@@ -239,22 +245,22 @@ public:
 
     template<typename Listener>
     inline listener_id_type
-	add_listener( key_type id, Listener listener )
+	add_listener( key_type id, Listener listener, bool once = false )
 	{
-		return add_listener( std::move( id ), make_function( std::move( listener ) ) );
+		return add_listener( std::move( id ), make_function( std::move( listener ) ), once );
     }
 
 	inline listener_id_type
 	on( key_type id, std::function< void () > listener )
 	{
-		return add_listener( std::move( id ), std::move( listener ) );
+		return add_listener( std::move( id ), std::move( listener ), false );
 	}
 
     template <typename... Args>
 	inline listener_id_type
 	on( key_type id, std::function< void ( Args... )> listener )
 	{
-		return add_listener( std::move( id ), std::move( listener ) );
+		return add_listener( std::move( id ), std::move( listener ), false );
 	}
     
     template<typename Listener>
@@ -262,6 +268,26 @@ public:
 	on( key_type id, Listener listener )
 	{
 		return on( std::move( id ), make_function( std::move( listener ) ) );
+    }
+
+	inline listener_id_type
+	once( key_type id, std::function< void () > listener )
+	{
+		return add_listener( std::move( id ), std::move( listener ), true );
+	}
+
+    template <typename... Args>
+	inline listener_id_type
+	once( key_type id, std::function< void ( Args... )> listener )
+	{
+		return add_listener( std::move( id ), std::move( listener ), true );
+	}
+    
+    template<typename Listener>
+	listener_id_type
+	once( key_type id, Listener listener )
+	{
+		return once( std::move( id ), make_function( std::move( listener ) ) );
     }
 
 	inline void
@@ -306,13 +332,28 @@ public:
 
 			listeners.reserve( it->second.size() );
 
-			for ( auto base : it->second )
+			auto bit = it->second.begin();
+
+			while ( bit != it->second.end() )
 			{
-				auto l = std::dynamic_pointer_cast< listener< Args...> >( base );
+				auto l = std::dynamic_pointer_cast< listener< Args...> >( *bit );
 
 				if ( l )
 				{
 					listeners.emplace_back( std::move( l ) );
+
+					if ( ( *bit )->is_once() )
+					{
+						bit = it->second.erase( bit );
+					}
+					else
+					{
+						bit++;
+					}
+				}
+				else
+				{
+					bit++;
 				}
 			}
 					
