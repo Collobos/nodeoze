@@ -26,3 +26,6 @@
 	path = ext/yajl
 	url = https://github.com/edgeofmagic/yajl.git
 	ignore = dirty
+[submodule "ext/fmt"]
+	path = ext/fmt
+	url = https://github.com/fmtlib/fmt.git
