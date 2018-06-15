@@ -108,11 +108,6 @@ private:
 
 		assert( self );
 
-<<<<<<< HEAD
-=======
-//	fprintf( stderr, "on read %d\n", req->result );
-
->>>>>>> 9c34c586cc832baabe595716e041ce358eb663e5
 		if ( req->result > 0 )
 		{
 			self->m_read_buf.size( req->result );
@@ -190,11 +185,7 @@ private:
 	{
 		assert( req );
 
-<<<<<<< HEAD
 		fprintf( stderr, "open result: %d\n", req->result );
-=======
-	//	fprintf( stderr, "writing buffer of size %d\n", b.size() );
->>>>>>> 9c34c586cc832baabe595716e041ce358eb663e5
 
 		auto self = reinterpret_cast< write_file* >( req->ptr );
 
