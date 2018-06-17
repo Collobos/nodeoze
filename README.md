@@ -1,4 +1,4 @@
-Imagine if you would the C++ standards committee and the boys and girls from Joyent (maintainers of node.js) all got drunk at a bar and together they spawned a new creation.
+Imagine if you would the C++ standards committee and the boys and girls from Joyent (creators of node.js) all got drunk at a bar and together they spawned a new creation.
 
 So many questions...what would it look like? How would it work? Do they all have a drinking problem?
 
