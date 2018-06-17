@@ -1,37 +1,7 @@
-## Welcome to GitHub Pages
+Imagine if you would the C++ standards committee and the boys and girls from Joyent (maintainers of node.js) all got drunk at a bar and together they spawned a new creation.
 
-You can use the [editor on GitHub](https://github.com/collobos/nodeoze/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+So many questions...what would it look like? How would it work? Do they all have a drinking problem?
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+We can't answer these questions. But we can do is tell you about nodeoze. Nodeoze is a C++ networking library that takes as it's inspiration many of the concepts introduced by Node.js.
 
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/collobos/nodeoze/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+Networking in C++ doesn't have to be hard. Matter of fact, it can be downright fun.  If you're using nodeoze that is.
