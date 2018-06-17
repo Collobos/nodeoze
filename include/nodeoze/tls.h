@@ -27,6 +27,7 @@
 #ifndef _nodeoze_tls_h
 #define _nodeoze_tls_h
 
+#include <nodeoze/stream.h>
 #include <nodeoze/stream2.h>
 #include <nodeoze/buffer.h>
 #include <nodeoze/types.h>
@@ -34,6 +35,55 @@
 namespace nodeoze {
 
 namespace tls {
+
+class client : public stream::duplex
+{
+public:
+
+	class options
+	{
+	public:
+
+		options()
+		{
+		}
+	};
+
+	using ptr = std::shared_ptr< client >;
+
+	static ptr
+	create( options options );
+
+	static ptr
+	create( options options, std::error_code &err );
+
+	virtual ~client() = 0;
+};
+
+class server : public stream::duplex
+{
+public:
+
+	class options
+	{
+	public:
+
+		options()
+		{
+		}
+
+		options( std::vector< buffer > cert_chain )
+		{
+		}
+	};
+
+	using ptr = std::shared_ptr< server >;
+
+	static ptr
+	create( options options );
+
+	virtual ~server() = 0;
+};
 
 extern std::error_code
 use_server_cert( const std::vector< nodeoze::buffer > &chain, const nodeoze::buffer &key );

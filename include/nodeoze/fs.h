@@ -35,11 +35,98 @@ namespace nodeoze {
 
 namespace fs {
 
-stream::readable::ptr
-create_read_stream( filesystem::path p );
+class writer : public stream::writable
+{
+public:
 
-stream::writable::ptr
-create_write_stream( filesystem::path p );
+    class options
+    {
+    public:
+
+        options( filesystem::path path )
+        :
+            m_path( std::move( path ) )
+        {
+        }
+
+        const filesystem::path&
+        path() const
+        {
+            return m_path;
+        }
+
+        inline bool
+        create() const
+        {
+            return m_create;
+        }
+
+        inline bool
+        truncate() const
+        {
+            return m_truncate;
+        }
+
+        inline options&
+        truncate( bool val )
+        {
+            m_truncate = val;
+            return *this;
+        }
+
+    private:
+
+        filesystem::path    m_path;
+        bool                m_create;
+        bool                m_truncate;
+    };
+
+    using ptr = std::shared_ptr< writer >;
+
+    static ptr
+    create( options options );
+
+    static ptr
+    create( options options, std::error_code &err );
+
+    virtual ~writer() = 0;
+};
+
+class reader : public stream::readable
+{
+public:
+
+    class options
+    {
+    public:
+
+        options( filesystem::path path )
+        :
+            m_path( std::move( path ) )
+        {
+        }
+
+        const filesystem::path&
+        path() const
+        {
+            return m_path;
+        }
+
+    private:
+
+        filesystem::path m_path;
+    };
+
+    using ptr = std::shared_ptr< reader >;
+
+    static ptr
+    create( options options );
+
+    static ptr
+    create( options options, std::error_code &err );
+
+    virtual ~reader() = 0;
+};
 
 }
 

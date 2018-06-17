@@ -231,6 +231,7 @@ private:
 };
 
 
+/*
 stream::readable::ptr
 fs::create_read_stream( filesystem::path path )
 {
@@ -291,3 +292,4 @@ TEST_CASE( "nodeoze/smoke/fs")
 		runloop::shared().run( runloop::mode_t::once );
 	}
 }
+*/
