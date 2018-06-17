@@ -18,10 +18,6 @@
 	path = ext/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
 	ignore = dirty
-[submodule "ext/uriparser"]
-	path = ext/uriparser
-	url = git://git.code.sf.net/p/uriparser/git
-	ignore = dirty
 [submodule "ext/yajl"]
 	path = ext/yajl
 	url = https://github.com/edgeofmagic/yajl.git
