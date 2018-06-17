@@ -25,3 +25,6 @@
 [submodule "ext/fmt"]
 	path = ext/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "ext/uriparser"]
+	path = ext/uriparser
+	url = https://github.com/uriparser/uriparser.git
