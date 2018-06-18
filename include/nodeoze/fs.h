@@ -61,6 +61,13 @@ public:
             return m_create;
         }
 
+        inline options&
+        create( bool val )
+        {
+            m_create = val;
+            return *this;
+        }
+
         inline bool
         truncate() const
         {

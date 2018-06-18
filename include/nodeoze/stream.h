@@ -37,23 +37,6 @@ namespace nodeoze {
 
 namespace stream {
 
-class writable;
-
-template< typename T >
-struct is_writable_stream : public std::integral_constant< bool, false >
-{
-};
-
-template<>
-struct is_writable_stream< writable > : public std::integral_constant< bool, true >
-{
-};
-
-template<>
-struct is_writable_stream< std::shared_ptr< writable > > : public std::integral_constant< bool, true >
-{
-};
-
 class base : virtual public event::emitter<>
 {
 public:
@@ -78,7 +61,6 @@ protected:
 
 	std::uint32_t	m_highwater_mark;
 };
-
 
 class writable : public base
 {
@@ -133,7 +115,7 @@ public:
 	virtual ~readable();
 
 	template< class T >
-	typename std::enable_if< is_writable_stream< T >::value, typename T::ptr >::type
+	typename std::enable_if< std::is_base_of< writable, T >::value, typename T::ptr >::type
 	pipe( typename std::shared_ptr< T > dest )
 	{
 		auto it = m_pipes.find( dest );
@@ -171,7 +153,7 @@ public:
 	}
 
 	template< class T >
-	typename std::enable_if< is_writable_stream< T >::value >::type
+	typename std::enable_if< std::is_base_of< writable, T >::value, void >::type
 	unpipe( typename T::ptr dest )
 	{
 		auto it = m_pipes.find( dest );
