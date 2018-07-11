@@ -27,9 +27,6 @@
 #ifndef _nodeoze_rpc_h
 #define _nodeoze_rpc_h
 
-#include <nodeoze/connection.h>
-#include <nodeoze/notification.h>
-#include <nodeoze/markers.h>
 #include <nodeoze/singleton.h>
 #include <nodeoze/http.h>
 #include <nodeoze/ws.h>
@@ -79,6 +76,7 @@ make_error( std::error_code error );
 any
 make_error( const any &message, std::error_code err );
 	
+#if 0
 class connection : public nodeoze::connection
 {
 public:
@@ -107,6 +105,7 @@ protected:
 	virtual nodeoze::buffer
 	deflate( const nodeoze::any &message ) = 0;
 };
+#endif
 
 class manager
 {
@@ -165,14 +164,6 @@ public:
 	
 		m_reply_handlers[ id ] = std::make_pair( owner, promise );
 		
-		if ( marker::rpc_performance )
-		{
-			m_request_start_times[ id ] = std::chrono::system_clock::now();
-			mlog( marker::rpc_performance, log::level_t::info, "client(%) %: start", id, method );
-		}
-		
-		mlog( marker::rpc, log::level_t::info, "--> % (%)", root, id );
-		
 		func( root );
 	}
 	
@@ -181,8 +172,6 @@ public:
 	dispatch( any &message, T func )
 	{
 		any error;
-		
-		mlog( marker::rpc, log::level_t::info, "%", message );
 		
 		if ( validate( message, error ) )
 		{
@@ -195,8 +184,6 @@ public:
 					auto err 	= std::error_code();
 					auto id		= message[ "id" ].to_uint32();
 	
-					mlog( marker::rpc, log::level_t::info, "<-- % (%)", message, id );
-		
 					if ( m_preflight_handler )
 					{
 						err = m_preflight_handler( message );
@@ -216,15 +203,6 @@ public:
 								{
 									root[ "jsonrpc" ]	= "2.0";
 									root[ "id" ]		= id;
-									
-									if ( root.is_member( "error" ) )
-									{
-										mlog( marker::rpc, log::level_t::info, "--> % (%) : %", message[ "method" ], id, root[ "error" ][ "code" ] );
-									}
-									else
-									{
-										mlog( marker::rpc, log::level_t::info, "--> % (%) : ok", message[ "method" ], id );
-									}
 									
 									func( root, close );
 								} );
@@ -254,37 +232,14 @@ public:
 						
 						if ( it->second.first == params.size() )
 						{
-							mlog( marker::rpc, log::level_t::info, "--> %", message[ "method" ] );
 							it->second.second( params );
 						}
-						else
-						{
-							nlog( log::level_t::error, "bad params for notification '%'", method );
-						}
-					}
-					else
-					{
-						nlog( log::level_t::warning, "no handler for notification '%'", method );
 					}
 				}
 			}
 			else if ( message.is_member( "id" ) )
 			{
 				auto id = message[ "id" ].to_uint64();
-				
-				if ( marker::rpc_performance )
-				{
-					auto sit = m_request_start_times.find( id );
-					if ( sit != m_request_start_times.end() )
-					{
-						auto start = sit->second;
-						auto finish = std::chrono::system_clock::now();
-						auto span = finish - start;
-						std::chrono::milliseconds response_millis = std::chrono::duration_cast<std::chrono::milliseconds>( span );
-						mlog( marker::rpc_performance, log::level_t::info, "client (%): response in % milliseconds", id, response_millis.count() );
-					}
-				}
-				
 				auto it = m_reply_handlers.find( id );
 						
 				if ( it != m_reply_handlers.end() )
@@ -309,8 +264,6 @@ public:
 						}
 					}
 					
-					mlog( marker::rpc, log::level_t::info, "<-- (%) : % (%)", id, err.value(), err.message() );
-					
 					auto promise = it->second.second;
 					
 					m_reply_handlers.erase( it );
@@ -323,18 +276,10 @@ public:
 					}
 					else
 					{
-						promise.reject( err, reject_context );
+						promise.reject( err );
 					}
 				}
-				else
-				{
-					mlog( marker::rpc, log::level_t::error, "unable to find handler for id %", id );
-				}
 			}
-		}
-		else
-		{
-			mlog( marker::rpc, log::level_t::error, "validation failed: %", message );
 		}
 	}
 	

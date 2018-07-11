@@ -4,6 +4,9 @@
 
 namespace nodeoze {
 
+/*
+ * YO: internal
+ */
 class stopwatch
 {
 public:

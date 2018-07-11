@@ -86,6 +86,7 @@ protected:
 
 namespace rpc {
 
+#if 0
 class connection : public nodeoze::rpc::connection
 {
 public:
@@ -111,6 +112,7 @@ protected:
 	any		m_root;
 	parser	m_parser;
 };
+#endif
 
 }
 

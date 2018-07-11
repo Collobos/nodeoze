@@ -138,17 +138,17 @@ arp_linux::resolve( const ip::address &ip_address )
 				
 			if ( !found )
 			{
-				ret.reject( make_error_code( std::errc::no_such_device_or_address ), reject_context );
+				ret.reject( make_error_code( std::errc::no_such_device_or_address ) );
 			}
 		},
 		[=]( auto err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		} );
 	}
 	else
 	{
-		ret.reject( err, reject_context );
+		ret.reject( err );
 	}
 
 	return ret;

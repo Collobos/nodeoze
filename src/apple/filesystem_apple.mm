@@ -1,6 +1,68 @@
 #include <nodeoze/filesystem.h>
+#include <Foundation/Foundation.h>
+#include <nodeoze/macros.h>
 #include <sys/stat.h>
+#include <dlfcn.h>
 #include <cstdio>
+
+using namespace nodeoze;
+
+extern "C"
+{
+	static void
+	symbol()
+	{
+	}
+}
+
+std::experimental::filesystem::path
+std::experimental::filesystem::v1::__temp_directory_path( std::error_code *errp )
+{
+    nunused( errp );
+
+    return path( "/tmp" );
+}
+
+
+filesystem::path
+filesystem::current_directory_path( std::error_code &err )
+{
+	Dl_info		module_info;
+	std::string	ret;
+
+    err = std::error_code();
+
+	if ( dladdr( reinterpret_cast< void* >( symbol ), &module_info ) != 0 )
+	{
+		ret = module_info.dli_fname;
+	}
+    else
+    {
+        err = make_error_code( std::errc::function_not_supported );
+    }
+	
+	return path( ret );
+}
+
+
+filesystem::path
+filesystem::home_directory_path( std::error_code &err )
+{
+    err = std::error_code();
+
+	return path( [ NSHomeDirectory() UTF8String ] );
+}
+
+
+filesystem::path
+filesystem::app_data_directory_path( std::error_code &err )
+{
+    err = std::error_code();
+
+	auto paths = NSSearchPathForDirectoriesInDomains( NSApplicationSupportDirectory, NSLocalDomainMask, YES );
+	return path( [ [ paths objectAtIndex:0 ] UTF8String ] );
+}
+
 
 bool
 std::experimental::filesystem::v1::__remove( const path& p, std::error_code *errp )

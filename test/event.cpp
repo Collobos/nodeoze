@@ -23,74 +23,83 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
- 
-#ifndef _nodeoze_limiter_h
-#define _nodeoze_limiter_h
 
-#include <functional>
-#include <cstdint>
-#include <chrono>
+#include <nodeoze/event.h>
+#include <nodeoze/test.h>
+#include <system_error>
 
-namespace nodeoze
+using namespace nodeoze;
+
+TEST_CASE( "nodeoze/smoke/emitter" )
 {
-
-class limiter
-{
-public:
-
-	typedef std::function< void () > handler_f;
-
-	limiter( double rate = 1, double window = 1 );
-	
-	~limiter();
-	
-	inline void
-	on_turned_on( handler_f handler )
+	SUBCASE( "void base" )
 	{
-		m_on_turned_on = handler;
-	}
-	
-	inline void
-	on_turned_off( handler_f handler )
-	{
-		m_on_turned_off = handler;
-	}
-	
-	inline double
-	rate() const
-	{
-		return m_rate;
-	}
-	
-	inline void
-	set_rate( double val )
-	{
-		m_rate = val;
-	}
-	
-	inline double
-	window() const
-	{
-		return m_window;
-	}
-	
-	bool
-	proceed();
-	
-private:
+		event::emitter<> e;
+		bool invoked = false;
 
-	typedef std::chrono::high_resolution_clock			clock_t;
-	typedef std::chrono::duration< double, std::micro >	duration_t;
-	
-	handler_f											m_on_turned_on;
-	handler_f											m_on_turned_off;
-	clock_t::time_point									m_last_time;
-	bool												m_last_result;
-	double												m_rate;
-	double												m_window;
-	double												m_allowance;
-};
+		auto id = e.on( "test", [&]()
+		{
+			invoked = true;
+		} );
 
+		REQUIRE( id != 0 );
+
+		e.emit( "test" );
+
+		REQUIRE( invoked == true );
+	}
+
+	SUBCASE( "int base" )
+	{
+		event::emitter<> e;
+		bool invoked = false;
+
+		auto id = e.on( "test", [&]( int i )
+		{
+			REQUIRE( i == 7 );
+			invoked = true;
+		} );
+
+		REQUIRE( id != 0 );
+
+		e.emit( "test", 7 );
+
+		REQUIRE( invoked == true );
+	}
+
+	SUBCASE( "error base" )
+	{
+		event::emitter<> e;
+		bool invoked = false;
+
+		auto id = e.on( "error", [&]( std::error_code err ) mutable
+		{
+			REQUIRE( static_cast< std::errc >( err.value() ) == std::errc::invalid_argument );
+			invoked = true;
+		} );
+
+		REQUIRE( id != 0 );
+
+		e.emit( "error", make_error_code( std::errc::invalid_argument ) );
+
+		REQUIRE( invoked == true );
+	}
+
+	SUBCASE( "std::string" )
+	{
+		event::emitter<> e;
+		bool invoked = false;
+
+		auto id = e.on( std::string( "error" ), [&]( std::error_code err ) mutable
+		{
+			REQUIRE( static_cast< std::errc >( err.value() ) == std::errc::invalid_argument );
+			invoked = true;
+		} );
+
+		REQUIRE( id != 0 );
+
+		e.emit( std::string( "error" ), make_error_code( std::errc::invalid_argument ) );
+
+		REQUIRE( invoked == true );
+	}
 }
-
-#endif

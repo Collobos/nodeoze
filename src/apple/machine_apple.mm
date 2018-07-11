@@ -27,18 +27,12 @@
 #include "machine_apple.h"
 #include <nodeoze/machine.h>
 #include <nodeoze/runloop.h>
-#include <nodeoze/markers.h>
-#include <nodeoze/notification.h>
 #include <nodeoze/macros.h>
-#include <nodeoze/log.h>
 #include <AssertMacros.h>
 #include <uv.h>
 #include <Foundation/Foundation.h>
 #include <SystemConfiguration/SystemConfiguration.h>
 #include <TargetConditionals.h>
-#if ( TARGET_OS_IPHONE == 1 ) || ( TARGET_IPHONE_SIMULATOR == 1 )
-#	include <UIKit/UIKit.h>
-#endif
 #include <sys/param.h>
 #include <sys/file.h>
 #include <sys/socket.h>
@@ -92,12 +86,12 @@ machine_apple::nif_apple::get_mac_address( const std::string &name )
 	// With all configured interfaces requested, get handle index
 	
 	mgmt_info_base[5] = if_nametoindex( name.c_str() );
-	ncheck_error_quiet( mgmt_info_base[ 5 ] != 0, exit );
+	ncheck_error( mgmt_info_base[ 5 ] != 0, exit );
 	
 	// Get the size of the data available (store in len)
 		
 	err = sysctl( mgmt_info_base, 6, NULL, &length, NULL, 0 );
-	ncheck_error_quiet( err >= 0, exit );
+	ncheck_error( err >= 0, exit );
 	
 	// Alloc memory based on above call
 			
@@ -106,7 +100,7 @@ machine_apple::nif_apple::get_mac_address( const std::string &name )
 	// Get system information, store in buffer
 				
 	err = sysctl( mgmt_info_base, 6, msg_buffer.mutable_data(), &length, NULL, 0 );
-	ncheck_error_quiet( err >= 0, exit );
+	ncheck_error( err >= 0, exit );
 
 	// Map msgbuffer to interface message structure
 	
@@ -151,15 +145,15 @@ machine_apple::machine_apple()
 	Boolean					ok;
 	
 	auto dynamic_store = SCDynamicStoreCreate( nullptr, ( CFStringRef ) [ [ NSProcessInfo processInfo ] processName ], system_configuration_callback, &context );
-	ncheck_error_quiet( dynamic_store, exit );
+	ncheck_error( dynamic_store, exit );
 	
 	watched_keys = CFArrayCreate( kCFAllocatorDefault, reinterpret_cast< const void** >( keys ), 1, &kCFTypeArrayCallBacks );
 	
 	ok = SCDynamicStoreSetNotificationKeys( dynamic_store, NULL, watched_keys );
-	ncheck_error_quiet( ok, exit );
+	ncheck_error( ok, exit );
 	
 	runloop_source = SCDynamicStoreCreateRunLoopSource( kCFAllocatorDefault, dynamic_store, 0 );
-	ncheck_error_quiet( runloop_source, exit );
+	ncheck_error( runloop_source, exit );
 	
 	CFRunLoopAddSource( CFRunLoopGetMain(), runloop_source, kCFRunLoopDefaultMode );
 	CFRelease( runloop_source );
@@ -249,8 +243,6 @@ machine_apple::refresh()
 		}
 	}
 	
-	mlog( marker::machine, log::level_t::info, "%", to_any() );
-
 	if ( addrs )
 	{
 		freeifaddrs( addrs );
@@ -323,12 +315,12 @@ machine_apple::system_configuration_callback( SCDynamicStoreRef store, CFArrayRe
 	
 	auto self = reinterpret_cast< machine_apple* >( info );
 	
-	mlog( marker::machine, log::level_t::info, "received network change event" );
-	
 	runloop::shared().dispatch( [=]()
 	{
 		self->refresh();
-		notification::shared().publish( notification::local, 0, make_oid( self ), network_change_event, self->to_any() );
+		// notification::shared().publish( notification::local, 0, make_oid( self ), network_change_event, self->to_any() );
+
+		int emit_event_here;
 	} );
 }
 
@@ -343,10 +335,10 @@ machine_apple::printer_change_notification( CFNotificationCenterRef center, void
 	
 	machine_apple *self = reinterpret_cast< machine_apple* >( observer );
 	
-	mlog( marker::machine, log::level_t::info, "printer change callback" );
-	
 	runloop::shared().dispatch( [=]()
 	{
-		notification::shared().publish( notification::local, 0, make_oid( self ), printer_change_event );
+		// notification::shared().publish( notification::local, 0, make_oid( self ), printer_change_event );
+
+		int emit_event_here;
 	} );
 }

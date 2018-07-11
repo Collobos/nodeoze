@@ -72,15 +72,59 @@ public:
 		{
 		}
 
-		options( std::vector< buffer > cert_chain )
+		inline const buffer&
+		key() const
 		{
+			return m_key;
 		}
+
+		inline options&
+		key( buffer key )
+		{
+			m_key = std::move( key );
+			return *this;
+		}
+
+		inline const buffer&
+		cert() const
+		{
+			return m_cert;
+		}
+
+		inline options&
+		cert( buffer cert ) 
+		{
+			m_cert = std::move( cert );
+			return *this;
+		}
+
+		inline const std::vector< buffer >&
+		intermediates() const
+		{
+			return m_intermediates;
+		}
+
+		inline options&
+		intermediates( std::vector< buffer > intermediates )
+		{
+			m_intermediates = std::move( intermediates );
+			return *this;
+		}
+
+	private:
+
+		buffer					m_key;
+		buffer					m_cert;
+		std::vector< buffer >	m_intermediates;
 	};
 
 	using ptr = std::shared_ptr< server >;
 
 	static ptr
 	create( options options );
+
+	static ptr
+	create( options options, std::error_code &err );
 
 	virtual ~server() = 0;
 };

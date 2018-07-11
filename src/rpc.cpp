@@ -25,16 +25,16 @@
  */
 
 #include <nodeoze/rpc.h>
-#include <nodeoze/notification.h>
 #include <nodeoze/tls.h>
 #include <nodeoze/macros.h>
-#include <nodeoze/markers.h>
 
 using namespace nodeoze;
 
 #if defined( __APPLE__ )
 #	pragma mark rpc::connection implementation
 #endif
+
+#if 0
 
 rpc::connection::connection( const uri &resource )
 :
@@ -80,7 +80,7 @@ rpc::connection::send_notification( const std::string &method, const any::array_
 		},
 		[=]( auto err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		} );
 	} );
 	
@@ -106,7 +106,7 @@ rpc::connection::send_request( const std::string &method, const any::array_type 
 		},
 		[=]( auto err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		} );
 	} );
 	
@@ -122,6 +122,8 @@ rpc::connection::close()
 	rpc::manager::shared().terminate_requests( make_oid( this ) );
 	nodeoze::connection::close();
 }
+
+#endif
 
 
 #if defined( __APPLE__ )
@@ -260,7 +262,7 @@ rpc::manager::terminate_requests( std::uint64_t oid )
 			
 			it = m_reply_handlers.erase( it );
 			
-			handler.reject( make_error_code( std::errc::interrupted ), reject_context );
+			handler.reject( make_error_code( std::errc::interrupted ) );
 		}
 		else
 		{

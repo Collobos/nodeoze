@@ -27,8 +27,6 @@
 #include <nodeoze/fs.h>
 #include <nodeoze/unicode.h>
 #include <nodeoze/macros.h>
-#include <nodeoze/log.h>
-#include <nodeoze/test.h>
 #include <fstream>
 #include "error_libuv.h"
 #include <uv.h>
@@ -130,7 +128,7 @@ protected:
 		{
 			auto err = std::error_code( req->result, libuv::error_category() );
 
-			self->m_write_promise.reject( err, reject_context );
+			self->m_write_promise.reject( err );
 
 			self->emit( "error", err );
 		}
@@ -309,54 +307,4 @@ fs::reader::create( options options, std::error_code &err )
 
 fs::reader::~reader()
 {
-}
-
-TEST_CASE( "nodeoze/smoke/fs")
-{
-	filesystem::path in( "/tmp/in.txt" );
-	filesystem::path out( "/tmp/out.txt" );
-	std::error_code err;
-	auto done = false;
-
-	std::ofstream ofs( in.c_str() );
-
-	for ( auto i = 0u; i < 1000000; i++ )
-	{
-		ofs << "all work and no play make jack a dull boy";
-	}
-
-	ofs.close();
-
-	auto rstream = fs::reader::create( in, err );
-	REQUIRE( !err );
-	REQUIRE( rstream );
-
-	rstream->on( "error", [&]( std::error_code err ) mutable
-	{
-		REQUIRE( !err );
-	} );
-
-	auto wstream = fs::writer::create( fs::writer::options( out ).create( true ).truncate( true ), err );
-	REQUIRE( !err );
-	REQUIRE( wstream );
-
-	wstream->on( "error", [&]( std::error_code err ) mutable
-	{
-		fprintf( stderr, "err: %d\n", err.value() );
-		fprintf( stderr, "err: %s\n", err.message().c_str() );
-		REQUIRE( !err );
-		done = true;
-	} );
-
-	rstream->pipe( wstream );
-
-	wstream->on( "finish", [&]() mutable
-	{
-		done = true;
-	} );
-
-	while ( !done )
-	{
-		runloop::shared().run( runloop::mode_t::once );
-	}
 }

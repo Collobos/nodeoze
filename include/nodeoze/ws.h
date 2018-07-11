@@ -67,6 +67,9 @@ public:
 	static ptr
 	create( options options );
 
+	static ptr
+	create( options options, std::error_code &err );
+
 	virtual ~client() = 0;
 };
 

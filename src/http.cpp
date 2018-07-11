@@ -26,7 +26,6 @@
  
 #include <nodeoze/http.h>
 #include <nodeoze/machine.h>
-#include <nodeoze/notification.h>
 #include <nodeoze/runloop.h>
 #include <nodeoze/rpc.h>
 #include <nodeoze/mime.h>
@@ -36,7 +35,6 @@
 #include <nodeoze/string.h>
 #include <nodeoze/proxy.h>
 #include <nodeoze/macros.h>
-#include <nodeoze/log.h>
 #include <http_parser.h>
 #include <algorithm>
 #include <fstream>
@@ -56,6 +54,8 @@
 #	define TCHAR char
 #	define TEXT( X ) X
 #endif
+
+#if 0
 
 #if defined(WIN32)
 
@@ -1199,7 +1199,7 @@ http::connection::send_request( message::ptr &request )
 		[=]( auto err ) mutable
 		{
 			mlog( marker::http, log::level_t::info, "connect failed % (%)", err, err.message() );
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		} );
 	}
 	
@@ -1252,7 +1252,7 @@ http::connection::send_response( message &message )
 	},
 	[=]( std::error_code err ) mutable
 	{
-		ret.reject( err, reject_context );
+		ret.reject( err );
 	} );
 	
 	return ret;
@@ -1595,7 +1595,7 @@ http::connection::message_was_received( http_parser *parser )
 			},
 			[=]( auto err ) mutable
 			{
-				saved.reject( err, reject_context );
+				saved.reject( err );
 			} );
 			
 			self->m_reset_parser = true;
@@ -1618,7 +1618,7 @@ http::connection::message_was_received( http_parser *parser )
 		},
 		[=]( auto err ) mutable
 		{
-			saved.reject( err, reject_context );
+			saved.reject( err );
 		} );
 		
 		self->m_reset_parser = true;
@@ -1634,7 +1634,7 @@ http::connection::message_was_received( http_parser *parser )
 		},
 		[=]( auto err ) mutable
 		{
-			saved.reject( err, reject_context );
+			saved.reject( err );
 		} );
 		
 		self->m_reset_parser = true;
@@ -1676,7 +1676,7 @@ http::connection::maybe_invoke_reply( std::error_code error, http::message::ptr 
 		}
 		else
 		{
-			saved.reject( error, reject_context );
+			saved.reject( error );
 		}
 	
 		runloop::shared().dispatch( [=]() mutable
@@ -1733,7 +1733,7 @@ http::loopback::send( buffer buf )
 	}
 	else
 	{
-		ret.reject( make_error_code( std::errc::not_connected ), reject_context );
+		ret.reject( make_error_code( std::errc::not_connected ) );
 	}
 
 	return ret;
@@ -2290,3 +2290,4 @@ error_category()
 
 }
 
+#endif

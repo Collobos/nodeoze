@@ -26,14 +26,11 @@
 #define NOMINMAX
  
 #include <nodeoze/proxy.h>
-#include <nodeoze/notification.h>
-#include "net_utils.h"
 #include <nodeoze/http.h>
 #include <nodeoze/any.h>
 #include <nodeoze/buffer.h>
 #include <nodeoze/base64.h>
-#include <nodeoze/log.h>
-#include <nodeoze/markers.h>
+#include "net_utils.h"
 #include <limits>
 #include <sstream>
 #include <vector>
@@ -308,8 +305,6 @@ proxy::manager::set_resource( const uri &resource )
 		{
 			encode_authorization( m_resource.username(), m_resource.password() );
 		}
-		
-		notification::shared().publish( notification::local, 0, make_oid( this ), was_changed_event );
 	}
 }
 
@@ -320,7 +315,6 @@ proxy::manager::clear()
 	if ( m_resource.scheme() != "" )
 	{
 		m_resource.clear();
-		notification::shared().publish( notification::local, 0, make_oid( this ), was_changed_event );
 	}
 }
 
@@ -333,28 +327,22 @@ socks5_proxy::socks5_proxy( const nodeoze::ip::endpoint &to )
 :
 	m_to( to )
 {
-	mlog( marker::proxy_socks, log::level_t::info, "to: %", to.to_string() );
 	m_state = stream::state_t::handshaking;
 }
 
 	
 socks5_proxy::~socks5_proxy()
 {
-	mlog( marker::proxy_socks, log::level_t::info, "" );
 }
 
 
 stream::state_t
 socks5_proxy::send( buffer &in_buf, buffer &out_buf )
 {
-	mlog( marker::proxy_socks, log::level_t::info, "state = %: sending % bytes", static_cast< std::uint32_t >( m_state ), in_buf.size() );
-	
 	if ( m_state == stream::state_t::handshaking )
 	{
 		if ( !m_sent_greeting )
 		{
-			mlog( marker::proxy_socks, log::level_t::info, "sending greeting..." );
-			
 			if ( proxy::manager::shared().authorization().size() > 0 )
 			{
 				out_buf.size( 4 );
@@ -372,8 +360,6 @@ socks5_proxy::send( buffer &in_buf, buffer &out_buf )
 				out_buf.put( 1, 0x01 );
 				out_buf.put( 2, 0x00 );
 			}
-			
-			mlog( marker::proxy_socks, log::level_t::info, "greeting size: %", out_buf.size() );
 			
 			m_sent_greeting = true;
 		}
@@ -399,16 +385,12 @@ socks5_proxy::send( buffer &in_buf, buffer &out_buf )
 stream::state_t
 socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, std::vector< buffer > &out_recv_bufs )
 {
-	mlog( marker::proxy_socks, log::level_t::info, "state = %: received % buffers", static_cast< std::uint32_t >( m_state ), in_recv_bufs.size() );
-	
 	switch ( m_state5 )
 	{
 		case waiting_for_opening_response:
 		{
 			std::size_t bytes_available = in_recv_bufs[ 0 ].size();
-			mlog( marker::proxy_socks, log::level_t::info, "bytes available: %", bytes_available );
 			std::size_t handshake_left	= 2 - m_recv_handshake.size();
-			mlog( marker::proxy_socks, log::level_t::info, "handshake left: %", handshake_left );
 	
 			m_recv_handshake.append( in_recv_bufs[ 0 ].const_data(), std::min( handshake_left, bytes_available ) );
 			
@@ -426,7 +408,6 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 						out_recv_bufs.clear();
 						
 						m_state5 = waiting_for_connect_response;
-						mlog( marker::proxy_socks, log::level_t::info, "new state: waiting for connect" );
 					}
 					else if ( m_recv_handshake[ 1 ] == 0x02 )
 					{
@@ -434,17 +415,14 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 						out_recv_bufs.clear();
 	
 						m_state5 = waiting_for_authentication_response;
-						mlog( marker::proxy_socks, log::level_t::info, "new state: waiting for authentication response...auth size: %", out_send_buf.size() );
 					}
 					else
 					{
-						mlog( marker::proxy_socks, log::level_t::info, "new state: error (%,%)", static_cast< std::uint32_t >( m_recv_handshake[ 0 ] ), static_cast< std::uint32_t >( m_recv_handshake[ 1 ] ) );
 						m_state = stream::state_t::error;
 					}
 				}
 				else
 				{
-					mlog( marker::proxy_socks, log::level_t::info, "new state: error (%,%)", static_cast< std::uint32_t >( m_recv_handshake[ 0 ] ), static_cast< std::uint32_t >( m_recv_handshake[ 1 ] ) );
 					m_state = stream::state_t::error;
 				}
 					
@@ -471,12 +449,10 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 					out_send_buf = make_connect_buffer();
 					out_recv_bufs.clear();
 					
-					mlog( marker::proxy_socks, log::level_t::info, "new state: waiting for connect" );
 					m_state5 = waiting_for_connect_response;
 				}
 				else
 				{
-					mlog( marker::proxy_socks, log::level_t::info, "new state: error (%,%)", static_cast< std::uint32_t >( m_recv_handshake[ 0 ] ), static_cast< std::uint32_t >( m_recv_handshake[ 1 ] ) );
 					m_state = stream::state_t::error;
 				}
 				
@@ -488,9 +464,7 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 		case waiting_for_connect_response:
 		{
 			std::size_t bytes_available = in_recv_bufs[ 0 ].size();
-			mlog( marker::proxy_socks, log::level_t::info, "bytes available: %", bytes_available );
 			std::size_t handshake_left	= 4 - m_recv_handshake.size();
-			mlog( marker::proxy_socks, log::level_t::info, "handshake left: %", handshake_left );
 	
 			m_recv_handshake.append( in_recv_bufs[ 0 ].const_data(), std::min( handshake_left, bytes_available ) );
 			
@@ -500,11 +474,6 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 			}
 			else if ( ( m_recv_handshake[ 0 ] == 0x05 ) && ( m_recv_handshake[ 1 ] == 0x00 ) )
 			{
-				for ( auto i = 0; i < 4; i++ )
-				{
-					mlog( marker::proxy_socks, log::level_t::info, "handshake[%]: %", i, static_cast< std::uint32_t >( m_recv_handshake[ i ] ) );
-				}
-				
 				switch ( m_recv_handshake[ 3 ] )
 				{
 					case 0x01:

@@ -183,7 +183,7 @@ public:
 			{
 				auto req	= new write_t( m_handle, std::move( buf ), ret );
 				auto err	= uv_write( req, reinterpret_cast< uv_stream_t* >( m_handle ), &req->m_uv_buf, 1, reinterpret_cast< uv_write_cb >( on_send ) );
-				ncheck_error_action_quiet( err == 0, on_send( req, err ), exit );
+				ncheck_error_action( err == 0, on_send( req, err ), exit );
 			}
 			else
 			{
@@ -192,7 +192,7 @@ public:
 		}
 		else
 		{
-			ret.reject( make_error_code( std::errc::invalid_argument ), reject_context );
+			ret.reject( make_error_code( std::errc::invalid_argument ) );
 		}
 		
 	exit:
@@ -208,7 +208,7 @@ public:
 		if ( m_handle )
 		{
 			auto err = std::error_code( uv_read_start( reinterpret_cast< uv_stream_t* >( m_handle ), reinterpret_cast< uv_alloc_cb >( on_alloc ), reinterpret_cast< uv_read_cb >( on_recv ) ), libuv::error_category() );
-			ncheck_error_action_quiet( !err, emit( "error", err ), exit );
+			ncheck_error_action( !err, emit( "error", err ), exit );
 		}
 		else
 		{
@@ -228,7 +228,7 @@ public:
 		if ( m_handle )
 		{
 			auto err = std::error_code( uv_read_stop( reinterpret_cast< uv_stream_t* >( m_handle ) ), libuv::error_category() );
-			ncheck_error_action_quiet( !err, emit( "error", err ), exit );
+			ncheck_error_action( !err, emit( "error", err ), exit );
 		}
 		else
 		{
@@ -273,8 +273,8 @@ public:
 		assert( handle );
 
 		auto self = reinterpret_cast< net_tcp_socket* >( handle->data );
-		ncheck_error_quiet( self, exit );
-		ncheck_error_quiet( buf, exit );
+		ncheck_error( self, exit );
+		ncheck_error( buf, exit );
 		
 		self->m_recv_buf.capacity( size_hint );
 		
@@ -348,7 +348,7 @@ public:
 					}
 					else
 					{
-						req->m_ret.reject( err, reject_context );
+						req->m_ret.reject( err );
 						self->emit( "error", err );
 					}
 				}
@@ -441,23 +441,23 @@ public:
 		sockaddr_storage	addr;
 		int					len;
 		auto err = std::error_code( uv_tcp_init( uv_default_loop(), m_handle ), libuv::error_category() );
-		ncheck_error_quiet( !err, exit );
+		ncheck_error( !err, exit );
 		assert( m_handle->type == UV_TCP );
 		m_handle->data = this;
 		
 		ip::endpoint_to_sockaddr( m_options.endpoint(), addr );
 		
 		err = std::error_code( uv_tcp_bind( m_handle, reinterpret_cast< sockaddr* >( &addr ), 0 ), libuv::error_category() );
-		ncheck_error_quiet( !err, exit );
+		ncheck_error( !err, exit );
 		
 		len = sizeof( addr );
 		err = std::error_code( uv_tcp_getsockname( m_handle, reinterpret_cast< sockaddr* >( &addr ), &len ), libuv::error_category() );
-		ncheck_error_quiet( !err, exit );
+		ncheck_error( !err, exit );
 		
 		ip::sockaddr_to_endpoint( addr, m_name );
 		
 		err = std::error_code( uv_listen( reinterpret_cast< uv_stream_t* >( m_handle ), static_cast< int >( m_options.qsize() ), reinterpret_cast< uv_connection_cb >( on_accept ) ), libuv::error_category() );
-		ncheck_error_action( !err, emit( "error", err ), exit, "uv_listen() on % failed (%)", m_name.to_string(), err );
+		ncheck_error_action( !err, emit( "error", err ), exit );
 
 		runloop::shared().dispatch( [=]() mutable
 		{
@@ -584,17 +584,17 @@ public:
 
 		m_handle = new uv_udp_t;
 		auto err = std::error_code( uv_udp_init( uv_default_loop(), m_handle ), libuv::error_category() );
-		ncheck_error_quiet( !err, exit );
+		ncheck_error( !err, exit );
 	
 		m_handle->data = this;
 	
 		ip::endpoint_to_sockaddr( m_options.endpoint(), addr );
 		
 		err = std::error_code( uv_udp_bind( m_handle, reinterpret_cast< sockaddr* >( &addr ), UV_UDP_REUSEADDR ), libuv::error_category() );
-		ncheck_error_quiet( !err, exit );
+		ncheck_error( !err, exit );
 		
 		err = std::error_code( uv_udp_recv_start( m_handle, reinterpret_cast< uv_alloc_cb >( on_alloc ), reinterpret_cast< uv_udp_recv_cb >( on_recv ) ), libuv::error_category() );
-		ncheck_error_quiet( !err, exit );
+		ncheck_error( !err, exit );
 		
 	exit:
 	
@@ -623,11 +623,11 @@ public:
 		auto err = std::error_code();
 		
 		err = std::error_code( uv_udp_set_membership( m_handle, endpoint.addr().to_string().c_str(), iface.to_string().c_str(), membership == multicast_membership_type::join ? UV_JOIN_GROUP : UV_LEAVE_GROUP ), libuv::error_category() );
-		ncheck_error_quiet( !err, exit );
+		ncheck_error( !err, exit );
 		if ( membership == multicast_membership_type::join )
 		{
 			err = std::error_code( uv_udp_set_multicast_loop( m_handle, 1 ), libuv::error_category() );
-			ncheck_error_quiet( !err, exit );
+			ncheck_error( !err, exit );
 		}
 
 	exit:
@@ -639,7 +639,7 @@ public:
 	set_broadcast( bool val )
 	{
 		auto err = std::error_code( uv_udp_set_broadcast( m_handle, val ), libuv::error_category() );
-		ncheck_error_quiet( !err, exit );
+		ncheck_error( !err, exit );
 
 	exit:
 
@@ -657,7 +657,7 @@ public:
 		
 		auto request	= new write_s( m_handle, buf, ret );
 		auto err		= uv_udp_send( request, m_handle, &request->m_uv_buf, 1, reinterpret_cast< sockaddr* >( &addr ), reinterpret_cast< uv_udp_send_cb >( on_send ) );
-		ncheck_error_action( err == 0, on_send( request, err ), exit, "uv_udp_send() to % failed (%)", to.to_string(), uv_strerror( err ) );
+		ncheck_error_action( err == 0, on_send( request, err ), exit );
 		
 	exit:
 

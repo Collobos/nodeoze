@@ -31,7 +31,6 @@
 #include <nodeoze/json.h>
 #include <nodeoze/location.h>
 #include <nodeoze/endpoint.h>
-#include <nodeoze/enum.h>
 #include <nodeoze/mac.h>
 #include <chrono>
 #include <cstdint>
@@ -186,13 +185,13 @@ public:
 	{
 	public:
 
-		enum class flags_t : std::uint32_t
+		struct flags_t
 		{
-			up				= ( 1 << 0 ),
-			loopback		= ( 1 << 1 ),
-			point_to_point	= ( 1 << 2 ),
-			multicast		= ( 1 << 3 ),
-			broadcast		= ( 1 << 4 )
+			static const std::uint32_t up				= std::uint32_t( 1 << 0 );
+			static const std::uint32_t loopback			= std::uint32_t( 1 << 1 );
+			static const std::uint32_t point_to_point	= std::uint32_t( 1 << 2 );
+			static const std::uint32_t multicast		= std::uint32_t( 1 << 3 );
+			static const std::uint32_t broadcast		= std::uint32_t( 1 << 4 );
 		};
 		
 		inline
@@ -234,7 +233,7 @@ public:
 			m_address( root[ machine::nif::keys::ip_address ] ),
 			m_netmask( root[ machine::nif::keys::ip_netmask ] ),
 			m_index( root[ machine::nif::keys::index ].to_uint32() ),
-			m_flags( static_cast< flags_t >( root[ machine::nif::keys::flags ].to_int32() ) )
+			m_flags( root[ machine::nif::keys::flags ].to_uint32() )
 		{
 			if ( root[ machine::nif::keys::mac_address ].size() > 0 )
 			{
@@ -355,14 +354,14 @@ public:
 			return m_index;
 		}
 
-		inline flags_t
+		inline std::uint32_t
 		flags() const
 		{
 			return m_flags;
 		}
 		
 		inline void
-		set_flags( flags_t val )
+		set_flags( std::uint32_t val )
 		{
 			m_flags = val;
 		}
@@ -419,7 +418,7 @@ public:
 		ip::address		m_address;
 		ip::address		m_netmask;
 		std::uint32_t	m_index	= 0;
-		flags_t			m_flags = static_cast< flags_t >( 0 );
+		std::uint32_t	m_flags = 0;
 	};
 	
 	static machine&
@@ -702,7 +701,5 @@ protected:
 };
 
 }
-
-ENUM_CLASS_BITMASK_OPERATORS( nodeoze::machine::nif::flags_t )
 
 #endif

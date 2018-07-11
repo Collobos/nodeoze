@@ -28,7 +28,6 @@
 #include <nodeoze/any.h>
 #include <nodeoze/string.h>
 #include <nodeoze/unicode.h>
-#include <nodeoze/log.h>
 #include <sstream>
 
 using namespace nodeoze;

@@ -26,9 +26,7 @@
 
 #include <nodeoze/process.h>
 #include <nodeoze/runloop.h>
-#include <nodeoze/markers.h>
 #include <nodeoze/thread.h>
-#include <nodeoze/log.h>
 #include <Foundation/Foundation.h>
 #include <thread>
 #include <uv.h>

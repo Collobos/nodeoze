@@ -1,11 +1,12 @@
 #include <nodeoze/location.h>
-#include <nodeoze/connection.h>
 
 using namespace nodeoze;
 
 promise< location >
 location::from_ip_address()
 {
+	auto ret		= promise< location >();
+#if 0
 	auto request	= std::make_shared< http::message >( http::method_t::get, uri( "http://ipinfo.io/json" ) );
 	
 	/*
@@ -19,7 +20,6 @@ location::from_ip_address()
 	request->add_header_field( "Accept", "*/*" );
 
 	auto connection = connection::create< http::connection >( request->resource() );
-	auto ret		= promise< location >();
 
 	connection->send_request( request )
 	.then( [=]( http::message::ptr response ) mutable
@@ -50,9 +50,11 @@ location::from_ip_address()
 	},
 	[=]( auto err ) mutable
 	{
-		ret.reject( err, reject_context );
+		ret.reject( err );
 		connection->close();
 	} );
+
+#endif
 
 	return ret;
 }

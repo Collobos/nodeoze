@@ -29,7 +29,7 @@
 
 #include <nodeoze/concurrent.h>
 #include <nodeoze/singleton.h>
-#include <nodeoze/path.h>
+#include <nodeoze/filesystem.h>
 #include <functional>
 #include <chrono>
 
@@ -68,7 +68,7 @@ public:
 
 	typedef std::function< void ( void ) >															dispatch_f;
 	typedef std::function< void ( event e ) >														event_f;
-	typedef std::function< void ( event e, const nodeoze::path &path, int events, int status ) >	fs_event_f;
+	typedef std::function< void ( event e, const filesystem::path &path, int events, int status ) >	fs_event_f;
 	
 	~runloop();
 	
@@ -79,7 +79,7 @@ public:
 	create( std::chrono::milliseconds msec );
 	
 	event
-	create( const nodeoze::path &path );
+	create( const filesystem::path &path );
 	
 #if defined( WIN32 )
 	

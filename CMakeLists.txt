@@ -40,14 +40,13 @@ else()
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/botan)
 
 add_custom_command(	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all.h ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all_internal.h ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all.cpp
-					COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/ext/botan/configure.py --minimized-build --enable-modules=md5,sha1,sha2_64,tls --single-amalgamation-file --amalgamation --disable-shared
+					COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/ext/botan/configure.py --minimized-build --enable-modules=auto_rng,md5,sha1,sha2_64,tls --single-amalgamation-file --amalgamation --disable-shared
 					WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/botan )
 
-include_directories( include src/win32 
+include_directories( include ${CMAKE_CURRENT_BINARY_DIR}/botan src/win32 
 	ext/libuv/include 
 	ext/libuv/src 
 	ext/rapidjson/include 
-	ext/botan 
 	ext/sqlite 
 	ext/http-parser 
 	ext/yajl/src/api 
@@ -94,40 +93,27 @@ set(NODEOZE_SRCS
 	include/nodeoze/address.h 
 	include/nodeoze/algorithm.h 
 	include/nodeoze/any.h 
-	include/nodeoze/application.h 
 	include/nodeoze/arp.h 
-	include/nodeoze/async_repeater.h 
-	include/nodeoze/barrier.h 
 	include/nodeoze/base64.h 
 	include/nodeoze/buffer.h 
 	include/nodeoze/compat.h 
 	include/nodeoze/concurrent.h 
-	include/nodeoze/connection.h 
 	include/nodeoze/database.h 
 	include/nodeoze/deque.h 
-	include/nodeoze/encrypt.h 
 	include/nodeoze/endian.h 
 	include/nodeoze/endpoint.h 
-	include/nodeoze/enum.h 
 	include/nodeoze/event.h 
-	include/nodeoze/expected.h 
 	include/nodeoze/filesystem.h
 	include/nodeoze/fs.h 
 	include/nodeoze/http.h 
 	include/nodeoze/json.h 
-	include/nodeoze/limiter.h 
 	include/nodeoze/location.h 
-	include/nodeoze/log.h 
 	include/nodeoze/mac.h 
 	include/nodeoze/machine.h 
 	include/nodeoze/macros.h 
-	include/nodeoze/markers.h 
 	include/nodeoze/mime.h 
 	include/nodeoze/msgpack.h 
-	include/nodeoze/notification.h 
 	include/nodeoze/nodeoze.h 
-	include/nodeoze/oid.h 
-	include/nodeoze/path.h 
 	include/nodeoze/printf.h 
 	include/nodeoze/process.h 
 	include/nodeoze/promise.h 
@@ -140,8 +126,6 @@ set(NODEOZE_SRCS
 	include/nodeoze/sha1.h 
 	include/nodeoze/shell.h 
 	include/nodeoze/singleton.h 
-	include/nodeoze/socket.h 
-	include/nodeoze/stackwalk.h 
 	include/nodeoze/state_machine.h 
 	include/nodeoze/stream.h 
 	include/nodeoze/string.h 
@@ -154,43 +138,31 @@ set(NODEOZE_SRCS
 	include/nodeoze/typestring.h 
 	include/nodeoze/unicode.h 
 	include/nodeoze/uri.h 
-	include/nodeoze/username.h 
 	include/nodeoze/uuid.h 
 	include/nodeoze/ws.h 
 	include/nodeoze/zip.h
 	include/nodeoze/traits.h
 	src/address.cpp 
 	src/any.cpp 
-	src/application.cpp 
-	src/async_repeater.cpp 
-	src/barrier.cpp 
 	src/base64.cpp 
 	src/buffer.cpp 
-	src/connection.cpp 
 	src/database.cpp 
-	src/encrypt.cpp 
 	src/endpoint.cpp 
 	src/fs.cpp 
 	src/http.cpp 
 	src/json.cpp 
 	src/json.cpp 
-	src/limiter.cpp 
 	src/location.cpp 
-	src/log.cpp 
 	src/machine.cpp 
-	src/markers.cpp 
 	src/mime.cpp 
 	src/net.cpp
-	src/notification.cpp 
 	src/promise.cpp 
 	src/proxy.cpp 
 	src/sha1.cpp 
-	src/socket.cpp 
 	src/stream.cpp 
 	src/time.cpp 
 	src/unicode.cpp 
 	src/uri.cpp 
-	src/username.cpp 
 	src/uuid.cpp 
 	src/ws.cpp 
 	src/rpc.cpp 
@@ -203,15 +175,12 @@ set(NODEOZE_SRCS
 	src/apple/fs_apple.h 
 	src/apple/machine_apple.h 
 	src/net_utils.h 
-	src/socket_libuv.h 
 	src/linux/arp_linux.h 
 	src/linux/fs_linux.h 
 	src/linux/machine_linux.h 
 	src/win32/crc32.h 
-	src/win32/event_log.h 
 	src/win32/arp_win32.h 
 	src/win32/fs_win32.h 
-	src/win32/log_win32.h 
 	src/win32/machine_win32.h 
 	src/event.cpp 
 	include/nodeoze/bstream.h
@@ -239,7 +208,6 @@ set(NODEOZE_SRCS
 	src/ibstream.cpp
 	src/obstream.cpp
 	src/fbstream.cpp
-	src/filesystem.cpp
 	include/nodeoze/raft/error.cpp
 	include/nodeoze/raft/error.h
 	include/nodeoze/raft/rlog.cpp
@@ -249,8 +217,12 @@ set(NODEOZE_SRCS
 	)
     
 
-# set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test3.cpp)
-set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test2.cpp)
+set(NODEOZE_TEST_SRCS
+	test/main.cpp
+	test/address.cpp
+	test/bstream/test0.cpp
+	test/bstream/test1.cpp
+	test/bstream/test2.cpp)
 
 set( NODEOZE_SRCS ${NODEOZE_SRCS} 
 	ext/libuv/src/uv-common.c 
@@ -305,9 +277,7 @@ if ( WIN32 )
 	ext/libuv/src/win/udp.c 
 	src/win32/arp_win32.cpp 
 	src/win32/fs_win32.cpp 
-	src/win32/log_win32.cpp 
 	src/win32/machine_win32.cpp 
-	src/win32/path_win32.cpp 
 	src/win32/process_win32.cpp 
 	src/win32/user.cpp 
 	src/win32/crc32.cpp)
@@ -341,11 +311,9 @@ else()
 			ext/libuv/src/unix/kqueue.c 
 			ext/libuv/src/unix/fsevents.c 
 			src/apple/arp_apple.cpp 
-			src/apple/fs_apple.mm 
-			src/apple/log_apple.mm 
 			src/apple/machine_apple.mm 
-			src/apple/process_apple.mm 
-			src/apple/path_apple.mm)
+			src/apple/process_apple.mm
+			src/apple/filesystem_apple.mm)
     
 	elseif (LINUX)
 		
@@ -354,10 +322,7 @@ else()
 			ext/libuv/src/unix/linux-inotify.c 
 			ext/libuv/src/unix/linux-syscalls.c 
 			src/linux/arp_linux.cpp 
-			src/linux/fs_linux.cpp 
-			src/linux/log_linux.cpp 
 			src/linux/machine_linux.cpp 
-			src/linux/path_linux.cpp 
 			src/linux/process_linux.cpp)
 		
 	endif()
@@ -365,7 +330,7 @@ else()
 endif()
 
 add_library( nodeoze_objects OBJECT ${NODEOZE_SRCS})
-add_library( nodeoze STATIC $<TARGET_OBJECTS:nodeoze_objects> src/dummy.cpp ) 
+add_library( nodeoze STATIC $<TARGET_OBJECTS:nodeoze_objects> ) 
 add_dependencies( nodeoze nodeoze_objects )
 add_dependencies( nodeoze nodeoze_test )
 set_target_properties(nodeoze PROPERTIES PREFIX "")

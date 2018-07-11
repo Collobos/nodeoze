@@ -28,6 +28,7 @@
 #define _nodeoze_database_h
 
 #include <nodeoze/event.h>
+#include <nodeoze/scoped_operation.h>
 #include <nodeoze/json.h>
 #include <nodeoze/types.h>
 #include <nodeoze/printf.h>
@@ -35,7 +36,7 @@
 #include <nodeoze/uri.h>
 #include <nodeoze/string.h>
 #include <nodeoze/typestring.h>
-#include <nodeoze/path.h>
+#include <nodeoze/filesystem.h>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -466,8 +467,6 @@ public:
 	std::error_code
 	prepare( const std::string &str, F func )
 	{
-		mlog( marker::database, log::level_t::info, "%", str );
-	
 		auto err	= std::error_code();
 		auto it		= m_prepared_statement_map.find( str );
 		
@@ -519,7 +518,7 @@ public:
 	transaction( F func )
 	{
 		auto err = start_transaction();
-		ncheck_error( !err, exit, "% (%)", err, err.message() );
+		ncheck_error( !err, exit );
 		err = func();
 		if ( !err )
 		{
@@ -530,7 +529,7 @@ public:
 			cancel_transaction();
 		}
 		
-		ncheck_error( !err, exit, "% (%)", err, err.message() );
+		ncheck_error( !err, exit );
 
 	exit:
 	
@@ -566,7 +565,7 @@ public:
 	restore( const std::string &db, backup_hook_f hook );
 	
 	std::error_code
-	backup_database( const nodeoze::path& backup_path, const std::vector<std::string>& statements, std::size_t step_size, int sleep_ms, std::atomic<bool>& exiting );
+	backup_database( const filesystem::path& backup_path, const std::vector<std::string>& statements, std::size_t step_size, int sleep_ms, std::atomic<bool>& exiting );
 	
 	oid_type
 	last_oid() const;
