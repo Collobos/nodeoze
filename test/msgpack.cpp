@@ -1,5 +1,7 @@
+#include <nodeoze/msgpack.h>
+#include <nodeoze/test.h>
 
-
+using namespace nodeoze;
 
 TEST_CASE( "nodeoze/smoke/msgpack")
 {

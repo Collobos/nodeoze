@@ -172,15 +172,12 @@ set(NODEOZE_SRCS
 	src/state_machine.cpp 
 	src/zip.cpp 
 	src/apple/arp_apple.h 
-	src/apple/fs_apple.h 
 	src/apple/machine_apple.h 
 	src/net_utils.h 
 	src/linux/arp_linux.h 
-	src/linux/fs_linux.h 
 	src/linux/machine_linux.h 
 	src/win32/crc32.h 
 	src/win32/arp_win32.h 
-	src/win32/fs_win32.h 
 	src/win32/machine_win32.h 
 	src/event.cpp 
 	include/nodeoze/bstream.h
@@ -218,11 +215,15 @@ set(NODEOZE_SRCS
     
 
 set(NODEOZE_TEST_SRCS
-	test/main.cpp
 	test/address.cpp
 	test/bstream/test0.cpp
 	test/bstream/test1.cpp
-	test/bstream/test2.cpp)
+	test/bstream/test2.cpp
+	test/event.cpp
+	test/fs.cpp
+	test/json.cpp
+	test/main.cpp
+	test/msgpack.cpp)
 
 set( NODEOZE_SRCS ${NODEOZE_SRCS} 
 	ext/libuv/src/uv-common.c 
@@ -276,10 +277,8 @@ if ( WIN32 )
 	ext/libuv/src/win/tty.c 
 	ext/libuv/src/win/udp.c 
 	src/win32/arp_win32.cpp 
-	src/win32/fs_win32.cpp 
 	src/win32/machine_win32.cpp 
 	src/win32/process_win32.cpp 
-	src/win32/user.cpp 
 	src/win32/crc32.cpp)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOTAN_DLL=")
 

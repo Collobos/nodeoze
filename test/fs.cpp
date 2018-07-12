@@ -1,4 +1,9 @@
+#include <nodeoze/fs.h>
+#include <nodeoze/address.h>
+#include <nodeoze/machine.h>
+#include <nodeoze/test.h>
 
+using namespace nodeoze;
 
 TEST_CASE( "nodeoze/smoke/address" )
 {

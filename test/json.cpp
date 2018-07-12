@@ -1,5 +1,7 @@
+#include <nodeoze/json.h>
+#include <nodeoze/test.h>
 
-
+using namespace nodeoze;
 
 TEST_CASE( "nodeoze/smoke/json" )
 {
