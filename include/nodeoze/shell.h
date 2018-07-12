@@ -25,9 +25,7 @@ public:
 	static inline int
 	execute( const std::string &command )
 	{
-		auto ret = ::system( command.c_str() );
-		mlog( marker::shell, log::level_t::info, "(%) %", ret, command );
-		return ret;
+		return ::system( command.c_str() );
 	}
 };
 

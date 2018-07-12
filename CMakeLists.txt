@@ -40,7 +40,7 @@ else()
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/botan)
 
 add_custom_command(	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all.h ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all_internal.h ${CMAKE_CURRENT_BINARY_DIR}/botan/botan_all.cpp
-					COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/ext/botan/configure.py --minimized-build --enable-modules=auto_rng,md5,sha1,sha2_64,tls --single-amalgamation-file --amalgamation --disable-shared
+					COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/ext/botan/configure.py --minimized-build --enable-modules=auto_rng,stateful_rng,system_rng,rdseed,md5,sha1,sha2_64,tls --single-amalgamation-file --amalgamation --disable-shared
 					WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/botan )
 
 include_directories( include ${CMAKE_CURRENT_BINARY_DIR}/botan src/win32 
@@ -122,7 +122,6 @@ set(NODEOZE_SRCS
 	include/nodeoze/rpc.h 
 	include/nodeoze/runloop.h 
 	include/nodeoze/scoped_operation.h 
-	include/nodeoze/sema.h 
 	include/nodeoze/sha1.h 
 	include/nodeoze/shell.h 
 	include/nodeoze/singleton.h 
@@ -223,7 +222,8 @@ set(NODEOZE_TEST_SRCS
 	test/fs.cpp
 	test/json.cpp
 	test/main.cpp
-	test/msgpack.cpp)
+	test/msgpack.cpp
+	test/tls.cpp)
 
 set( NODEOZE_SRCS ${NODEOZE_SRCS} 
 	ext/libuv/src/uv-common.c 
