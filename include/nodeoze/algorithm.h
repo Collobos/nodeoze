@@ -27,10 +27,9 @@
 #ifndef _nodeoze_nalgorithm_h
 #define _nodeoze_nalgorithm_h
 
-#include <nodeoze/async_repeater.h>
 #include <unordered_set>
 
-namespace std {
+namespace nodeoze {
 
 typedef std::function< void () > next_f;
 typedef std::function< void ( bool equal ) > async_equal_f;

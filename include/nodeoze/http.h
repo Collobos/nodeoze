@@ -27,6 +27,8 @@
 #ifndef _nodeoze_http_h
 #define _nodeoze_http_h
 
+#if 0
+
 #include <nodeoze/connection.h>
 #include <nodeoze/notification.h>
 #include <nodeoze/proxy.h>
@@ -1035,5 +1037,7 @@ namespace std
 	template<>
 	struct is_error_code_enum< nodeoze::http::code_t > : public std::true_type {};
 }
+
+#endif
 
 #endif

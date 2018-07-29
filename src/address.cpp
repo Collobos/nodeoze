@@ -44,8 +44,6 @@
 #include <nodeoze/runloop.h>
 #include <nodeoze/unicode.h>
 #include <nodeoze/machine.h>
-#include <nodeoze/test.h>
-#include <nodeoze/log.h>
 #include <algorithm>
 #include <cstring>
 #include <sstream>
@@ -145,7 +143,7 @@ ip::address::resolve( std::string host )
 
 				case EAI_ADDRFAMILY:
 				{
-					ret.reject( make_error_code( std::errc::address_family_not_supported ), reject_context );
+					ret.reject( make_error_code( std::errc::address_family_not_supported ) );
 				}
 				break;
 
@@ -153,37 +151,37 @@ ip::address::resolve( std::string host )
 
 				case EAI_AGAIN:
 				{
-					ret.reject( make_error_code( std::errc::resource_unavailable_try_again ), reject_context );
+					ret.reject( make_error_code( std::errc::resource_unavailable_try_again ) );
 				}
 				break;
 
 				case EAI_BADFLAGS:
 				{
-					ret.reject( make_error_code( std::errc::invalid_argument ), reject_context );
+					ret.reject( make_error_code( std::errc::invalid_argument ) );
 				}
 				break;
 
 				case EAI_FAIL:
 				{
-					ret.reject( make_error_code( std::errc::bad_address ), reject_context );
+					ret.reject( make_error_code( std::errc::bad_address ) );
 				}
 				break;
 
 				case EAI_FAMILY:
 				{
-					ret.reject( make_error_code( std::errc::address_family_not_supported ), reject_context );
+					ret.reject( make_error_code( std::errc::address_family_not_supported ) );
 				}
 				break;
 
 				case EAI_MEMORY:
 				{
-					ret.reject( make_error_code( std::errc::not_enough_memory ), reject_context );
+					ret.reject( make_error_code( std::errc::not_enough_memory ) );
 				}
 				break;
 
 				case EAI_NODATA:
 				{
-					ret.reject( make_error_code( std::errc::no_message ), reject_context );
+					ret.reject( make_error_code( std::errc::no_message ) );
 				}
 				break;
 
@@ -191,7 +189,7 @@ ip::address::resolve( std::string host )
 
 				case EAI_NONAME:
 				{
-					ret.reject( make_error_code( std::errc::no_message ), reject_context );
+					ret.reject( make_error_code( std::errc::no_message ) );
 				}
 				break;
 
@@ -199,13 +197,13 @@ ip::address::resolve( std::string host )
 
 				case EAI_SERVICE:
 				{
-					ret.reject( make_error_code( std::errc::wrong_protocol_type ), reject_context );
+					ret.reject( make_error_code( std::errc::wrong_protocol_type ) );
 				}
 				break;
 
 				case EAI_SOCKTYPE:
 				{
-					ret.reject( make_error_code( std::errc::wrong_protocol_type ), reject_context );
+					ret.reject( make_error_code( std::errc::wrong_protocol_type ) );
 				}
 				break;
 
@@ -213,7 +211,7 @@ ip::address::resolve( std::string host )
 
 				case EAI_SYSTEM:
 				{
-					ret.reject( std::error_code( errno, std::generic_category() ), reject_context );
+					ret.reject( std::error_code( errno, std::generic_category() ) );
 				}
 				break;
 
@@ -221,7 +219,7 @@ ip::address::resolve( std::string host )
 				
 				default:
 				{
-					ret.reject( make_error_code( std::errc::host_unreachable ), reject_context );
+					ret.reject( make_error_code( std::errc::host_unreachable ) );
 				}
 			}
 		} );
@@ -748,146 +746,4 @@ ip::address::from_v6( const std::string &s )
 exit:
 
 	return;
-}
-
-
-TEST_CASE( "nodeoze/smoke/address" )
-{
-	SUBCASE( "less than" )
-	{
-		ip::address lhs( ip::address::type_t::unknown );
-		ip::address rhs( ip::address::type_t::unknown );
-		
-		CHECK( !( lhs < rhs ) );
-		
-		rhs = ip::address( ip::address::type_t::v4 );
-		
-		CHECK( lhs < rhs );
-		
-		lhs = ip::address( ip::address::type_t::v4 );
-		
-		CHECK( !( lhs < rhs ) );
-		
-		rhs = ip::address::v4_loopback();
-		
-		CHECK( lhs < rhs );
-		
-		rhs = ip::address::v6_any();
-		
-		CHECK( lhs < rhs );
-		
-		lhs = ip::address::v6_any();
-		
-		CHECK( !( lhs < rhs ) );
-	}
-
-	SUBCASE( "resolve correctly" )
-	{
-		if ( machine::self().has_internet_connection() )
-		{
-			runloop::shared().run( runloop::mode_t::nowait );
-
-			auto done = std::make_shared< bool >( false );
-
-			ip::address::resolve( "xtheband.com" )
-			.then( [=]( std::vector< ip::address > addresses )
-			{
-				CHECK( addresses.size() > 0 );
-				*done = true;
-			},
-			[=]( std::error_code err ) 
-			{
-				nunused( err );
-
-				CHECK( 0 );
-			} );
-
-			while ( !done )
-			{
-				runloop::shared().run( runloop::mode_t::once );
-			}
-		}
-	}
-
-	SUBCASE( "resolve incorrectly" )
-	{
-		auto done = std::make_shared< bool >( false );
-
-		ip::address::resolve( "thishostdoesnotexist.xyz" )
-		.then( [=]( std::vector< ip::address > addresses )
-		{
-			nunused( addresses );
-			assert( 0 );
-		},
-		[=]( std::error_code err ) 
-		{
-			CHECK( err.value() != 0 );
-			*done = true;
-		} );
-
-		while ( !done )
-		{
-			runloop::shared().run( runloop::mode_t::once );
-		}
-	}
-	
-	SUBCASE( "check v4 loopback" )
-	{
-		nodeoze::any bytes;
-		
-		bytes.push_back( 127 );
-		bytes.push_back( 0 );
-		bytes.push_back( 0 );
-		bytes.push_back( 1 );
-		
-		ip::address a( bytes );
-		
-		CHECK( a.is_v4() );
-		CHECK( a.is_loopback_v4() );
-	}
-	
-	SUBCASE( "check v6 loopback" )
-	{
-		nodeoze::any bytes;
-		
-		bytes.push_back( 0 );
-		bytes.push_back( 0 );
-		bytes.push_back( 0 );
-		bytes.push_back( 1 );
-		
-		ip::address a( bytes );
-		
-		CHECK( a.is_v6() );
-		CHECK( a.is_loopback_v6() );
-	}
-	
-	SUBCASE( "check v4 link local" )
-	{
-		nodeoze::any bytes;
-		
-		bytes.push_back( 169 );
-		bytes.push_back( 254 );
-		bytes.push_back( 0 );
-		bytes.push_back( 1 );
-		
-		ip::address a( bytes );
-		
-		CHECK( a.is_v4() );
-		CHECK( a.is_link_local_v4() );
-	}
-	
-	SUBCASE( "check v6 link local" )
-	{
-		nodeoze::any bytes;
-		
-		bytes.push_back( htons( 0xfe80 ) );
-		bytes.push_back( 0 );
-		bytes.push_back( 0 );
-		bytes.push_back( 1 );
-		
-		ip::address a( bytes );
-		
-		CHECK( a.is_v6() );
-		CHECK( a.is_link_local_v6() );
-	}
 }

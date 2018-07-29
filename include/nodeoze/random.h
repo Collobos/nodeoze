@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef _nodeoze_nrandom_h
-#define _nodeoze_nrandom_h
+#ifndef _nodeoze_random_h
+#define _nodeoze_random_h
 
 #include <random>
 #include <chrono>
@@ -62,7 +62,6 @@ public:
 	
 private:
 
-//	std::random_device					m_rand_dev;
 	std::mt19937_64						m_rand_gen;
 	std::uniform_int_distribution< T >	m_rand_dis;
 };

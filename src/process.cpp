@@ -112,7 +112,6 @@ on_write( uv_write_t *req, int status )
 	if ( status != 0 )
 	{
 		auto err = std::error_code( status, libuv::error_category() );
-		nlog( log::level_t::error, "error writing to child % (%)", err, err.message() );
 	}
 	
 	delete req;
@@ -184,7 +183,7 @@ process::rss() const
 
 
 promise< std::pair< std::int64_t, int > >
-process::create( const path &exe, const std::vector< std::string > &args, const env_t &env, const path &working_directory, pid_t &pid, input_f stdin_handler, output_f stdout_handler, output_f stderr_handler )
+process::create( const filesystem::path &exe, const std::vector< std::string > &args, const env_t &env, const filesystem::path &working_directory, pid_t &pid, input_f stdin_handler, output_f stdout_handler, output_f stderr_handler )
 {
 	auto context	= std::unique_ptr< process_s, std::function< void ( process_s* )> >( new process_s(), []( auto handle )
 	{
@@ -206,19 +205,16 @@ process::create( const path &exe, const std::vector< std::string > &args, const 
 	context->stderr_handler	= stderr_handler;
 	context->ret			= ret;
 	
-	mlog( marker::process, log::level_t::info, "exe: %", exe.to_string() );
-
-	c_args.push_back( exe.to_string().c_str() );
+	c_args.push_back( exe.c_str() );
 	
 	for ( auto &arg : args )
 	{
-		mlog( marker::process, log::level_t::info, "arg: %", arg );
 		c_args.push_back( arg.c_str() );
 	}
 	
 	c_args.push_back( nullptr );
 	
-	context->options.file		= exe.to_string().c_str();
+	context->options.file		= exe.c_str();
 	context->options.args		= const_cast< char** >( c_args.data() );
 
 #if defined( WIN32 )
@@ -271,16 +267,15 @@ process::create( const path &exe, const std::vector< std::string > &args, const 
 		context->options.env = const_cast< char** >( c_env.data() );
 	}
 	
-	if ( working_directory )
+	if ( !working_directory.empty() )
 	{
-		mlog( marker::process, log::level_t::info, "working directory: %", working_directory.to_string() );
-		context->options.cwd	= working_directory.to_string().c_str();
+		context->options.cwd	= working_directory.c_str();
 	}
 	
 	context->options.exit_cb	= exit_cb;
 
 	auto err = uv_spawn( uv_default_loop(), context.get(), &context->options );
-	ncheck_error_action_quiet( err == 0, ret.reject( std::error_code( err, libuv::error_category() ), reject_context ), exit );
+	ncheck_error_action( err == 0, ret.reject( std::error_code( err, libuv::error_category() ) ), exit );
 	
 	if ( stdin_handler )
 	{
@@ -288,17 +283,13 @@ process::create( const path &exe, const std::vector< std::string > &args, const 
 		auto buf = uv_buf_init( const_cast< char* >( str.data() ), str.size() );
 		auto req = new uv_write_t;
 		auto err = std::error_code( uv_write( req, reinterpret_cast< uv_stream_t* >( context->in ), &buf, 1, on_write ), libuv::error_category() );
-		if ( err )
-		{
-			nlog( log::level_t::error, "error writing to child % (%)", err, err.message() );
-		}
 	}
 	
 	err = uv_read_start( reinterpret_cast< uv_stream_t* >( context->out ), on_alloc_stdout, on_read_stdout );
-	ncheck_error_action_quiet( err == 0, ret.reject( std::error_code( err, libuv::error_category() ), reject_context ), exit );
+	ncheck_error_action( err == 0, ret.reject( std::error_code( err, libuv::error_category() ) ), exit );
 	
 	err = uv_read_start( reinterpret_cast< uv_stream_t* >( context->err ), on_alloc_stderr, on_read_stderr );
-	ncheck_error_action_quiet( err == 0, ret.reject( std::error_code( err, libuv::error_category() ), reject_context ), exit );
+	ncheck_error_action( err == 0, ret.reject( std::error_code( err, libuv::error_category() ) ), exit );
 
 	pid = context->pid;
 	
@@ -331,7 +322,7 @@ process::to_any() const
 
 
 scoped_operation
-always_running_process::create( const nodeoze::path &exe, const std::vector< std::string > &args, const process::env_t &env, const nodeoze::path &working_directory, process::input_f stdin_handler, process::output_f stdout_handler, process::output_f stderr_handler )
+always_running_process::create( const filesystem::path &exe, const std::vector< std::string > &args, const process::env_t &env, const filesystem::path &working_directory, process::input_f stdin_handler, process::output_f stdout_handler, process::output_f stderr_handler )
 {
 	auto pid		= std::make_shared< process::pid_t >( 0 );
 	auto restart	= [=]() mutable
@@ -351,27 +342,12 @@ always_running_process::create( const nodeoze::path &exe, const std::vector< std
 	{
 		nunused( result );
 
-#if defined( __APPLE__ ) || defined( __linux__ )
-
-		if ( result.second != SIGTERM )
-		{
-			mlog( marker::process, log::level_t::warning, "process % exited unexpectedly, exit status %, term signal %", exe, result.first, result.second );
-		}
-
-#else
-		
-		mlog( marker::process, log::level_t::warning, "process % exited unexpectedly, exit status %, term signal %", exe, result.first, result.second );
-
-#endif
-
 		restart();
 	},
 	[=]( auto err ) mutable
 	{
 		nunused( err );
 		
-		mlog( marker::process, log::level_t::error, "unable to start process %, err % (%)", exe, err.value(), err.message() );
-
 		restart();
 	} );
 	
@@ -386,7 +362,6 @@ always_running_process::create( const nodeoze::path &exe, const std::vector< std
 	} );
 }
 
-
 TEST_CASE( "nodeoze/smoke/process" )
 {
 	SUBCASE( "create" )
@@ -394,9 +369,9 @@ TEST_CASE( "nodeoze/smoke/process" )
 		auto tid = thread::id();
 		CHECK( tid != 0 );
 		
-		auto file = path::tmp() + "test.js";
+		auto file = filesystem::temp_directory_path() / filesystem::path( "test.js" );
 		
-		auto os = std::ofstream( file.to_string() );
+		auto os = std::ofstream( file.native() );
 		
 		os << "let envString = process.env.NODEOZE_TEST_STRING;" << std::endl;
 		os << "if ( envString === 'secret' )" << std::endl;
@@ -417,15 +392,15 @@ TEST_CASE( "nodeoze/smoke/process" )
 
 #if defined( WIN32 )
 
-		auto command	= nodeoze::path( "C:\\Program Files\\nodejs\\node.exe" );
+		auto command	= filesystem::path( "C:\\Program Files\\nodejs\\node.exe" );
 
 #elif defined( __APPLE__ )
 
-		auto command	= nodeoze::path( "/usr/local/bin/node" );
+		auto command	= filesystem::path( "/usr/local/bin/node" );
 
 #elif defined( __linux__ )
 
-		auto command	= nodeoze::path( "/usr/bin/node" );
+		auto command	= filesystem::path( "/usr/bin/node" );
 
 #endif
 
@@ -433,7 +408,7 @@ TEST_CASE( "nodeoze/smoke/process" )
 		auto pid		= process::pid_t( 0 );
 		auto done		= false;
 
-		process::create( command, { file.to_string() }, { "NODEOZE_TEST_STRING=secret" }, path::home(), pid, [&]()
+		process::create( command, { file.native() }, { "NODEOZE_TEST_STRING=secret" }, filesystem::home_directory_path(), pid, [&]()
 		{
 			return str;
 		},

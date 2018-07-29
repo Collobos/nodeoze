@@ -27,65 +27,26 @@
 #ifndef	_nodeoze_macros_h
 #define	_nodeoze_macros_h
 
-#define	ncheck_warning( X, MESSAGE, ... )								\
-do																		\
-{																		\
-	if ( !( X ) )														\
-	{																	\
-		nlog( nodeoze::log::level_t::warning, MESSAGE, ##__VA_ARGS__ );	\
-	}																	\
-}																		\
-while ( 0 )
-
-#define ncheck_error( X, LABEL, MESSAGE, ...)							\
+#define ncheck_error( X, LABEL )										\
 {																		\
 do																		\
 {																		\
 	if ( !( X ) )														\
 	{																	\
-		nlog( nodeoze::log::level_t::error, MESSAGE, ##__VA_ARGS__ );	\
-		nrequire_failed_test();											\
+		ncheck_failed_test();											\
 		goto LABEL;														\
 	}																	\
 }																		\
 while ( 0 );															\
 }
 
-#define	ncheck_error_quiet( X, LABEL )									\
+#define ncheck_error_action( X, ACTION, LABEL )							\
 {																		\
 do																		\
 {																		\
 	if ( !( X ) )														\
 	{																	\
-		nrequire_failed_test();											\
-		goto LABEL;														\
-	}																	\
-}																		\
-while( 0 );																\
-}
-
-#define ncheck_error_action( X, ACTION, LABEL, MESSAGE, ...)			\
-{																		\
-do																		\
-{																		\
-	if ( !( X ) )														\
-	{																	\
-		nlog( nodeoze::log::level_t::error, MESSAGE, ##__VA_ARGS__ );	\
-		nrequire_failed_test();											\
-		{ ACTION; }														\
-		goto LABEL;														\
-	}																	\
-}																		\
-while ( 0 );															\
-}
-
-#define ncheck_error_action_quiet( X, ACTION, LABEL )					\
-{																		\
-do																		\
-{																		\
-	if ( !( X ) )														\
-	{																	\
-		nrequire_failed_test();											\
+		ncheck_failed_test();											\
 		{ ACTION; }														\
 		goto LABEL;														\
 	}																	\
@@ -156,6 +117,6 @@ NAME()													\
 #endif
 
 extern void
-nrequire_failed_test();
+ncheck_failed_test();
 
 #endif

@@ -43,6 +43,64 @@ class message;
 
 namespace ws {
 
+class client 
+{
+public:
+
+	class options
+	{
+	public:
+
+		options( std::vector< std::string > sub_protocols )
+		:
+			m_sub_protocols( std::move( sub_protocols ) )
+		{
+		}
+
+	private:
+
+		std::vector< std::string > m_sub_protocols;
+	};
+
+	using ptr = std::shared_ptr< client >;
+
+	static ptr
+	create( options options );
+
+	static ptr
+	create( options options, std::error_code &err );
+
+	virtual ~client() = 0;
+};
+
+class server
+{
+public:
+
+	class options
+	{
+	public:
+
+		options()
+		{
+		}
+
+	private:
+
+		std::vector< std::string >	m_extensions;
+	};
+
+	using ptr = std::shared_ptr< server >;
+
+	static ptr
+	create( options options );
+
+	static ptr
+	create( options options, std::error_code &err );
+
+	virtual ~server();
+};
+
 class filter : public stream::filter
 {
 public:

@@ -25,7 +25,6 @@
  */
  
 #include <nodeoze/uri.h>
-#include <nodeoze/connection.h>
 #include <nodeoze/string.h>
 #include <uriparser/Uri.h>
 #include <string>
@@ -421,5 +420,9 @@ uri::equals( const uri &rhs ) const
 bool
 uri::wants_security() const
 {
-	return connection::factory::wants_security( *this );
+	int fix_this;
+	
+	return false;
+
+	// return connection::factory::wants_security( *this );
 }

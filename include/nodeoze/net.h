@@ -9,21 +9,7 @@ namespace nodeoze {
 
 namespace net {
 
-#if defined( WIN32 )
-
-#include <winsock2.h>
-using native_type = SOCKET;
-
-#else
-
-using native_type = int;
-
-#endif
-
 namespace tcp {
-
-stream::duplex::ptr 
-create_connection( ip::endpoint endpoint );
 
 /** a tcp socket
  
@@ -47,54 +33,64 @@ class socket : public stream::duplex
 {
 public:
 
-	class handle;
+	class options
+	{
+	public:
 
-	socket();
+		options( ip::endpoint endpoint )
+		:
+			m_endpoint( endpoint )
+		{
+		}
 
-	socket( native_type fd );
+		inline const ip::endpoint&
+		endpoint() const
+		{
+			return m_endpoint;
+		}
 
-	socket( const socket &rhs ) = delete;
+		bool
+		keep_alive() const
+		{
+			return m_keep_alive;
+		}
 
-	socket( socket &&rhs );
+		options&
+		keep_alive( bool val )
+		{
+			m_keep_alive = val;
+			return *this;
+		}
 
-	socket( handle *h );
+		bool
+		nagle() const
+		{
+			return m_nagle;
+		}
 
-	virtual ~socket();
+		options&
+		nagle( bool val )
+		{
+			m_nagle = val;
+			return *this;
+		}
 
-	socket&
-	operator=( const socket &rhs ) = delete;
+	private:
 
-	socket&
-	operator=( socket &&rhs );
+		ip::endpoint	m_endpoint;
+		bool			m_keep_alive;
+		bool			m_nagle;
+	};
 
-	promise< void >
-	connect( ip::endpoint to );
+	using ptr = std::shared_ptr< socket >;
 
-protected:
+	static ptr
+	create( options options );
 
-	friend class server;
-	friend handle;
+	static ptr
+	create( options options, std::error_code &err );
 
-
-	virtual promise< void >
-	really_write( buffer b );
-
-	virtual void
-	really_read();
-
-	virtual void
-	really_pause();
-
-	void
-	on_connect( std::error_code error, promise< void > ret );
-
-	void
-	on_send( std::error_code error, promise< void > ret );
-
-	void
-	on_recv( std::error_code error, buffer &buf );
-
-	handle *m_handle;
+	virtual ~socket() = 0;
 };
 
 /*
@@ -110,95 +106,99 @@ class server : public event::emitter<>
 {
 public:
 
-	server();
+	class options
+	{
+	public:
 
-	server( const server &rhs ) = delete;
+		options( ip::endpoint endpoint )
+		:
+			m_endpoint( std::move( endpoint ) )
+		{
+		}
 
-	server( server &&rhs );
+		const ip::endpoint&
+		endpoint() const
+		{
+			return m_endpoint;
+		}
 
-	virtual ~server();
+		std::int32_t
+		qsize() const
+		{
+			return m_qsize;
+		}
 
-	server&
-	operator=( const server& rhs ) = delete;
+		options&
+		qsize( std::int32_t val )
+		{
+			m_qsize = val;
+			return *this;
+		}
 
-	server&
-	operator=( server &&rhs );
+	private:
 
-	promise< void >
-	listen( ip::endpoint endpoint, std::size_t qsize );
+		ip::endpoint	m_endpoint;
+		std::int32_t	m_qsize = 5;
+	};
 
-	ip::endpoint
-	name() const;
+	using ptr = std::shared_ptr< server >;
 
-	virtual void
-	close();
+	static ptr
+	create( options options );
 
-private:
+	static ptr
+	create( options options, std::error_code &err );
 
-	class handle;
+	virtual ~server() = 0;
 
-	void
-	on_bind( std::error_code err, promise< void > ret );
-
-	void
-	on_accept( std::error_code err, socket sock );
-
-	handle *m_handle;
+	virtual const ip::endpoint&
+	name() const = 0;
 };
-
 
 }
 
 namespace udp {
 
-enum class multicast_membership_type
-{
-	join,
-	leave
-};
-
-class socket : public stream::duplex
+class socket : public event::emitter<>
 {
 public:
 
-	socket();
+	class options
+	{
+	public:
 
-	socket( native_type fd );
+		options( ip::endpoint endpoint )
+		:
+			m_endpoint( endpoint )
+		{
+		}
 
-	socket( const socket &rhs ) = delete;
+		inline const ip::endpoint&
+		endpoint() const
+		{
+			return m_endpoint;
+		}
 
-	socket( socket &&rhs );
+	private:
 
-	socket&
-	operator=( const socket &rhs ) = delete;
+		ip::endpoint m_endpoint;
+	};
 
-	socket&
-	operator=( socket &&rhs );
+	enum class multicast_membership_type
+	{
+		join,
+		leave
+	};
 
-protected:
+	using ptr = std::shared_ptr< socket >;
 
-	virtual promise< void >
-	really_write( buffer b );
+	static ptr
+	create( options options );
 
-	virtual void
-	really_read();
+	static ptr
+	create( options options, std::error_code &err );
 
-	virtual void
-	really_pause();
-
-	void
-	on_bind( std::error_code error, promise< void > ret );
-	
-	void
-	on_send( std::error_code error, promise< void > ret );
-	
-	void
-	on_recv( std::error_code error, const nodeoze::ip::endpoint &from, nodeoze::buffer buf );
-
-	class handle;
-	friend handle;
-
-	handle *m_handle;
+	virtual ~socket() = 0;
 };
 
 }

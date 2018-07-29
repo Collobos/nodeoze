@@ -24,12 +24,6 @@
  *
  */
 
-/* Inspired by
- *
- * Boris Kolpackov - http://www.codesynthesis.com
- *
- */
-
 #ifndef _nodeoze_buffer_h
 #define _nodeoze_buffer_h
 

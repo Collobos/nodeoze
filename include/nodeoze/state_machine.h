@@ -30,9 +30,7 @@
 #include <nodeoze/scoped_operation.h>
 #include <nodeoze/runloop.h>
 #include <nodeoze/promise.h>
-#include <nodeoze/markers.h>
 #include <nodeoze/deque.h>
-#include <nodeoze/log.h>
 #include <unordered_map>
 #include <vector>
 #include <type_traits>
@@ -274,7 +272,7 @@ public:
 		}
 		else
 		{
-			ret.reject( std::errc::state_not_recoverable, reject_context );
+			ret.reject( make_error_code( std::errc::state_not_recoverable ) );
 		}
 
 		return ret;
@@ -291,7 +289,7 @@ public:
 		}
 		else
 		{
-			ret.reject( std::errc::state_not_recoverable, reject_context );
+			ret.reject( make_error_code( std::errc::state_not_recoverable ) );
 		}
 
 		return ret;
@@ -308,7 +306,7 @@ public:
 		}
 		else
 		{
-			ret.reject( std::errc::state_not_recoverable, reject_context );
+			ret.reject( make_error_code( std::errc::state_not_recoverable ) );
 		}
 
 		return ret;
@@ -324,8 +322,6 @@ public:
 	observe( const std::vector< state_type > &states, observe_f observer )
 	{
 		auto id = ++m_observer_id;
-
-		mlog( marker::state_machine, log::level_t::info, "adding observer to %", m_name );
 
 		m_observers.emplace( std::piecewise_construct, std::forward_as_tuple( id ), std::forward_as_tuple( std::make_pair( states, observer ) ) );
 	}
@@ -382,8 +378,6 @@ private:
 
 				if ( m_state != transition->second.first )
 				{
-					mlog( marker::state_machine, log::level_t::info, "% %:% => %", m_name, m_state, event, transition->second.first );
-				
 					m_in_transition = true;
 					m_state			=
 					{
@@ -400,10 +394,6 @@ private:
 					assert( m_state == saved );
 #endif
 					m_in_transition = false;
-				}
-				else
-				{
-					mlog( marker::state_machine, log::level_t::info, "% %:% ignoring transition but invoking observers", m_name, m_state, event );
 				}
 
 				dispatch_observers( last, m_state );
@@ -425,7 +415,6 @@ private:
 			}
 			else
 			{
-				mlog( marker::state_machine, log::level_t::error, "% detected bad state transition %:%", m_name, m_state, event );
 #if defined( DEBUG )
 				abort();
 #endif
@@ -433,9 +422,6 @@ private:
 		}
 		else
 		{
-#if defined( DEBUG )
-			mlog( marker::state_machine, log::level_t::info, "pushing event % on event queue because we're already handling transition to %", event, m_state.value() );
-#endif
 			m_event_queue.push_back(
 			{
 				event,
@@ -460,7 +446,6 @@ private:
 
 					if ( eit != m_observers.end() )
 					{
-						mlog( marker::state_machine, log::level_t::info, "removing observer from %", m_name );
 						m_observers.erase( eit );
 					}
 				}
@@ -483,7 +468,7 @@ private:
 			}
 			else if ( std::find( bad.begin(), bad.end(), next.value() ) != bad.end() )
 			{
-				ret.reject( make_error_code( std::errc::state_not_recoverable ), reject_context );
+				ret.reject( make_error_code( std::errc::state_not_recoverable ) );
 			}
 
 			return !ret.is_finished();

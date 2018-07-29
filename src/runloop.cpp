@@ -26,7 +26,6 @@
 
 #include <nodeoze/runloop.h>
 #include <nodeoze/macros.h>
-#include <nodeoze/log.h>
 #include <uv.h>
 #include <assert.h>
 #include <thread>
@@ -125,7 +124,7 @@ struct uv_event
 		{
 			uv_fs_event_s		m_handle;
 			runloop::fs_event_f	m_callback;
-			nodeoze::path		m_path;
+			filesystem::path	m_path;
 		} path;
 
 #if defined( WIN32 )
@@ -164,7 +163,6 @@ runloop::runloop()
 
 runloop::~runloop()
 {
-	nlog( log::level_t::debug, "" );
 }
 
 
@@ -176,7 +174,7 @@ runloop::create( native_socket_type fd, int mask )
 	
 	event = new uv_event( uv_event::type_t::poll );
 	err = uv_poll_init( uv_default_loop(), &event->m_data.poll.m_handle, fd );
-	ncheck_error_action_quiet( err == 0, delete event; event = nullptr, exit );
+	ncheck_error_action( err == 0, delete event; event = nullptr, exit );
 	
 	event->m_data.poll.m_handle.data = event;
 	event->m_data.poll.m_events = 0;
@@ -205,7 +203,7 @@ runloop::create( std::chrono::milliseconds msec )
 	
 	event = new uv_event( uv_event::type_t::timer );
 	err = uv_timer_init( uv_default_loop(), &event->m_data.timer.m_handle );
-	ncheck_error_action_quiet( err == 0, delete event; event = nullptr, exit );
+	ncheck_error_action( err == 0, delete event; event = nullptr, exit );
 	
 	event->m_data.timer.m_handle.data	= event;
 	event->m_data.timer.m_msec			= msec.count();
@@ -218,15 +216,17 @@ exit:
 
 
 runloop::event
-runloop::create( const nodeoze::path &path )
+runloop::create( const filesystem::path &path )
 {
+	int use_std_error_code_as_2nd_parameter;
+
 	uv_event	*event;
 	int			err;
 	
 	event = new uv_event( uv_event::type_t::path );
 	event->m_data.path.m_path = path;
 	err = uv_fs_event_init( uv_default_loop(), &event->m_data.path.m_handle );
-	ncheck_error_action( err == 0, delete event; event = nullptr, exit, "uv_fs_event_init() failed" );
+	ncheck_error_action( err == 0, delete event; event = nullptr, exit );
 	
 exit:
 
@@ -255,7 +255,7 @@ runloop::schedule( event e, event_f func )
 {
 	uv_event *event = reinterpret_cast< uv_event* >( e );
 	
-	ncheck_error_quiet( event, exit );
+	ncheck_error( event, exit );
 	
 	schedule( e, std::chrono::milliseconds( event->m_data.timer.m_msec), func );
 	
@@ -270,7 +270,7 @@ runloop::schedule( event e, std::chrono::milliseconds msec, event_f func )
 {
 	uv_event *event = reinterpret_cast< uv_event* >( e );
 	
-	ncheck_error_quiet( event, exit );
+	ncheck_error( event, exit );
 	
 	switch ( event->m_type )
 	{
@@ -313,7 +313,7 @@ runloop::schedule( event e, std::chrono::milliseconds msec, event_f func )
 				}
 				else if ( ret != WAIT_OBJECT_0 + 1 )
 				{
-					nlog( log::level_t::error, "WaitForMultipleObjects() returned % (%)", ret, ::GetLastError() );
+					// nlog( log::level_t::error, "WaitForMultipleObjects() returned % (%)", ret, ::GetLastError() );
 				}
 			} );
 		}
@@ -342,7 +342,7 @@ runloop::schedule_oneshot_timer( std::chrono::milliseconds msec, event_f func )
 	
 	event = new uv_event( uv_event::type_t::timer );
 	err = uv_timer_init( uv_default_loop(), &event->m_data.timer.m_handle );
-	ncheck_error_action_quiet( err == 0, delete event; event = nullptr, exit );
+	ncheck_error_action( err == 0, delete event; event = nullptr, exit );
 	
 	event->m_data.timer.m_handle.data	= event;
 	event->m_data.timer.m_msec			= msec.count();
@@ -361,11 +361,11 @@ runloop::schedule( event e, fs_event_f func )
 {
 	uv_event *event = reinterpret_cast< uv_event* >( e );
 	
-	ncheck_error( event, exit, "null event" );
-	ncheck_error( event->m_type == uv_event::type_t::path, exit, "event type is wrong" );
+	ncheck_error( event, exit );
+	ncheck_error( event->m_type == uv_event::type_t::path, exit );
 	
 	event->m_data.path.m_callback = func;
-	uv_fs_event_start( &event->m_data.path.m_handle, reinterpret_cast< uv_fs_event_cb >( on_path ), event->m_data.path.m_path.to_string().c_str(), 0 );
+	uv_fs_event_start( &event->m_data.path.m_handle, reinterpret_cast< uv_fs_event_cb >( on_path ), event->m_data.path.m_path.c_str(), 0 );
 	event->m_active = true;
 	
 exit:
@@ -379,7 +379,7 @@ runloop::suspend( event e )
 {
 	uv_event *event = reinterpret_cast< uv_event* >( e );
 	
-	ncheck_error_quiet( event, exit );
+	ncheck_error( event, exit );
 	
 	switch ( event->m_type )
 	{
@@ -428,7 +428,7 @@ runloop::cancel( event e )
 {
 	uv_event *event = reinterpret_cast< uv_event* >( e );
 	
-	ncheck_error_quiet( event, exit );
+	ncheck_error( event, exit );
 	
 	if ( event->m_active )
 	{
@@ -522,7 +522,7 @@ runloop::dispatch( dispatch_f f )
 {
 	m_queue.emplace( std::move( f ) );
 	auto ret = uv_async_send( reinterpret_cast< uv_async_t* >( m_handle ) );
-	ncheck_error( ret == 0, exit, "uv_async_send() failed (%)", ret );
+	ncheck_error( ret == 0, exit );
 
 exit:
 
@@ -584,7 +584,7 @@ runloop::on_path( void *v, const char *filename, int events, int status )
 	
 	if ( filename )
 	{
-		auto absolute = event->m_data.path.m_path + std::string( filename );
+		auto absolute = event->m_data.path.m_path / filesystem::path( filename );
 		event->m_data.path.m_callback( event, absolute, events, status );
 	}
 }

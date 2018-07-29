@@ -27,9 +27,7 @@
 #ifndef _nodeoze_promise_h
 #define _nodeoze_promise_h
 
-#include <nodeoze/log.h>
 #include <nodeoze/runloop.h>
-#include <nodeoze/markers.h>
 #include <nodeoze/macros.h>
 #include <nodeoze/deque.h>
 #include <functional>
@@ -39,16 +37,6 @@
 #include <string>
 #include <cstdlib>
 #include <cassert>
-
-#if defined( WIN32 )
-
-#define reject_context __FILE__, __FUNCTION__, __LINE__
-
-#elif defined( __clang__ )
-
-#define reject_context __FILE__, __PRETTY_FUNCTION__, __LINE__
-
-#endif
 
 namespace nodeoze {
 
@@ -196,7 +184,7 @@ public:
 	{
 		auto ret = promise< T >();
 
-		ret.reject( err, reject_context );
+		ret.reject( err );
 
 		return ret;
 	}
@@ -284,14 +272,14 @@ public:
 
 			if ( m_shared->resolve )
 			{
-				m_shared->resolve();
-				m_shared->resolve	= nullptr;
-				m_shared->reject	= nullptr;
+				auto resolve = std::move( m_shared->resolve );
+				resolve();
+				m_shared->reject = nullptr;
 
 				if ( m_shared->finally )
 				{
-					m_shared->finally();
-					m_shared->finally = nullptr;
+					auto finally = std::move( m_shared->finally );
+					finally();
 				}
 			}
 		}
@@ -309,14 +297,14 @@ public:
 		
 			if ( m_shared->resolve )
 			{
-				m_shared->resolve( std::move( val ) );
-				m_shared->resolve	= nullptr;
+				auto resolve = std::move( m_shared->resolve );
+				resolve( std::move( val ) );
 				m_shared->reject	= nullptr;
 
 				if ( m_shared->finally )
 				{
-					m_shared->finally();
-					m_shared->finally = nullptr;
+					auto finally = std::move( m_shared->finally );
+					finally();
 				}
 			}
 			else
@@ -338,14 +326,14 @@ public:
 			
 			if ( m_shared->resolve )
 			{
-				m_shared->resolve( val );
-				m_shared->resolve	= nullptr;
-				m_shared->reject	= nullptr;
+				auto resolve = std::move( m_shared->resolve );
+				resolve( val );
+				m_shared->reject = nullptr;
 
 				if ( m_shared->finally )
 				{
-					m_shared->finally();
-					m_shared->finally = nullptr;
+					auto finally = std::move( m_shared->finally );
+					finally();
 				}
 			}
 			else
@@ -356,30 +344,32 @@ public:
 	}
 	
 	void
-	reject( std::error_code error, const char *file, const char *func, std::uint32_t line )
+	reject( std::error_code err )
 	{
-		if ( ( log::shared().level() <= log::level_t::info ) && marker::promise )
+		assert( m_shared );
+
+		if ( m_shared && !m_shared->resolved && !m_shared->rejected )
 		{
-			nodeoze::log::shared().put( log::level_t::info, file, func, line, "rejected by % (%)", error.value(), error.message() );
+			m_shared->err		= err;
+			m_shared->rejected	= true;
+
+			if ( m_shared->reject )
+			{
+				auto reject = std::move( m_shared->reject );
+				reject( err );
+				m_shared->resolve = nullptr;
+
+				if ( m_shared->finally )
+				{
+					auto finally = std::move( m_shared->finally );
+					finally();
+				}
+			}
+			else
+			{
+				m_shared->err = err;
+			}
 		}
-
-		reject( error );
-	}
-	
-	template< typename ...Params >
-	void
-	reject( std::error_code error, const char *file, const char *func, std::uint32_t line, const char *format, const Params &... params )
-	{
-		if ( ( log::shared().level() <= log::level_t::info ) && marker::promise )
-		{
-			std::ostringstream os;
-
-			nodeoze::printf( os, format, params... );
-
-			nodeoze::log::shared().put( log::level_t::info, file, func, line, "rejected by % (%): ", error.value(), error.message(), os.str() );
-		}
-
-		reject( error );
 	}
 	
 	inline bool
@@ -528,39 +518,11 @@ public:
 		m_shared->rejected	= false;
 		m_shared->resolve	= nullptr;
 		m_shared->reject	= nullptr;
+		m_shared->finally	= nullptr;
 		m_shared->refs		= 1;
 	}
 
 private:
-
-	inline void
-	reject( std::error_code err )
-	{
-		assert( m_shared );
-
-		if ( m_shared && !m_shared->resolved && !m_shared->rejected )
-		{
-			m_shared->err		= err;
-			m_shared->rejected	= true;
-
-			if ( m_shared->reject )
-			{
-				m_shared->reject( err );
-				m_shared->resolve	= nullptr;
-				m_shared->reject	= nullptr;
-
-				if ( m_shared->finally )
-				{
-					m_shared->finally();
-					m_shared->finally = nullptr;
-				}
-			}
-			else
-			{
-				m_shared->err = err;
-			}
-		}
-	}
 
 	template<
 		typename Resolve,
@@ -619,7 +581,7 @@ private:
 
 		m_shared->reject = [=]( std::error_code err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -648,7 +610,7 @@ private:
 
 		m_shared->reject = [=]( std::error_code err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -678,13 +640,13 @@ private:
 			},
 			[=]( std::error_code err ) mutable
 			{
-				ret.reject( err, reject_context );
+				ret.reject( err );
 			} );
 		};
 
 		m_shared->reject	= [=]( std::error_code err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -714,13 +676,13 @@ private:
 			},
 			[=]( std::error_code err ) mutable
 			{
-				ret.reject( err, reject_context );
+				ret.reject( err );
 			} );
 		};
 
 		m_shared->reject	= [=]( std::error_code err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -750,13 +712,13 @@ private:
 			},
 			[=]( std::error_code err ) mutable
 			{
-				ret.reject( err, reject_context );
+				ret.reject( err );
 			} );
 		};
 
 		m_shared->reject	= [=]( std::error_code err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -786,13 +748,13 @@ private:
 			},
 			[=]( std::error_code err ) mutable
 			{
-				ret.reject( err, reject_context );
+				ret.reject( err );
 			} );
 		};
 
 		m_shared->reject	= [=]( std::error_code err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		};
 		
 		maybe_direct_resolve_reject();
@@ -814,8 +776,8 @@ private:
 
 			if ( m_shared->finally )
 			{
-				m_shared->finally();
-				m_shared->finally = nullptr;
+				auto finally = std::move( m_shared->finally );
+				finally();
 			}
 		}
 		else if ( is_resolved() )
@@ -827,8 +789,8 @@ private:
 
 			if ( m_shared->finally )
 			{
-				m_shared->finally();
-				m_shared->finally = nullptr;
+				auto finally = std::move( m_shared->finally );
+				finally();
 			}
 		}
 	}
@@ -910,7 +872,7 @@ private:
 
 				if ( !copy.is_finished() )
 				{
-					copy.reject( make_error_code( std::errc::timed_out ), reject_context );
+					copy.reject( make_error_code( std::errc::timed_out ) );
 				}
 			} );
 		}
@@ -970,7 +932,7 @@ nodeoze::promise< T >::all( promises_type promises )
 				
 				if ( !ret.is_finished() )
 				{
-					ret.reject( err, reject_context );
+					ret.reject( err );
 				}
 			} );
 
@@ -1016,7 +978,7 @@ nodeoze::promise< void >::all( promises_type promises )
 
 				if ( !ret.is_finished() )
 				{
-					ret.reject( err, reject_context );
+					ret.reject( err );
 				}
 			} );
 		}
@@ -1050,7 +1012,7 @@ nodeoze::promise< T >::race( promises_type promises )
 			{
 				if ( !ret.is_finished() )
 				{
-					ret.reject( err, reject_context );
+					ret.reject( err );
 				}
 			} );
 		}
@@ -1084,7 +1046,7 @@ nodeoze::promise< void >::race( promises_type promises )
 			{
 				if ( !ret.is_finished() )
 				{
-					ret.reject( err, reject_context );
+					ret.reject( err );
 				}
 			} );
 		}
@@ -1128,7 +1090,7 @@ nodeoze::promise< T >::any( promises_type promises )
 				
 				if ( !ret.is_finished() && is_finished() )
 				{
-					ret.reject( err, reject_context ) ;
+					ret.reject( err );
 				}
 			} );
 		}
@@ -1172,7 +1134,7 @@ nodeoze::promise< void >::any( promises_type promises )
 				
 				if ( !ret.is_finished() && is_finished() )
 				{
-					ret.reject( err, reject_context );
+					ret.reject( err );
 				}
 			} );
 		}

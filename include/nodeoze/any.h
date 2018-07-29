@@ -36,7 +36,6 @@
 #include <nodeoze/unordered_map.h>
 #include <nodeoze/bstream/ibstream.h>
 #include <nodeoze/bstream/obstream.h>
-#include <nodeoze/log.h>
 #include <streambuf>
 #include <iostream>
 #include <cctype>
@@ -1528,19 +1527,6 @@ public:
 		return std::chrono::system_clock::from_time_t( static_cast< std::time_t >( is_integer() ? m_data.m_integer : 0 ) );
 	}
 	
-	/*!	\brief Returns the contained integer value, as a value of type log::level_t
-	 *	\return the contained value, cast to type log::level_t
-	 *
-	 *	If this instance contains an integer value, the value of the internal representation
-	 *	is cast to type log::level_t. If the type contained by this instance is not integer,
-	 *	the returned value is log::level_t::info.
-	 */
-	log::level_t
-	to_log_level() const
-	{
-		return is_integer() ? static_cast< log::level_t >( m_data.m_integer ) : log::level_t::info;
-	}
-
 	/*!	\brief Returns the floating value contained by this instance.
 	 *	\return the contained floating value.
 	 *
@@ -1895,8 +1881,8 @@ public:
 	{
 		auto ret = std::error_code();
 
-		ncheck_error_action_quiet( m_type == type_t::array, ret = make_error_code( std::errc::invalid_argument ), exit );
-		ncheck_error_action_quiet( index < size(), ret = make_error_code( std::errc::invalid_argument ), exit );
+		ncheck_error_action( m_type == type_t::array, ret = make_error_code( std::errc::invalid_argument ), exit );
+		ncheck_error_action( index < size(), ret = make_error_code( std::errc::invalid_argument ), exit );
 		m_data.m_array.erase( m_data.m_array.begin() + index );
 
 	exit:
@@ -1913,9 +1899,9 @@ public:
 	{
 		object_type::iterator it;
 
-		ncheck_error( m_type == type_t::object, exit, "any (%) is not an object", m_type );
+		ncheck_error( m_type == type_t::object, exit );
 		it = m_data.m_object.find( key );
-		ncheck_error( it != m_data.m_object.end(), exit, "key % does not exist in object", key );
+		ncheck_error( it != m_data.m_object.end(), exit );
 		m_data.m_object.erase( it );
 
 	exit:

@@ -37,23 +37,6 @@ namespace nodeoze {
 
 namespace stream {
 
-class writable;
-
-template< typename T >
-struct is_writable_stream : public std::integral_constant< bool, false >
-{
-};
-
-template<>
-struct is_writable_stream< writable > : public std::integral_constant< bool, true >
-{
-};
-
-template<>
-struct is_writable_stream< std::shared_ptr< writable > > : public std::integral_constant< bool, true >
-{
-};
-
 class base : virtual public event::emitter<>
 {
 public:
@@ -79,7 +62,6 @@ protected:
 	std::uint32_t	m_highwater_mark;
 };
 
-
 class writable : public base
 {
 public:
@@ -90,19 +72,23 @@ public:
 
 	virtual ~writable();
 
-	promise< void >
-	write( buffer b );
+	bool
+	write( buffer b, std::function< void () > cb = nullptr );
+
+	void
+	end();
 
 protected:
 
 	void
-	start_write( buffer b, promise< void > ret );
+	start_write( buffer b );
 
 	virtual promise< void >
 	really_write( buffer b );
 
-	bool												m_writing = false;
-	std::queue< std::pair< buffer, promise< void > > > 	m_queue;
+	bool					m_writing	= false;
+	std::queue< buffer >	m_queue;
+	bool					m_ended		= false;
 };
 
 /*
@@ -129,7 +115,7 @@ public:
 	virtual ~readable();
 
 	template< class T >
-	typename std::enable_if< is_writable_stream< T >::value, typename T::ptr >::type
+	typename std::enable_if< std::is_base_of< writable, T >::value, typename T::ptr >::type
 	pipe( typename std::shared_ptr< T > dest )
 	{
 		auto it = m_pipes.find( dest );
@@ -140,9 +126,17 @@ public:
 			it = m_pipes.find( dest );
 		}
 
-		it->second.emplace_back( std::make_pair( "data", on( "data", [dest]( buffer buf ) mutable
+		it->second.emplace_back( std::make_pair( "data", on( "data", [this,dest]( buffer buf ) mutable
 		{
-			dest->write( buf );
+			if ( !dest->write( buf ) )
+			{
+				really_pause();
+
+				dest->once( "drain", [=]() mutable
+				{
+					really_read();
+				} );
+			}
 		} ) ) );
 
 		it->second.emplace_back( std::make_pair( "error", on( "error", [dest]( std::error_code err ) mutable
@@ -152,14 +146,14 @@ public:
 
 		it->second.emplace_back( std::make_pair( "end", on( "end", [dest]() mutable
 		{
-			dest->emit( "end" );
+			dest->end();
 		} ) ) );
 
 		return dest;
 	}
 
 	template< class T >
-	typename std::enable_if< is_writable_stream< T >::value >::type
+	typename std::enable_if< std::is_base_of< writable, T >::value, void >::type
 	unpipe( typename T::ptr dest )
 	{
 		auto it = m_pipes.find( dest );
@@ -191,7 +185,6 @@ protected:
 
 	std::unordered_map< writable::ptr, listeners > m_pipes;
 };
-
 
 
 class duplex : public readable, public writable

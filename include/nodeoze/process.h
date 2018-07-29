@@ -29,6 +29,7 @@
 
 #include <nodeoze/promise.h>
 #include <nodeoze/scoped_operation.h>
+#include <nodeoze/filesystem.h>
 #include <functional>
 #include <cstdint>
 #include <string>
@@ -40,7 +41,6 @@
 namespace nodeoze {
 
 class any;
-class path;
 class buffer;
 
 class process
@@ -58,8 +58,12 @@ public:
 	typedef std::function< void ( const nodeoze::buffer &buf ) >	output_f;
 	typedef std::vector< std::string >								env_t;
 	
+	/*
+	 * YO: make this stream friendly
+	 */
+
 	static promise< std::pair< std::int64_t, int > >
-	create( const nodeoze::path &exe, const std::vector< std::string > &args, const env_t &env, const nodeoze::path &working_directory, pid_t &pid, input_f stdin_handler = nullptr, output_f stdout_handler = nullptr, output_f stderr_handler = nullptr );
+	create( const filesystem::path &exe, const std::vector< std::string > &args, const env_t &env, const filesystem::path &working_directory, pid_t &pid, input_f stdin_handler = nullptr, output_f stdout_handler = nullptr, output_f stderr_handler = nullptr );
 
 	static process&
 	self();
@@ -144,7 +148,7 @@ class always_running_process
 public:
 
 	static scoped_operation
-	create( const nodeoze::path &exe, const std::vector< std::string > &args, const process::env_t &env, const nodeoze::path &working_directory, process::input_f stdin_handler = nullptr, process::output_f stdout_handler = nullptr, process::output_f stderr_handler = nullptr );
+	create( const filesystem::path &exe, const std::vector< std::string > &args, const process::env_t &env, const filesystem::path &working_directory, process::input_f stdin_handler = nullptr, process::output_f stdout_handler = nullptr, process::output_f stderr_handler = nullptr );
 };
 
 }

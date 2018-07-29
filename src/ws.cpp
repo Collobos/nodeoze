@@ -33,8 +33,6 @@
 #include <nodeoze/runloop.h>
 #include <nodeoze/base64.h>
 #include <nodeoze/uuid.h>
-#include <nodeoze/log.h>
-#include <nodeoze/markers.h>
 #include <nodeoze/macros.h>
 #include <nodeoze/http.h>
 #include <nodeoze/sha1.h>
@@ -423,6 +421,7 @@ hasher::circular_shift(int bits, unsigned word)
     return ((word << bits) & 0xFFFFFFFF) | ((word & 0xFFFFFFFF) >> (32-bits));
 }
 
+#if 0
 
 class ws_filter_impl : public ws::filter
 {
@@ -1395,3 +1394,5 @@ ws_filter_impl::teardown()
 	
 	m_unparsed_recv_data.clear();
 }
+
+#endif

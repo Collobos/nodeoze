@@ -25,7 +25,6 @@
  */
 
 #include "arp_apple.h"
-#include <nodeoze/socket.h>
 #include <nodeoze/macros.h>
 #include <sys/param.h>
 #include <sys/file.h>
@@ -55,9 +54,15 @@ NODEOZE_DEFINE_SINGLETON( arp )
 arp*
 arp::create()
 {
-	return new arp_apple;
+	int fix_this;
+
+	return nullptr;
+
+	// return new arp_apple;
 }
 
+
+#if 0
 
 arp::arp()
 {
@@ -105,12 +110,12 @@ arp_apple::resolve( const ip::address &ip_address )
 		},
 		[=]( std::error_code err ) mutable
 		{
-			ret.reject( err, reject_context );
+			ret.reject( err );
 		} );
 	}
 	else
 	{
-		ret.reject( err, reject_context );
+		ret.reject( err );
 	}
 	
 	return ret;
@@ -164,8 +169,10 @@ exit:
 
 	if ( !found )
 	{
-		ret.reject( make_error_code( std::errc::no_such_device_or_address ), reject_context );
+		ret.reject( make_error_code( std::errc::no_such_device_or_address ) );
 	}
 
 	return ret;
 }
+
+#endif

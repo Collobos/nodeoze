@@ -7,6 +7,11 @@
 
 namespace nodeoze {
 
+/*
+ * streamify this
+ * bufferize this too (at least it should take buffer as parameters)
+ */
+
 class zip
 {
 public:

@@ -240,10 +240,6 @@ public:
 			a.m_addr.m_l[ 2 ]	= m_addr.m_l[ 2 ] & rhs.m_addr.m_l[ 2 ];
 			a.m_addr.m_l[ 3 ]	= m_addr.m_l[ 3 ] & rhs.m_addr.m_l[ 3 ];
 		}
-		else
-		{
-			nlog( log::level_t::warning, "address type mismatch: % -> %", to_string(), rhs.to_string() );
-		}
 		
 		return a;
 	}
@@ -290,7 +286,6 @@ public:
 		}
 		else
 		{
-			nlog( log::level_t::warning, "index (%) out of bounds", index );
 			return 0;
 		}
 	}
@@ -304,7 +299,6 @@ public:
 		}
 		else
 		{
-			nlog( log::level_t::warning, "index (%) out of bounds", index );
 			return 0;
 		}
 	}
@@ -318,7 +312,6 @@ public:
 		}
 		else
 		{
-			nlog( log::level_t::warning, "index (%) out of bounds", index );
 			return 0;
 		}
 	}
@@ -329,12 +322,10 @@ public:
 		bool result = true;
 		if ( ! root.is_array() )
 		{
-			nlog( log::level_t::error, "ip address is not an array" );
 			result = false;
 		}
 		else if ( ! ( root.size() == 1 || root.size() == 4 || root.size() == 16 ) )
 		{
-			nlog( log::level_t::error, "ip address array size is %, should be 1, 4 or 16", root.size() );
 			result = false;
 		}
 		else
@@ -343,7 +334,6 @@ public:
 			{
 				if ( !root[ i ].is_integer() )
 				{
-					nlog( log::level_t::error, "ip address array element [%] is type %, should be an integer", i, root[0].type() );
 					result = false;
 				}
 			}

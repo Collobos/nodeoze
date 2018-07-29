@@ -39,7 +39,7 @@ mac::address::address()
 mac::address::address( const std::uint8_t *bytes, std::size_t size )
 {
 	memset( m_bytes, 0, sizeof( m_bytes ) );
-	ncheck_error( size == 6, exit, "can only construct mac::address with 6 byte values (%)", size );
+	ncheck_error( size == 6, exit );
 	memcpy( m_bytes, bytes, sizeof( m_bytes ) );
 
 exit:
@@ -50,7 +50,7 @@ exit:
 mac::address::address( const nodeoze::buffer &bytes )
 {
 	memset( m_bytes, 0, sizeof( m_bytes ) );
-	ncheck_error( bytes.size() == 6, exit, "can only construct mac::address with 48 bit values" );
+	ncheck_error( bytes.size() == 6, exit );
 	memcpy( m_bytes, bytes.const_data(), sizeof( m_bytes ) );
 
 exit:
@@ -61,8 +61,7 @@ exit:
 mac::address::address( const std::string &s )
 {
 	memset( m_bytes, 0, sizeof( m_bytes ) );
-	ncheck_error( s.size() == 17, exit, "can only construct mac::address with 17 byte strings" );
-nlog( log::level_t::info, "s: %", s );
+	ncheck_error( s.size() == 17, exit );
 	sscanf( s.c_str(), "%x-%x-%x-%x-%x-%x", &m_bytes[ 0 ], &m_bytes[ 1 ], &m_bytes[ 2 ], &m_bytes[ 3 ], &m_bytes[ 4 ], &m_bytes[ 5 ] );
 
 exit:
