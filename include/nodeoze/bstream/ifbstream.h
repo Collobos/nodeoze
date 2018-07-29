@@ -15,35 +15,35 @@ class ifbstream : public ibstream
 {
 public:
 
-    ifbstream( ibs_context::ptr context = nullptr )
+    ifbstream( context_base const& cntxt = get_default_context() )
     :
-    ibstream{ std::make_unique< ibfilebuf >(), std::move( context ) }
+    ibstream{ std::make_unique< ibfilebuf >(), cntxt }
     {}
 
     ifbstream( ifbstream const& ) = delete;
     ifbstream( ifbstream&& ) = delete;
 
     inline
-    ifbstream( std::unique_ptr< ibfilebuf > fbuf, ibs_context::ptr context = nullptr )
-    : ibstream{ std::move( fbuf ), std::move( context ) }
+    ifbstream( std::unique_ptr< ibfilebuf > fbuf, context_base const& cntxt = get_default_context() )
+    : ibstream{ std::move( fbuf ), cntxt }
     {}
 
     inline
-    ifbstream( ibfilebuf&& fbuf, ibs_context::ptr context = nullptr )
+    ifbstream( ibfilebuf&& fbuf, context_base const& cntxt = get_default_context() )
     :
-    ibstream{ std::make_unique< ibfilebuf >( std::move( fbuf ) ), std::move( context ) }
+    ibstream{ std::make_unique< ibfilebuf >( std::move( fbuf ) ), cntxt }
     {}
 
     inline
-    ifbstream( std::string const& filename, ibs_context::ptr context = nullptr )
+    ifbstream( std::string const& filename, context_base const& cntxt = get_default_context() )
     :
-    ibstream{ std::make_unique< ibfilebuf >( filename ), std::move( context ) }
+    ibstream{ std::make_unique< ibfilebuf >( filename ), cntxt }
     {}
 
     inline
-    ifbstream( std::string const& filename, std::error_code& err, ibs_context::ptr context = nullptr )
+    ifbstream( std::string const& filename, std::error_code& err, context_base const& cntxt = get_default_context() )
     :
-    ibstream{ std::make_unique< ibfilebuf >( filename, err ), std::move( context ) }
+    ibstream{ std::make_unique< ibfilebuf >( filename, err ), cntxt }
     {}
 
     inline void

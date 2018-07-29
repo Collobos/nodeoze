@@ -215,6 +215,7 @@ set(NODEOZE_SRCS
 	src/win32/machine_win32.h 
 	src/event.cpp 
 	include/nodeoze/bstream.h
+	include/nodeoze/bstream/error_category_context.h
 	include/nodeoze/bstream/base_classes.h
 	include/nodeoze/bstream/error.h
 	include/nodeoze/bstream/ibstream.h
@@ -234,23 +235,24 @@ set(NODEOZE_SRCS
 	include/nodeoze/bstream/numstream.h
 	include/nodeoze/bstream/bstreambuf.h
 	src/bstreambuf.cpp
+	src/error_category_context.cpp
 	src/umstream.cpp
 	src/membuf.cpp
 	src/ibstream.cpp
 	src/obstream.cpp
 	src/fbstream.cpp
 	src/filesystem.cpp
-	include/nodeoze/raft/error.cpp
-	include/nodeoze/raft/error.h
-	include/nodeoze/raft/rlog.cpp
-	include/nodeoze/raft/log.h
-	include/nodeoze/raft/state_machine.h
-	include/nodeoze/raft/types.h 
+#	include/nodeoze/raft/error.cpp
+#	include/nodeoze/raft/error.h
+#	include/nodeoze/raft/rlog.cpp
+#	include/nodeoze/raft/log.h
+#	include/nodeoze/raft/state_machine.h
+#	include/nodeoze/raft/types.h 
 	)
     
 
 # set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test3.cpp)
-set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test2.cpp)
+set(NODEOZE_TEST_SRCS src/test.cpp src/bstream_test0.cpp src/bstream_test1.cpp src/bstream_test2.cpp src/bstream_test3.cpp)
 
 set( NODEOZE_SRCS ${NODEOZE_SRCS} 
 	ext/libuv/src/uv-common.c 

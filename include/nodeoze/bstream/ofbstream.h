@@ -16,9 +16,9 @@ class ofbstream : public obstream
 public:
 
     inline 
-    ofbstream( obs_context::ptr context = nullptr )
+    ofbstream( context_base const& cntxt = get_default_context() )
     :
-    obstream{ std::make_unique< obfilebuf >(), std::move( context ) }
+    obstream{ std::make_unique< obfilebuf >(), cntxt }
     {
     }
 
@@ -26,26 +26,20 @@ public:
     ofbstream( ofbstream&& ) = delete;
 
     inline
-    ofbstream( std::unique_ptr< obfilebuf > fbuf, obs_context::ptr context = nullptr )
-    : obstream{ std::move( fbuf ), std::move( context ) }
-    {}
-
-/*     inline
-    ofbstream( obfilebuf&& fbuf, obs_context::ptr context = nullptr )
-    :
-    obstream{ std::make_unique< obfilebuf >( std::move( fbuf ) ), std::move( context ) }
-    {}
- */
-    inline
-    ofbstream( std::string const& filename, open_mode mode = obfilebuf::default_mode, obs_context::ptr context = nullptr )
-    :
-    obstream{ std::make_unique< obfilebuf >( filename, mode ), std::move( context ) }
+    ofbstream( std::unique_ptr< obfilebuf > fbuf, context_base const& cntxt = get_default_context() )
+    : obstream{ std::move( fbuf ), cntxt }
     {}
 
     inline
-    ofbstream( std::string const& filename, open_mode mode, std::error_code& err, obs_context::ptr context = nullptr )
+    ofbstream( std::string const& filename, open_mode mode = obfilebuf::default_mode, context_base const& cntxt = get_default_context() )
     :
-    obstream{ std::make_unique< obfilebuf >(), std::move( context ) }
+    obstream{ std::make_unique< obfilebuf >( filename, mode ), cntxt }
+    {}
+
+    inline
+    ofbstream( std::string const& filename, open_mode mode, std::error_code& err, context_base const& cntxt = get_default_context() )
+    :
+    obstream{ std::make_unique< obfilebuf >(), cntxt }
     {
         get_filebuf().open( filename, mode, err );
     }

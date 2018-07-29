@@ -17,20 +17,20 @@ public:
     ombstream( ombstream&& ) = delete;
 
     inline
-    ombstream( std::unique_ptr< obmembuf > strmbuf, obs_context::ptr context = nullptr )
-    : obstream{ std::move( strmbuf ), std::move( context ) }
+    ombstream( std::unique_ptr< obmembuf > strmbuf, context_base const& cntxt = get_default_context() )
+    : obstream{ std::move( strmbuf ), cntxt }
     {}
 
     inline
-    ombstream( buffer&& buf, obs_context::ptr context = nullptr )
+    ombstream( buffer&& buf, context_base const& cntxt = get_default_context() )
     :
-    obstream{ std::make_unique< obmembuf >( std::move( buf ) ), std::move( context ) }
+    obstream{ std::make_unique< obmembuf >( std::move( buf ) ), cntxt }
     {}
  
     inline
-    ombstream( size_type size, obs_context::ptr context = nullptr )
+    ombstream( size_type size, context_base const& cntxt = get_default_context() )
     :
-    ombstream( std::make_unique< obmembuf >( size ), std::move( context ) )
+    ombstream( std::make_unique< obmembuf >( size ), cntxt )
     {}
 
     inline buffer

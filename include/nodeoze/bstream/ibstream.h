@@ -44,11 +44,13 @@
 #include <unordered_set>
 #include <set>
 #include <tuple>
+#include <typeindex>
 #include <boost/endian/conversion.hpp>
 #include <nodeoze/bstream/error.h>
 #include <nodeoze/bstream/typecode.h>
 #include <nodeoze/bstream/numstream.h>
 #include <nodeoze/bstream/utils/traits.h>
+#include <nodeoze/bstream/error_category_context.h>
 #include <nodeoze/buffer.h>
 
 namespace nodeoze
@@ -58,10 +60,7 @@ namespace bstream
 class ibstream;
 
 template< class T >
-class array_base;
-
-template< class T >
-class map_base;
+class streaming_base;
 
 template< class T >
 struct ibstream_ctor_detected : public std::is_constructible< T, ibstream& > {};
@@ -71,8 +70,7 @@ struct has_streaming_base : public std::false_type {};
 
 template< class T >
 struct has_streaming_base< T,
-    typename std::enable_if_t< std::is_base_of< bstream::array_base< T >, T >::value
-                            || std::is_base_of< bstream::map_base< T >, T >::value > >
+    typename std::enable_if_t< std::is_base_of< bstream::streaming_base< T >, T >::value > >
 : public std::true_type {};
 
 template< class T, class Enable = void >
@@ -89,8 +87,20 @@ struct value_deserializer;
 template<class T, class Enable = void>
 struct ref_deserializer;
 
+template< class T, class Enable = void >
+struct ptr_deserializer;
+
+template< class T, class Enable = void >
+struct shared_ptr_deserializer;
+
+template< class T, class Enable = void >
+struct unique_ptr_deserializer;
+
 template<class T, class Enable = void>
 struct serializer;
+
+template< class Derived, class Base, class Enable = void >
+struct base_serializer;
 
 namespace detail
 {
@@ -115,6 +125,30 @@ namespace detail
 
 template<class T>
 struct has_value_deserializer : decltype(detail::test_value_deserializer<T>(0)) {};
+
+namespace detail
+{
+    template<class T>
+    static auto test_ptr_deserializer(int)
+        -> utils::sfinae_true_if<decltype(ptr_deserializer<T>::get( std::declval<ibstream&>() ))>;
+    template<class>
+    static auto test_ptr_deserializer(long) -> std::false_type;
+} // namespace detail
+
+template<class T>
+struct has_ptr_deserializer : decltype(detail::test_ptr_deserializer<T>(0)) {};
+
+namespace detail
+{
+    template<class T>
+    static auto test_shared_ptr_deserializer(int)
+        -> utils::sfinae_true_if<decltype(shared_ptr_deserializer<T>::get( std::declval<ibstream&>() ))>;
+    template<class>
+    static auto test_shared_ptr_deserializer(long) -> std::false_type;
+} // namespace detail
+
+template<class T>
+struct has_shared_ptr_deserializer : decltype(detail::test_shared_ptr_deserializer<T>(0)) {};
 
 namespace detail
 {
@@ -202,6 +236,12 @@ struct value_deserializer<T,
         std::numeric_limits<T>::is_signed && 
         sizeof(T) == 1>>
 {
+    inline T 
+    operator()(inumstream& is) const
+    {
+        return get(is);
+    }
+
     inline static T get(inumstream& is)
     {
         auto tcode = is.get();
@@ -237,6 +277,12 @@ struct value_deserializer<T,
         !std::numeric_limits<T>::is_signed && 
         sizeof(T) == 1>>
 {
+    inline T 
+    operator()(inumstream& is) const
+    {
+        return get(is);
+    }
+
     inline static T get(inumstream& is)
     {
         auto tcode = is.get();
@@ -268,6 +314,12 @@ struct value_deserializer<T,
         std::numeric_limits<T>::is_signed && 
         sizeof(T) == 2>>
 {
+    inline T 
+    operator()(inumstream& is) const
+    {
+        return get(is);
+    }
+
     inline static T get(inumstream& is)
     {
         auto tcode = is.get();
@@ -319,6 +371,12 @@ struct value_deserializer<T,
         !std::numeric_limits<T>::is_signed && 
         sizeof(T) == 2>>
 {
+    inline T 
+    operator()(inumstream& is) const
+    {
+        return get(is);
+    }
+
     inline static T get(inumstream& is)
     {
         auto tcode = is.get();
@@ -352,6 +410,12 @@ struct value_deserializer<T,
         std::numeric_limits<T>::is_signed && 
         sizeof(T) == 4>>
 {
+    inline T 
+    operator()(inumstream& is) const
+    {
+        return get(is);
+    }
+
     inline static T get(inumstream& is)
     {
         auto tcode = is.get();
@@ -407,6 +471,12 @@ struct value_deserializer<T,
         !std::numeric_limits<T>::is_signed && 
         sizeof(T) == 4>>
 {
+    inline T 
+    operator()(inumstream& is) const
+    {
+        return get(is);
+    }
+
     inline static T get(inumstream& is)
     {
         auto tcode = is.get();
@@ -442,6 +512,12 @@ struct value_deserializer<T,
         std::numeric_limits<T>::is_signed && 
         sizeof(T) == 8>>
 {
+    inline T 
+    operator()(inumstream& is) const
+    {
+        return get(is);
+    }
+
     inline static T get(inumstream& is)
     {
         auto tcode = is.get();
@@ -501,6 +577,12 @@ struct value_deserializer<T,
         !std::numeric_limits<T>::is_signed && 
         sizeof(T) == 8>>
 {
+    inline T 
+    operator()(inumstream& is) const
+    {
+        return get(is);
+    }
+
     inline static T get(inumstream& is)
     {
         auto tcode = is.get();
@@ -534,7 +616,8 @@ struct value_deserializer<T,
 template<>
 struct value_deserializer<std::string>
 {
-    inline std::string operator()(inumstream& is) const
+    inline std::string 
+    operator()(inumstream& is) const
     {
         return get(is);
     }
@@ -577,7 +660,8 @@ struct value_deserializer<std::string>
 template<>
 struct value_deserializer<nodeoze::string_alias>
 {
-    inline nodeoze::string_alias operator()(inumstream& is) const
+    inline nodeoze::string_alias 
+    operator()(inumstream& is) const
     {
         return get(is);
     }
@@ -622,55 +706,385 @@ struct value_deserializer<nodeoze::string_alias>
     }
 };	
 
-class ibs_context
+class context_impl_base : public error_category_context
 {
 public:
+    static constexpr bool is_valid_tag( poly_tag_type tag ) { return tag != invalid_tag; };
 
-    using ptr = std::unique_ptr< ibs_context >;
+    context_impl_base( bool dedup_shared_ptrs, boost::endian::order byte_order )
+    :
+    error_category_context{},
+    m_dedup_shared_ptrs{ dedup_shared_ptrs },
+    m_byte_order{ byte_order }
+    {}
 
-    virtual void 
-    save_ptr(std::shared_ptr<void> ptr) = 0;
+    context_impl_base( error_category_context::category_init_list categories, bool dedup_shared_ptrs, boost::endian::order byte_order )
+    :
+    error_category_context{ categories },
+    m_dedup_shared_ptrs{ dedup_shared_ptrs },
+    m_byte_order{ byte_order }
+    {}
 
-    virtual std::shared_ptr<void> 
-    get_saved_ptr(std::size_t index) = 0;
+    virtual ~context_impl_base() {}
 
-    virtual void
-    clear() = 0;
+    virtual poly_tag_type
+    get_type_tag( std::type_index index ) const = 0;
 
-    virtual ~ibs_context() {}
-    
-};
-
-class ibs_ptr_context : public ibs_context
-{
-public:
-    using ptr = std::unique_ptr< ibs_context >;
-
-    virtual void 
-    save_ptr(std::shared_ptr<void> ptr) override
+    template< class T >
+    inline poly_tag_type
+    get_type_tag() const
     {
-        m_shared_pointers.push_back(ptr);
+        return get_type_tag( typeid( T ) );
     }
 
-    virtual std::shared_ptr<void> 
-    get_saved_ptr(std::size_t index) override
+    virtual bool
+    can_downcast_ptr( poly_tag_type from, poly_tag_type to ) const = 0;
+
+    virtual void*
+    create_raw_from_tag( poly_tag_type tag, ibstream& is ) const = 0;
+
+    // virtual std::shared_ptr< void >
+    // create_shared_ptr( poly_tag_type from, poly_tag_type to, ibstream& is ) const = 0;
+
+    virtual std::shared_ptr< void >
+    create_shared_from_tag( poly_tag_type tag, ibstream& is ) const = 0;
+
+    template< class T >
+    inline T*
+    create_raw( poly_tag_type tag, ibstream& is ) const
     {
-        if (index >= m_shared_pointers.size())
+        if ( can_downcast_ptr( tag, get_type_tag< T >() ) )
         {
-            throw std::out_of_range("invalid shared pointer index in stream");
+            return static_cast< T* >( create_raw_from_tag( tag, is ) );
         }
-        return m_shared_pointers[index];
+        else
+        {
+            throw std::system_error{ make_error_code( bstream::errc::invalid_ptr_downcast ) };
+        }
     }
 
-    virtual void
-    clear() override
+    template< class T >
+    inline std::shared_ptr< T >
+    create_shared( poly_tag_type tag, ibstream& is ) const
     {
-        m_shared_pointers.clear();
+        if ( can_downcast_ptr( tag, get_type_tag< T >() ) )
+        {
+            return std::static_pointer_cast< T >( create_shared_from_tag( tag, is ) );
+        }
+        else
+        {
+            throw std::system_error{ make_error_code( bstream::errc::invalid_ptr_downcast ) };
+        }
+    }
+
+    inline bool
+    dedup_shared_ptrs() const
+    {
+        return m_dedup_shared_ptrs;
+    }
+
+    inline boost::endian::order
+    byte_order() const
+    {
+        return m_byte_order;
     }
 
 private:
-    std::vector<std::shared_ptr<void>> m_shared_pointers;
+    bool                        m_dedup_shared_ptrs;
+    boost::endian::order        m_byte_order;
 };
+
+using poly_raw_factory_func = std::function< void* ( ibstream& ) >;
+
+using poly_shared_factory_func = std::function< std::shared_ptr< void > ( ibstream& ) >;
+
+template< class T1, class T2, class Enable = void >
+struct can_downcast_ptr : public std::false_type {};
+
+template< class T1, class T2 >
+struct can_downcast_ptr< T1, T2, std::enable_if_t< std::is_base_of< T2, T1 >::value > > : public std::true_type {};
+
+template< class T, class... Args >
+struct can_downcast_ptr_row
+{
+    static const std::vector< bool > row_values;
+};
+
+template< class T, class... Args >
+const std::vector< bool > can_downcast_ptr_row< T, Args... >::row_values = { can_downcast_ptr< T, Args >::value... };
+
+template< class... Args >
+struct can_downcast_ptr_table
+{
+    static const std::vector< std::vector< bool > > values;
+};
+
+template< class... Args >
+const std::vector< std::vector< bool > > can_downcast_ptr_table< Args... >::values = 
+{ 
+    { can_downcast_ptr_row< Args, Args... >::row_values }... 
+};
+
+
+
+
+
+
+
+
+
+
+// using poly_sfactory_func = std::function< std::shared_ptr< void > ( ibstream& ) >;
+
+// template< class Derived, class Base >
+// struct poly_sfactory_builder
+// {
+//     static poly_sfactory_func build() 
+//     {
+//         poly_sfactory_func func = [] ( ibstream& is )
+//         {
+
+//             std::shared_ptr< void > result;
+
+//             if ( std::is_abstract< Derived >::value || ! has_shared_ptr_deserializer< Derived >::value || ! std::is_base_of< Base, Derived >::value )
+//             {
+//                 result = nullptr;
+//             }
+//             else
+//             {
+//                 std::shared_ptr< Derived > dptr = shared_ptr_deserializer< Derived >::get( is );
+//                 result = dptr;
+//             }
+//             return result;
+//         };
+//         return func;
+//     }
+// };
+
+
+
+	// template< class T, class... Args >
+	// struct sfactory_func_row
+	// {
+	// 	static const std::vector< poly_sfactory_func > row_values;
+	// };
+
+	// template< class T, class... Args >
+	// const std::vector< poly_sfactory_func > sfactory_func_row< T, Args... >::row_values = { poly_sfactory_builder< T, Args >::build()... };
+
+	// template< class... Args >
+	// struct poly_sfactory_table
+	// {
+	// 	static const std::vector< std::vector< poly_sfactory_func > > funcs;
+	// };
+
+	// template< class... Args >
+	// const std::vector< std::vector< poly_sfactory_func > > poly_sfactory_table< Args... >::funcs = 
+	// { 
+	// 	{ sfactory_func_row< Args, Args... >::row_values }... 
+	// };
+
+
+
+template< class... Args >
+class context_impl : public context_impl_base
+{
+public:
+//    using arglist = utils::_arg_list< Args... >;
+
+    context_impl( bool dedup_shared_ptrs, boost::endian::order byte_order )
+    :
+    context_impl_base{ dedup_shared_ptrs, byte_order }
+    {}
+
+    context_impl( error_category_context::category_init_list categories, bool dedup_shared_ptrs, boost::endian::order byte_order )
+    :
+    context_impl_base{ categories, dedup_shared_ptrs, byte_order }
+    {}
+
+    virtual poly_tag_type 
+    get_type_tag( std::type_index index ) const override
+    {
+        auto it = m_type_tag_map.find( index );
+        if ( it != m_type_tag_map.end() )
+        {
+            return it->second;
+        }
+        else
+        {
+            return invalid_tag;
+        }
+    }
+
+    virtual bool 
+    can_downcast_ptr( poly_tag_type from, poly_tag_type to ) const override
+    {
+        return m_downcast_ptr_table.values[ from ][ to ];
+    }
+
+    virtual void*
+    create_raw_from_tag( poly_tag_type tag, ibstream& is ) const override
+    {
+        return m_factories[ tag ]( is );
+    }
+
+    virtual std::shared_ptr< void >
+    create_shared_from_tag( poly_tag_type tag, ibstream& is ) const override
+    {
+        return m_shared_factories[ tag ]( is );
+    }
+
+protected:
+    static const std::unordered_map< std::type_index, poly_tag_type >    m_type_tag_map;
+    static const can_downcast_ptr_table< Args... >               m_downcast_ptr_table;
+    static const std::vector< poly_raw_factory_func >                       m_factories;
+    static const std::vector< poly_shared_factory_func >                m_shared_factories;
+//    static const poly_sfactory_table< Args... >                         m_factory_table;
+};
+
+template< class... Args >
+const std::unordered_map< std::type_index, poly_tag_type > context_impl< Args... >::m_type_tag_map = 
+{ 
+    { typeid(Args), utils::index< Args, Args... >::value }... 
+};
+
+
+template< class... Args >
+const can_downcast_ptr_table< Args... > context_impl< Args... >::m_downcast_ptr_table;
+
+// template< class... Args >
+// const poly_sfactory_table< Args... > context_impl< Args... >::m_factory_table;
+
+template< class T, class Enable = void >
+struct poly_factory;
+
+template< class T >
+struct poly_factory<T, std::enable_if_t< std::is_abstract< T >::value || ! has_ptr_deserializer< T >::value > >
+{
+    inline void* 
+    operator()( ibstream& is ) const
+    {
+        return get( is );
+    }
+
+    static inline void*
+    get( ibstream& )
+    {
+        return nullptr;
+    }
+};
+
+template< class T >
+struct poly_factory< T, std::enable_if_t< ! std::is_abstract< T >::value && has_ptr_deserializer< T >::value > >
+{
+    inline void* 
+    operator()( ibstream& is ) const
+    {
+        return get( is );
+    }
+
+    static inline void*
+    get( ibstream& is )
+    {
+        return ptr_deserializer< T >::get( is );
+    }
+};
+
+template< class... Args >
+const std::vector< poly_raw_factory_func > context_impl< Args... >::m_factories = 
+{
+    []( ibstream& is ) 
+    {
+        return poly_factory< Args >::get( is );
+    }...
+};
+
+template< class T, class Enable = void >
+struct poly_shared_factory;
+
+template< class T >
+struct poly_shared_factory<T, std::enable_if_t< std::is_abstract< T >::value || ! has_shared_ptr_deserializer< T >::value > >
+{
+    inline std::shared_ptr< void > 
+    operator()( ibstream& is ) const
+    {
+        return get( is );
+    }
+
+    static inline std::shared_ptr< void >
+    get( ibstream& )
+    {
+        return nullptr;
+    }
+};
+
+template< class T >
+struct poly_shared_factory< T, std::enable_if_t< ! std::is_abstract< T >::value && has_shared_ptr_deserializer< T >::value > >
+{
+    inline std::shared_ptr< void > 
+    operator()( ibstream& is ) const
+    {
+        return get( is );
+    }
+
+    static inline std::shared_ptr< void >
+    get( ibstream& is )
+    {
+        return shared_ptr_deserializer< T >::get( is );
+    }
+};
+
+template< class... Args >
+const std::vector< poly_shared_factory_func > context_impl< Args... >::m_shared_factories =
+{
+    [] ( ibstream& is )
+    {
+        return poly_shared_factory< Args >::get( is );
+    }...
+};
+
+class context_base 
+{
+public:
+
+    virtual ~context_base() {}
+
+    virtual std::shared_ptr< const context_impl_base >
+    get_context_impl() const = 0;
+
+};
+
+template< class... Args >
+class context : public context_base
+{
+public:
+
+    context( bool dedup_shared_ptrs = true, boost::endian::order byte_order = boost::endian::order::big )
+    :
+    m_context_impl{ std::make_shared< const context_impl< Args... > >( dedup_shared_ptrs, byte_order ) }
+    {}
+
+    context( error_category_context::category_init_list categories, bool dedup_shared_ptrs = true, boost::endian::order byte_order = boost::endian::order::big )
+    :
+    m_context_impl{ std::make_shared< const context_impl< Args... > >( categories, dedup_shared_ptrs, byte_order ) }
+    {}
+    
+    virtual std::shared_ptr< const context_impl_base >
+    get_context_impl() const override
+    {
+        return m_context_impl;
+    }
+
+private:
+    std::shared_ptr< const context_impl_base >   m_context_impl;
+};
+
+
+inline context_base const& get_default_context()
+{
+    static const context<> default_context{ {} };
+    return default_context;
+}
 
 /*! \class ibstream
     *	\brief binary input stream
@@ -688,29 +1102,49 @@ public:
     using base = inumstream;
 
     template<class U, class E> friend struct value_deserializer;
-    
+
+    using saved_ptr_info = std::pair< std::type_index , std::shared_ptr< void > >;
+
+    class ptr_deduper
+    {
+    public:
+
+        template< class T >
+        inline void
+        save_ptr( std::shared_ptr< T > ptr )
+        {
+            m_saved_ptrs.push_back( saved_ptr_info( typeid( *ptr ), ptr ) );
+        }
+
+        inline saved_ptr_info const&
+        get_saved_ptr( std::size_t index )
+        {
+            return m_saved_ptrs[ index ];
+        }
+
+        inline void
+        clear()
+        {
+            m_saved_ptrs.clear();
+        }
+
+    private:
+
+        std::deque< saved_ptr_info >        m_saved_ptrs;
+    };
+
+
     ibstream() = delete;
     ibstream( ibstream const& ) = delete;
     ibstream( ibstream&& ) = delete;
 
     inline
-    ibstream( std::unique_ptr< bstream::ibstreambuf > strmbuf, ibs_context::ptr context = nullptr )
+    ibstream( std::unique_ptr< bstream::ibstreambuf > strmbuf, context_base const& cntxt = get_default_context() )
     : 
-    inumstream{ std::move( strmbuf ) },
-    m_context{ std::move( context ) }
+    inumstream{ std::move( strmbuf ), cntxt.get_context_impl()->byte_order() },
+    m_context{ cntxt.get_context_impl() },
+    m_ptr_deduper{ m_context->dedup_shared_ptrs() ? std::make_unique< ptr_deduper >() : nullptr }
     {}
-
-    inline void
-    set_context( ibs_context::ptr context )
-    {
-        m_context = std::move( context );
-    }
-
-    inline void
-    set_ptr_context()
-    {
-        m_context = std::make_unique< ibs_ptr_context >();
-    }
 
     template<class T>
     inline typename std::enable_if_t<is_ibstream_constructible<T>::value, T>
@@ -1291,14 +1725,14 @@ public:
     virtual void
     reset()
     {
-        if ( m_context ) m_context->clear();
+        if ( m_ptr_deduper ) m_ptr_deduper->clear();
         position( 0 );
     }
 
     virtual void
     reset( std::error_code& err )
     {
-        if ( m_context ) m_context->clear();
+        if ( m_ptr_deduper ) m_ptr_deduper->clear();
         position( 0, err );
     }
 
@@ -1334,57 +1768,70 @@ public:
 
 protected:
 
-    template<class T>
-    using shared_ptr_factory = std::function< std::shared_ptr<T> (ibstream&) >;
-
-    template<class T>
-    std::shared_ptr<T> 
-    read_as_shared_ptr(shared_ptr_factory<T> factory)
+    /*
+     *  Pointers are streamed as a 2 - element object (array or map).
+     *  The first element is the type tag (int). If the tag is -1,
+     *  then there is no run-time type information in the stream;
+     *  the object should be constructed based on the assumption that
+     *  it is an instance of T. If it is not -1, then it is interpreted
+     *  as a type tag, and the ibstream instance is expected to have
+     *  a poly_context that can create an instance from this tag.
+     * 
+     *  The second element is either a nil, a positive integer value, 
+     *  or a serialized object (array or map). If it is nil, a nullptr
+     *  value is returned. 
+     *  If it is an integer,
+     *  it is interpreted as an id associated with a previously-
+     *  stream object, which is expected to be stored in the stream 
+     *  graph context.
+     *  If it is an object, an instance of the appropriate type
+     *  (as indicated by the parameter T and/or the tag value as
+     *  interpreted by the poly_contexts) is constructed from the 
+     *  streamed object, cast to the return type (possibly mediated 
+     *  by the poly_context), and returned.
+     * 
+     * 
+     */
+    template< class T >
+    std::shared_ptr< T >
+    read_as_shared_ptr()
     {
-        std::shared_ptr<T> result{nullptr};
-        
+        std::shared_ptr< T > result{ nullptr };
         auto n = read_array_header();
-        if (n != 1)
+        if ( n != 2 )
         {
             throw std::system_error{ make_error_code( bstream::errc::type_error ) };
         }
-        
+
+        auto type_tag = read_as< int >();
         auto code = peek();
-        
-        if (code == typecode::nil) // nullptr
+        if ( code == typecode::nil ) // return result ( nullptr ) as is
         {
             code = get();
         }
-        else if (typecode::is_positive_int(code)) // saved ptr
+        else if ( typecode::is_positive_int( code ) ) // saved ptr
         {
-            auto index = read_as<std::size_t>();
-            result = std::static_pointer_cast<T>(get_saved_ptr(index));
+            result = get_saved_ptr< T >( type_tag );
         }
-        else if (typecode::is_array(code) || typecode::is_map(code)) // streamed object
+        else // not saved ptr
         {
-                result = factory(*this);
-                save_ptr(result);
-        }
-        else
-        {
-            throw std::system_error{ make_error_code( bstream::errc::type_error ) };
+            result = deserialize_as_shared_ptr< T >( type_tag );
         }
         return result;
     }
-
-    template<class T>
-    using unique_ptr_factory = std::function< std::unique_ptr<T> (ibstream&) >;
     
     template<class T>
     std::unique_ptr<T>
-    read_as_unique_ptr(unique_ptr_factory<T> factory)
+    read_as_unique_ptr()
     {
         auto n = read_array_header();
-        if (n != 1)
+        if ( n != 2 )
         {
             throw std::system_error{ make_error_code( bstream::errc::type_error ) };
         }
         
+        auto tag = read_as< poly_tag_type >();
+
         auto code = peek();
         
         if (code == typecode::nil) // nullptr
@@ -1392,429 +1839,577 @@ protected:
             code = get();
             return nullptr;
         }
-        else if (typecode::is_array(code) || typecode::is_map(code)) // streamed object
+        else // streamed object
         {
-            return factory(*this);
+            return deserialize_as_unique_ptr< T >( tag );
+        }
+    }
+
+    template< class T >
+    std::shared_ptr< T >
+    deserialize_as_shared_ptr( poly_tag_type tag )
+    {
+        std::shared_ptr< T > result{ nullptr };
+
+        if ( tag == invalid_tag ) // read as T
+        {
+            result = shared_ptr_deserializer< T >::get( *this );
+        }
+        else
+        {
+            result =  m_context->create_shared< T >( tag, *this );
+        }
+
+        if ( m_ptr_deduper )
+        {
+            m_ptr_deduper->save_ptr( result );
+        }
+
+        return result;
+    }
+
+    template< class T >
+    std::unique_ptr< T >
+    deserialize_as_unique_ptr( poly_tag_type tag )
+    {
+        if ( tag == invalid_tag ) // read as T
+        {
+            return unique_ptr_deserializer< T >::get( *this );
+        }
+        else
+        {
+            return std::unique_ptr< T >( m_context->create_raw< T >( tag, *this ) );
+        }
+    }
+
+    template< class T >
+    std::shared_ptr< T >
+    get_saved_ptr( int type_tag )
+    {
+        std::shared_ptr< T > result{ nullptr };
+
+        if ( m_ptr_deduper )
+        {
+            auto index = read_as< std::size_t >();
+            auto info = m_ptr_deduper->get_saved_ptr( index );
+            if ( type_tag > -1 )
+            {
+                auto saved_tag = m_context->get_type_tag( info.first );
+                if ( saved_tag != type_tag )
+                {
+                    throw std::system_error{ make_error_code( bstream::errc::type_error ) };
+                }
+                if ( m_context->can_downcast_ptr( type_tag, m_context->get_type_tag( typeid( T ) ) ) )
+                {
+                    result = std::static_pointer_cast< T >( info.second );
+                }
+                else
+                {
+                    throw std::system_error{ make_error_code( bstream::errc::invalid_ptr_downcast ) };
+                }
+            }
+            else // no type info in stream
+            {
+                if ( info.first == typeid( T ) )
+                {
+                    result = std::static_pointer_cast< T >( info.second );
+                }
+                else
+                {
+                    throw std::system_error{ make_error_code( bstream::errc::type_error ) };
+                }
+            }
+        }
+        else 
+        {
+            throw std::system_error{ make_error_code( bstream::errc::context_mismatch ) };
+        }
+        return result;
+    }
+
+
+    std::error_code
+    read_error_code()
+    {
+        auto n = read_array_header();
+        if ( n != 2 )
+        {
+            throw std::system_error{ make_error_code( bstream::errc::type_error ) };
+        }
+        auto category_index = read_as< error_category_context::index_type >();
+        auto value = read_as< error_category_context::index_type >();
+        return std::error_code{ value, m_context->category_from_index( category_index ) };
+    }
+
+    
+    void 
+    ingest( bufwriter& os );
+
+    std::unique_ptr< bufwriter >                    m_bufwriter = nullptr;
+    std::shared_ptr< const context_impl_base >      m_context;
+    std::unique_ptr< ptr_deduper >                  m_ptr_deduper;
+};
+	        
+template<class T>
+struct value_deserializer<T, std::enable_if_t<std::is_enum<T>::value>>
+{
+    inline T 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static T get(ibstream& is)
+    {
+        auto ut = is.read_as<typename std::underlying_type<T>::type>();
+        return static_cast<T>(ut);
+    }				
+};
+
+template<class T>
+inline typename std::enable_if_t<has_ref_deserializer<T>::value, ibstream&> 
+operator>>(ibstream& is, T& obj)
+{
+    return ref_deserializer<T>::get(is, obj);
+}
+
+template<class T>
+inline typename std::enable_if_t<
+    !has_ref_deserializer<T>::value &&
+    is_ibstream_constructible<T>::value &&
+    std::is_assignable<T&,T>::value,
+    ibstream&> 
+operator>>(ibstream& is, T& obj)
+{
+    obj = T(is);
+    return is;
+}
+
+template<class T>
+inline typename std::enable_if_t<
+    !has_ref_deserializer<T>::value &&
+    !is_ibstream_constructible<T>::value &&
+    has_value_deserializer<T>::value &&
+    std::is_assignable<T&,T>::value,
+    ibstream&>
+operator>>(ibstream& is, T& obj)
+{
+    obj = value_deserializer<T>::get(is);
+    return is;
+}
+
+template<class T>
+struct ref_deserializer<T, std::enable_if_t<has_deserialize_method<T>::value>>
+{
+
+    inline ibstream& 
+    operator()(ibstream& is, T& obj) const
+    {
+        return get(is, obj);
+    }
+
+    static inline ibstream&
+    get(ibstream& is, T& obj)
+    {
+        return obj.deserialize(is);
+    }
+};
+
+template<class T>
+struct value_deserializer<T, std::enable_if_t<is_ibstream_constructible<T>::value>>
+{
+    inline T 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    static inline T get(ibstream& is)
+    {
+        return T{is};
+    }
+};
+
+template<>
+struct value_deserializer<bool>
+{
+    inline bool 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static bool get(ibstream& is)
+    {
+        auto tcode = is.get();
+        switch(tcode)
+        {
+            case typecode::bool_true:
+                return true;
+            case typecode::bool_false:
+                return false;
+            default:
+                throw std::system_error{ make_error_code( bstream::errc::type_error ) };
+        }
+    }
+};
+
+template<>
+struct value_deserializer<float>
+{
+    inline float 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static float get(ibstream& is)
+    {
+        auto tcode = is.get();
+        if (tcode == typecode::float_32)
+        {
+            std::uint32_t unpacked = is.get_num<std::uint32_t>();
+            return reinterpret_cast<float&>(unpacked);
         }
         else
         {
             throw std::system_error{ make_error_code( bstream::errc::type_error ) };
         }
     }
-    
-    std::shared_ptr<void> 
-    get_saved_ptr(std::size_t index)
+};
+
+template<>
+struct value_deserializer<double>
+{
+    inline double 
+    operator()( ibstream& is )  const
     {
-        if ( ! m_context )
+        return get(is);
+    }
+
+    inline static double get(ibstream& is)
+    {
+        auto tcode = is.get();
+        if (tcode == typecode::float_32)
         {
-            throw type_error("invalid ptr_info value (saved_pointer) in ibstream");
+            std::uint32_t unpacked = is.get_num<std::uint32_t>();
+            return static_cast<double>(reinterpret_cast<float&>(unpacked));
+        }
+        else if (tcode == typecode::float_64)
+        {
+            std::uint64_t unpacked = is.get_num<std::uint64_t>();
+            return reinterpret_cast<double&>(unpacked);
         }
         else
         {
-            return m_context->get_saved_ptr( index );
+            throw std::system_error{ make_error_code( bstream::errc::type_error ) };
         }
     }
-    
-    void 
-    save_ptr(std::shared_ptr<void> ptr)
-    {
-        if ( m_context )
-        {
-            m_context->save_ptr( ptr );
-        }
-    }
-
-    void 
-    ingest( bufwriter& os );
-
-    std::unique_ptr< bufwriter >    m_bufwriter = nullptr;
-    ibs_context::ptr                m_context;
 };
-	        
-    template<class T>
-    struct value_deserializer<T, std::enable_if_t<std::is_enum<T>::value>>
-    {
-        inline static T get(ibstream& is)
-        {
-			auto ut = is.read_as<typename std::underlying_type<T>::type>();
-			return static_cast<T>(ut);
-		}				
-    };
 
-    template<class T>
-    inline typename std::enable_if_t<has_ref_deserializer<T>::value, ibstream&> 
-    operator>>(ibstream& is, T& obj)
+template<class Rep, class Ratio>
+struct value_deserializer<std::chrono::duration<Rep,Ratio>>
+{
+    using duration_type = std::chrono::duration<Rep,Ratio>;
+
+    inline duration_type 
+    operator()( ibstream& is )  const
     {
-        return ref_deserializer<T>::get(is, obj);
+        return get(is);
     }
 
-    template<class T>
-    inline typename std::enable_if_t<
-        !has_ref_deserializer<T>::value &&
-        is_ibstream_constructible<T>::value &&
-        std::is_assignable<T&,T>::value,
-        ibstream&> 
-    operator>>(ibstream& is, T& obj)
+    inline static duration_type
+    get(ibstream&is)
     {
-        obj = T(is);
-        return is;
+        auto count = is.read_as<duration_type::rep>();
+        return duration_type{count};
+    }
+};
+
+template<class Clock, class Duration>
+struct value_deserializer<std::chrono::time_point<Clock,Duration>>
+{
+    using time_point_type = std::chrono::time_point<Clock,Duration>;
+
+    inline time_point_type 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
     }
 
-    template<class T>
-    inline typename std::enable_if_t<
-        !has_ref_deserializer<T>::value &&
-        !is_ibstream_constructible<T>::value &&
-        has_value_deserializer<T>::value &&
-        std::is_assignable<T&,T>::value,
-        ibstream&>
-    operator>>(ibstream& is, T& obj)
+    inline static time_point_type
+    get(ibstream& is)
     {
-        obj = value_deserializer<T>::get(is);
-        return is;
+        auto ticks = is.read_as<typename time_point_type::rep>();
+        return time_point_type(typename time_point_type::duration(ticks));
+    }
+};
+
+/*
+ *	Value deserializers for shared pointer types
+ */
+
+/*
+ *	Prefer stream-constructed when available
+ */
+
+template<class T>
+struct value_deserializer< std::shared_ptr< T > >
+{
+    inline std::shared_ptr< T > 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
     }
 
-	template<class T>
-	struct ref_deserializer<T, std::enable_if_t<has_deserialize_method<T>::value>>
-	{
-		static inline ibstream&
-		get(ibstream& is, T& obj)
-		{
-			return obj.deserialize(is);
-		}
-	};
-	
-	template<class T>
-	struct value_deserializer<T, std::enable_if_t<is_ibstream_constructible<T>::value>>
-	{
-		static inline T get(ibstream& is)
-		{
-			return T{is};
-		}
-	};
-	
-    template<>
-    struct value_deserializer<bool>
+    inline static std::shared_ptr<T>
+    get(ibstream& is)
     {
-        inline static bool get(ibstream& is)
-        {
-            auto tcode = is.get();
-            switch(tcode)
-            {
-                case typecode::bool_true:
-                    return true;
-                case typecode::bool_false:
-                    return false;
-                default:
-					throw std::system_error{ make_error_code( bstream::errc::type_error ) };
-            }
-        }
-    };
+        return is.read_as_shared_ptr< T >();
+    }
+};
 
-    template<>
-    struct value_deserializer<float>
+template< class T >
+struct ptr_deserializer< T, typename std::enable_if_t< is_ibstream_constructible< T >::value > >
+{
+    inline T*
+    operator()( ibstream& is ) const
     {
-        inline static float get(ibstream& is)
-        {
-            auto tcode = is.get();
-            if (tcode == typecode::float_32)
-            {
-                std::uint32_t unpacked = is.get_num<std::uint32_t>();
-                return reinterpret_cast<float&>(unpacked);
-            }
-            else
-            {
-				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
-            }
-        }
-    };
+        return get( is );
+    }
 
-    template<>
-    struct value_deserializer<double>
+    inline static T*
+    get( ibstream& is )
     {
-        inline static double get(ibstream& is)
-        {
-            auto tcode = is.get();
-            if (tcode == typecode::float_32)
-            {
-                std::uint32_t unpacked = is.get_num<std::uint32_t>();
-                return static_cast<double>(reinterpret_cast<float&>(unpacked));
-            }
-            else if (tcode == typecode::float_64)
-            {
-                std::uint64_t unpacked = is.get_num<std::uint64_t>();
-                return reinterpret_cast<double&>(unpacked);
-            }
-            else
-            {
-				throw std::system_error{ make_error_code( bstream::errc::type_error ) };
-            }
-        }
-    };
-	
-	template<class Rep, class Ratio>
-	struct value_deserializer<std::chrono::duration<Rep,Ratio>>
-	{
-		using duration_type = std::chrono::duration<Rep,Ratio>;
-		inline static duration_type
-		get(ibstream&is)
-		{
-			auto count = is.read_as<duration_type::rep>();
-			return duration_type{count};
-		}
-	};
-	
-	template<class Clock, class Duration>
-	struct value_deserializer<std::chrono::time_point<Clock,Duration>>
-	{
-		using time_point_type = std::chrono::time_point<Clock,Duration>;
-		inline static time_point_type
-		get(ibstream& is)
-		{
-			auto ticks = is.read_as<typename time_point_type::rep>();
-			return time_point_type(typename time_point_type::duration(ticks));
-		}
-	};
-	
-	/*
-	 *	Value deserializers for shared pointer types
-	 */
-	
-	/*
-	 *	Prefer stream-constructed when available
-	 */
-	template<class T>
-	struct value_deserializer<std::shared_ptr<T>,
-		typename std::enable_if_t<is_ibstream_constructible<T>::value>>
-	{
-		inline static std::shared_ptr<T>
-		get(ibstream& is)
-		{
-			return is.read_as_shared_ptr<T>([] (ibstream& istrm)
-			{
-				return std::make_shared<T>(istrm);
-			});
-		}
-	};
-	
-	/*
-	 *	If no stream constructor is available, prefer a value_deserializer<T>
-	 * 
-	 *	The value_deserializer<shared_ptr<T>> based on a value_deserializer<T> 
-	 *	requires a move contructor for T
-	 */
-	template<class T>
-	struct value_deserializer<std::shared_ptr<T>,
-		typename std::enable_if_t<
-			!is_ibstream_constructible<T>::value &&
-			has_value_deserializer<T>::value &&
-			std::is_move_constructible<T>::value>>
-	{
-		inline static std::shared_ptr<T>
-		get(ibstream& is)
-		{
-			return is.read_as_shared_ptr<T>([] (ibstream& istrm)
-			{
-				return std::make_shared<T>(value_deserializer<T>::get(istrm));
-			});
-		}
-	};
-	
-	/*
-	 *	The value_deserializer<shared_ptr<T>> based on a ref_deserializer<T> 
-	 *	requires eiher a move contructor or copy constructor for T;
-	 *	prefer the move contructor
-	 */
-	template<class T>
-	struct value_deserializer<std::shared_ptr<T>,
-		typename std::enable_if_t<
-            !is_ibstream_constructible<T>::value &&
-            !has_value_deserializer<T>::value &&
-            has_ref_deserializer<T>::value &&
-            std::is_default_constructible<T>::value &&
-            std::is_move_constructible<T>::value>>
-	{
-		inline static std::shared_ptr<T>
-		get(ibstream& is)
-		{
-			return is.read_as_shared_ptr<T>([] (ibstream& istrm)
-			{
-                T obj;
-                ref_deserializer<T>::get(istrm, obj);
-                return std::make_shared<T>(std::move(obj));
-				
-			});
-		}
-	};
+        return new T{ is };
+    }
+};
 
-	template<class T>
-	struct value_deserializer<
-		std::shared_ptr<T>,
-		typename std::enable_if_t<
-            !is_ibstream_constructible<T>::value &&
-            !has_value_deserializer<T>::value &&
-            has_ref_deserializer<T>::value &&
-            std::is_default_constructible<T>::value &&
-            !std::is_move_constructible<T>::value &&
-            std::is_copy_constructible<T>::value>>
-	{
-		inline static std::shared_ptr<T>
-		get(ibstream& is)
-		{
-			return is.read_as_shared_ptr<T>([] (ibstream& istrm)
-			{
-                T obj;
-                ref_deserializer<T>::get(istrm, obj);
-                return std::make_shared<T>(obj);			
-			});
-		}
-	};
+template< class T >
+struct shared_ptr_deserializer< T, typename std::enable_if_t< is_ibstream_constructible< T >::value > >
+{
+    inline std::shared_ptr< T >
+    operator()( ibstream& is ) const
+    {
+        return get( is );
+    }
 
-	/*
-	 *	Value deserializers for unique pointer types
-	 */
-	
-	/*
-	 *	Prefer stream-constructed when available
-	 */
-	template<class T>
-	struct value_deserializer<std::unique_ptr<T>,
-		typename std::enable_if_t<is_ibstream_constructible<T>::value>>
-	{
-		inline static std::unique_ptr<T>
-		get(ibstream& is)
-		{
-			return is.read_as_unique_ptr<T>([] (ibstream& istrm)
-			{
-				return std::make_unique<T>(istrm);
-			});
-		}
-	};
-	
-	/*
-	 *	If no stream constructor is available, prefer a value_deserializer<T>
-	 * 
-	 *	The value_deserializer<unique_ptr<T>> based on a value_deserializer<T> 
-	 *	requires a move contructor for T
-	 */
-	template<class T>
-	struct value_deserializer<std::unique_ptr<T>,
-		typename std::enable_if_t<
-			!is_ibstream_constructible<T>::value &&
-			has_value_deserializer<T>::value &&
-			std::is_move_constructible<T>::value>>
-	{
-		inline static std::unique_ptr<T>
-		get(ibstream& is)
-		{
-			return is.read_as_unique_ptr<T>([] (ibstream& istrm)
-			{
-				return std::make_unique<T>(value_deserializer<T>::get(istrm));
-			});
-		}
-	};
+    inline static std::shared_ptr< T >
+    get( ibstream& is )
+    {
+        return std::make_shared< T >( is );
+    }
+};
 
-	
-	/*
-	 *	The value_deserializer<unique_ptr<T>> based on a ref_deserializer<T> 
-	 *	requires either a move contructor or copy constructor for T;
-	 *	prefer the move contructor
-	 */
-	template<class T>
-	struct value_deserializer<std::unique_ptr<T>,
-		typename std::enable_if_t<
-            !is_ibstream_constructible<T>::value &&
-            !has_value_deserializer<T>::value &&
-            has_ref_deserializer<T>::value &&
-            std::is_default_constructible<T>::value &&
-            std::is_move_constructible<T>::value>>
-	{
-		inline static std::unique_ptr<T>
-		get(ibstream& is)
-		{
-			return is.read_as_unique_ptr<T>([] (ibstream& istrm)
-			{
-                T obj;
-                ref_deserializer<T>::get(istrm, obj);
-                return std::make_unique<T>(std::move(obj));
-				
-			});
-		}
-	};
+template< class T >
+struct unique_ptr_deserializer< T, typename std::enable_if_t< is_ibstream_constructible< T >::value > >
+{
+    inline std::unique_ptr< T >
+    operator()( ibstream& is ) const
+    {
+        return get( is );
+    }
 
-	template<class T>
-	struct value_deserializer<std::unique_ptr<T>,
-		typename std::enable_if_t<
-            !is_ibstream_constructible<T>::value &&
-            !has_value_deserializer<T>::value &&
-            has_ref_deserializer<T>::value &&
-            std::is_default_constructible<T>::value &&
-            !std::is_move_constructible<T>::value &&
-            std::is_copy_constructible<T>::value>>
-	{
-		inline static std::unique_ptr<T>
-		get(ibstream& is)
-		{
-			return is.read_as_unique_ptr<T>([] (ibstream& istrm)
-			{
-                T obj;
-                ref_deserializer<T>::get(istrm, obj);
-                return std::make_unique<T>(obj);			
-			});
-		}
-	};
-	
-    template<class T, class Enable = void> 
-    struct ibstream_initializer;
+    inline static std::unique_ptr< T >
+    get( ibstream& is )
+    {
+        return std::make_unique< T >( is );
+    }
+};
 
-//    template<class T>
-//    struct ibstream_initializer<T, 
-//        typename std::enable_if_t<is_ibstream_constructible<T>::value>>
-//    {
-//        using param_type = ibstream&;
-//        using return_type = ibstream&;
-//        inline static return_type get(param_type is)
-//        {
-//            return is;
-//        }
-//    };
-//
-//    template<class T>
-//    struct ibstream_initializer <T, 
-//        typename std::enable_if_t<
-//            !is_ibstream_constructible<T>::value &&
-//            has_value_deserializer<T>::value>>
-//    {
-//        using param_type = ibstream&;
-//        using return_type = T;
-//        inline static return_type get(param_type is)
-//        {
-//            return value_deserializer<T>::get(is);
-//        }
-//    };
-//     
-//    template<class T>
-//    struct ibstream_initializer <T, 
-//        typename std::enable_if_t<
-//            !is_ibstream_constructible<T>::value &&
-//            !has_value_deserializer<T>::value &&
-//			std::is_default_constructible<T>::value &&
-//            (std::is_copy_constructible<T>::value || std::is_move_constructible<T>::value) &&
-//            has_ref_deserializer<T>::value>>
-//    {
-//        using param_type = ibstream&;
-//        using return_type = T;
-//        inline static return_type get(param_type is)
-//        {
-//            T obj;
-//            ref_deserializer<T>::get(is, obj);
-//            return obj;
-//        }
-//    };
+/*
+ *	If no stream constructor is available, prefer a value_deserializer<T>
+ * 
+ *	The value_deserializer<shared_ptr<T>> based on a value_deserializer<T> 
+ *	requires a move contructor for T
+ */
+
+template< class T >
+struct ptr_deserializer< T,
+    typename std::enable_if_t<
+        !is_ibstream_constructible< T >::value &&
+        has_value_deserializer< T >::value &&
+        std::is_move_constructible< T >::value > >
+{
+    inline T* 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static T*
+    get(ibstream& is)
+    {
+        return new T{ value_deserializer< T >::get( is ) };
+    }
+};
+
+template< class T >
+struct shared_ptr_deserializer< T,
+    typename std::enable_if_t<
+        !is_ibstream_constructible< T >::value &&
+        has_value_deserializer< T >::value &&
+        std::is_move_constructible< T >::value > >
+{
+    inline std::shared_ptr< T >
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static std::shared_ptr< T >
+    get(ibstream& is)
+    {
+        return std::make_shared< T >( value_deserializer< T >::get( is ) );
+    }
+};
+
+template< class T >
+struct unique_ptr_deserializer< T,
+    typename std::enable_if_t<
+        !is_ibstream_constructible< T >::value &&
+        has_value_deserializer< T >::value &&
+        std::is_move_constructible< T >::value > >
+{
+    inline std::unique_ptr< T >
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static std::unique_ptr< T >
+    get(ibstream& is)
+    {
+        return std::make_unique< T >( value_deserializer< T >::get( is ) );
+    }
+};
+
+/*
+    *	The value_deserializer<shared_ptr<T>> based on a ref_deserializer<T> 
+    *	requires eiher a move contructor or copy constructor for T;
+    *	prefer the move contructor
+    */
+
+template< class T >
+struct ptr_deserializer< T,
+    typename std::enable_if_t<
+        !is_ibstream_constructible< T >::value &&
+        !has_value_deserializer< T >::value &&
+        has_ref_deserializer< T >::value &&
+        std::is_default_constructible< T >::value > >
+{
+    inline T* 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static T*
+    get( ibstream& is )
+    {
+        T *ptr = new T;
+        ref_deserializer< T >::get( is, *ptr );
+        return ptr;
+    }
+};
+
+template< class T >
+struct shared_ptr_deserializer< T,
+    typename std::enable_if_t<
+        !is_ibstream_constructible< T >::value &&
+        !has_value_deserializer< T >::value &&
+        has_ref_deserializer< T >::value &&
+        std::is_default_constructible< T >::value > >
+{
+    inline std::shared_ptr< T >
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static std::shared_ptr< T >
+    get( ibstream& is )
+    {
+        std::shared_ptr< T > ptr = std::make_shared< T >();
+        ref_deserializer< T >::get( is, *ptr );
+        return ptr;
+    }
+};
+
+template< class T >
+struct unique_ptr_deserializer< T,
+    typename std::enable_if_t<
+        !is_ibstream_constructible< T >::value &&
+        !has_value_deserializer< T >::value &&
+        has_ref_deserializer< T >::value &&
+        std::is_default_constructible< T >::value > >
+{
+    inline std::unique_ptr< T > 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static std::unique_ptr< T >
+    get( ibstream& is )
+    {
+        std::unique_ptr< T > ptr = std::make_unique< T >();
+        ref_deserializer< T >::get( is, *ptr );
+        return ptr;
+    }
+};
+
+/*
+    *	Value deserializers for unique pointer types
+    */
+
+template<class T>
+struct value_deserializer< std::unique_ptr< T > >
+{
+    inline std::unique_ptr< T > 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
+    inline static std::unique_ptr<T>
+    get(ibstream& is)
+    {
+        return is.read_as_unique_ptr<T>();
+    }
+};
+
+
+
+/*
+ *	Prefer stream-constructed when available
+ */
+/*
+ *	If no stream constructor is available, prefer a value_deserializer<T>
+ * 
+ *	The value_deserializer<unique_ptr<T>> based on a value_deserializer<T> 
+ *	requires a move contructor for T
+ */
+
+/*
+ *	The value_deserializer<unique_ptr<T>> based on a ref_deserializer<T> 
+ *	requires either a move contructor or copy constructor for T;
+ *	prefer the move contructor
+ */
+
+template<class T, class Enable = void> 
+struct ibstream_initializer;
 
 template<class T, class Alloc>
 struct value_deserializer<std::vector<T, Alloc>,
         typename std::enable_if_t<is_ibstream_readable<T>::value>>
 {
+    inline std::vector<T, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     inline static std::vector<T, Alloc> 
     get(ibstream& is)
     {
@@ -1833,6 +2428,12 @@ template<class T, class Alloc>
 struct value_deserializer<std::list<T, Alloc>,
         typename std::enable_if_t<is_ibstream_readable<T>::value>>
 {
+    inline std::list<T, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     inline static std::list<T, Alloc> 
     get(ibstream& is)
     {
@@ -1850,6 +2451,12 @@ template<class T, class Alloc>
 struct value_deserializer<std::forward_list<T, Alloc>,
         typename std::enable_if_t<is_ibstream_readable<T>::value>>
 {
+    inline std::forward_list<T, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     inline static std::forward_list<T, Alloc> 
     get(ibstream& is)
     {
@@ -1868,6 +2475,12 @@ template<class T, class Alloc>
 struct value_deserializer<std::deque<T, Alloc>,
         typename std::enable_if_t<is_ibstream_readable<T>::value>>
 {
+    inline std::deque<T, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     inline static std::deque<T, Alloc> 
     get(ibstream& is)
     {
@@ -1885,6 +2498,12 @@ template<class T, class Compare, class Alloc>
 struct value_deserializer<std::set<T, Compare, Alloc>,
         typename std::enable_if_t<is_ibstream_readable<T>::value>>
 {
+    inline std::set<T, Compare, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     inline static std::set<T, Compare, Alloc> 
     get(ibstream& is)
     {
@@ -1902,6 +2521,12 @@ template<class T, class Compare, class Alloc>
 struct value_deserializer<std::multiset<T, Compare, Alloc>,
         typename std::enable_if_t<is_ibstream_readable<T>::value>>
 {
+    inline std::multiset<T, Compare, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     inline static std::multiset<T, Compare, Alloc> 
     get(ibstream& is)
     {
@@ -1919,6 +2544,12 @@ template<class T, class Hash, class Equal, class Alloc>
 struct value_deserializer<std::unordered_set<T, Hash, Equal, Alloc>,
         typename std::enable_if_t<is_ibstream_readable<T>::value>>
 {
+    inline std::unordered_set<T, Hash, Equal, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     inline static std::unordered_set<T, Hash, Equal, Alloc> 
     get(ibstream& is)
     {
@@ -1936,6 +2567,12 @@ template<class T, class Hash, class Equal, class Alloc>
 struct value_deserializer<std::unordered_multiset<T, Hash, Equal, Alloc>,
         typename std::enable_if_t<is_ibstream_readable<T>::value>>
 {
+    inline std::unordered_multiset<T, Hash, Equal, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     inline static std::unordered_multiset<T, Hash, Equal, Alloc> 
     get(ibstream& is)
     {
@@ -1955,6 +2592,12 @@ struct value_deserializer<std::unordered_map<K, V, Hash, Equal, Alloc>,
             is_ibstream_readable<K>::value &&
             is_ibstream_readable<V>::value>>
 {
+    inline std::unordered_map<K, V, Hash, Equal, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline std::unordered_map<K, V, Hash, Equal, Alloc>
     get(ibstream& is)
     {
@@ -1978,6 +2621,12 @@ struct value_deserializer<std::unordered_multimap<K, V, Hash, Equal, Alloc>,
             is_ibstream_readable<K>::value &&
             is_ibstream_readable<V>::value>>
 {
+    inline std::unordered_multimap<K, V, Hash, Equal, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline std::unordered_multimap<K, V, Hash, Equal, Alloc>
     get(ibstream& is)
     {
@@ -2006,6 +2655,12 @@ struct value_deserializer<std::map<K, V, Compare, Alloc>,
             is_ibstream_readable<K>::value &&
             is_ibstream_readable<V>::value>>
 {
+    inline std::map<K, V, Compare, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline std::map<K, V, Compare, Alloc>
     get(ibstream& is)
     {
@@ -2027,6 +2682,12 @@ struct value_deserializer<std::multimap<K, V, Compare, Alloc>,
             is_ibstream_readable<K>::value &&
             is_ibstream_readable<V>::value>>
 {
+    inline std::multimap<K, V, Compare, Alloc> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline std::multimap<K, V, Compare, Alloc>
     get(ibstream& is)
     {
@@ -2048,6 +2709,12 @@ struct value_deserializer<std::tuple<Args...>,
 {
     using tuple_type = std::tuple<Args...>;
     
+    inline tuple_type 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline tuple_type
     get(ibstream& is)
     {
@@ -2081,6 +2748,12 @@ struct value_deserializer<std::pair<T1, T2>,
             std::is_move_constructible<T1>::value &&
             std::is_move_constructible<T2>::value>>
 {
+    inline std::pair<T1, T2> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline std::pair<T1, T2>
     get(ibstream& is)
     {
@@ -2097,6 +2770,12 @@ struct value_deserializer<std::pair<T1, T2>,
             (!std::is_move_constructible<T1>::value && std::is_copy_constructible<T1>::value) &&
             std::is_move_constructible<T2>::value>>
 {
+    inline std::pair<T1, T2> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline std::pair<T1, T2>
     get(ibstream& is)
     {
@@ -2113,6 +2792,12 @@ struct value_deserializer<std::pair<T1, T2>,
             std::is_move_constructible<T1>::value &&
             (!std::is_move_constructible<T2>::value && std::is_copy_constructible<T2>::value)>>
 {
+    inline std::pair<T1, T2> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline std::pair<T1, T2>
     get(ibstream& is)
     {
@@ -2129,6 +2814,12 @@ struct value_deserializer<std::pair<T1, T2>,
             (!std::is_move_constructible<T1>::value && std::is_copy_constructible<T1>::value) &&
             (!std::is_move_constructible<T2>::value && std::is_copy_constructible<T2>::value)>>
 {
+    inline std::pair<T1, T2> 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline std::pair<T1, T2>
     get(ibstream& is)
     {
@@ -2142,10 +2833,32 @@ struct value_deserializer<std::pair<T1, T2>,
 template<>
 struct value_deserializer< nodeoze::buffer >
 {
+    inline nodeoze::buffer 
+    operator()( ibstream& is )  const
+    {
+        return get(is);
+    }
+
     static inline nodeoze::buffer
     get( ibstream& is )
     {
         return is.read_blob();
+    }
+};
+
+template<>
+struct value_deserializer< std::error_code >
+{
+    inline std::error_code
+    operator()( ibstream& is ) const
+    {
+        return get( is );
+    }
+
+    static inline std::error_code
+    get( ibstream& is )
+    {
+        return is.read_error_code();
     }
 };
 

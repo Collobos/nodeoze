@@ -26,19 +26,4 @@
 
 using namespace nodeoze;
 
-bool bstream::obs_ptr_context::maybe_write_shared_ptr( obstream& os, void *ptr)
-{
-	os.write_array_header(1);
-	auto it = m_shared_pointers.find(ptr);
-	if (it != m_shared_pointers.end())
-	{
-		os.put_num(it->second);
-		return true;
-	}
-	else
-	{
-		m_shared_pointers.emplace(ptr, m_shared_pointers.size());
-		return false;
-	}
-}
 

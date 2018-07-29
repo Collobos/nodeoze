@@ -6,6 +6,9 @@
 
 using namespace nodeoze;
 
+namespace test_types_2
+{
+
 class fee
 {
 public:
@@ -59,24 +62,26 @@ public:
     std::string s;    
 };
 
+} // namespace test_types_2
+
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor 
 {
 template <>
-struct as<foe> 
+struct as<test_types_2::foe> 
 {
-    foe operator()(msgpack::object const& o) const {
+    test_types_2::foe operator()(msgpack::object const& o) const {
         if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
         if (o.via.array.size != 2) throw msgpack::type_error();
-        return foe(o.via.array.ptr[0].as<int>(), o.via.array.ptr[1].as<std::string>());
+        return test_types_2::foe(o.via.array.ptr[0].as<int>(), o.via.array.ptr[1].as<std::string>());
     }
 };
 
 template<>
-struct pack<foe> {
+struct pack<test_types_2::foe> {
     template <typename Stream>
-    packer<Stream>& operator()(msgpack::packer<Stream>& o, foe const& v) const {
+    packer<Stream>& operator()(msgpack::packer<Stream>& o, test_types_2::foe const& v) const {
         // packing member variables as an array.
         o.pack_array(2);
         o.pack(v.n);
@@ -86,9 +91,9 @@ struct pack<foe> {
 };
 
 template<>
-struct pack<fum> {
+struct pack<test_types_2::fum> {
     template <typename Stream>
-    packer<Stream>& operator()(msgpack::packer<Stream>& o, fum const& v) const {
+    packer<Stream>& operator()(msgpack::packer<Stream>& o, test_types_2::fum const& v) const {
         // packing member variables as an array.
         o.pack_array(2);
         o.pack(v.n);
@@ -100,9 +105,9 @@ struct pack<fum> {
 	
 // Place class template specialization here
 template<>
-struct convert<fum> 
+struct convert<test_types_2::fum> 
 {
-	msgpack::object const& operator()(msgpack::object const& o, fum& v) const 
+	msgpack::object const& operator()(msgpack::object const& o, test_types_2::fum& v) const 
 	{
 		try
 		{
@@ -130,11 +135,12 @@ struct convert<fum>
 } // msgpack
 
 
-BSTRM_HAS_MSGPACK_CVT_ADAPTOR(fum);
-BSTRM_HAS_MSGPACK_PACK_ADAPTOR(fum);
-BSTRM_HAS_MSGPACK_PACK_ADAPTOR(foe);
-BSTRM_HAS_MSGPACK_AS_ADAPTOR(foe);
+BSTRM_HAS_MSGPACK_CVT_ADAPTOR(test_types_2::fum);
+BSTRM_HAS_MSGPACK_PACK_ADAPTOR(test_types_2::fum);
+BSTRM_HAS_MSGPACK_PACK_ADAPTOR(test_types_2::foe);
+BSTRM_HAS_MSGPACK_AS_ADAPTOR(test_types_2::foe);
 
+using namespace test_types_2;
 
 TEST_CASE("nodeoze/smoke/bstream/msgpack_integration")
 {

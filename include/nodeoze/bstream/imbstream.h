@@ -18,20 +18,20 @@ public:
     imbstream( imbstream&& ) = delete;
 
     inline
-    imbstream( std::unique_ptr< ibmembuf > strmbuf, ibs_context::ptr context = nullptr )
-    : ibstream{ std::move( strmbuf ), std::move( context ) }
+    imbstream( std::unique_ptr< ibmembuf > strmbuf, context_base const& cntxt = get_default_context() )
+    : ibstream{ std::move( strmbuf ), cntxt }
     {}
 
     inline
-    imbstream( buffer const& buf, ibs_context::ptr context = nullptr )
+    imbstream( buffer const& buf, context_base const& cntxt = get_default_context() )
     :
-    ibstream( std::make_unique< ibmembuf >( buf ), std::move( context ) )
+    ibstream( std::make_unique< ibmembuf >( buf ), cntxt )
     {}
 
     inline
-    imbstream( buffer&& buf, ibs_context::ptr context = nullptr )
+    imbstream( buffer&& buf, context_base const& cntxt = get_default_context() )
     :
-    ibstream{ std::make_unique< ibmembuf >( std::move( buf ) ), std::move( context ) }
+    ibstream{ std::make_unique< ibmembuf >( std::move( buf ) ), cntxt }
     {}
 
     inline void
@@ -62,51 +62,6 @@ public:
         reset( err );
     }
 
-    inline void
-    use( std::unique_ptr< ibmembuf > strmbuf, ibs_context::ptr context )
-    {
-        inumstream::use( std::move( strmbuf ) );
-        m_context = std::move( context );
-        reset();
-    }
-
-    inline void
-    use( std::unique_ptr< ibmembuf > strmbuf, ibs_context::ptr context, std::error_code& err )
-    {
-        inumstream::use( std::move( strmbuf ) );
-        m_context = std::move( context );
-        reset( err );
-    }
-
-    inline void
-    use( buffer&& buf, ibs_context::ptr context )
-    {
-        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ) ) );
-        m_context = std::move( context );
-        reset();
-    }
-
-    inline void
-    use( buffer&& buf, ibs_context::ptr context, std::error_code& err )
-    {
-        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ) ) );
-        m_context = std::move( context );
-        reset( err );
-    }
-
-/*
-    inline
-    imbstream( buffer const& buf )
-    : 
-    ibstream{ std::unique_ptr< ibmembuf >( new ibmembuf( buf ) ) }
-    {}
-
-    inline
-    imbstream( buffer&& buf )
-    : 
-    ibstream{ std::unique_ptr< ibmembuf>( new ibmembuf( std::move( buf ) ) }
-    {}
-*/
     inline buffer
     get_buffer()
     {

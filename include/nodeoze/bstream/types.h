@@ -13,15 +13,10 @@ namespace bstream
     using position_type = std::int64_t;
     using offset_type  = std::int64_t;
     using byte_type = std::uint8_t;
+    using poly_tag_type = int;
 
+    static constexpr poly_tag_type invalid_tag = -1;
     static constexpr position_type invalid_position = -1;
-
-    // inline void
-    // clear_error( std::error_code& err )
-    // {
-    //     static const std::error_code ok = make_error_code( bstream::errc::ok );
-    //     err = ok;
-    // }
 
     enum class seek_anchor
     {

@@ -40,84 +40,45 @@ namespace nodeoze
 {
 namespace bstream
 {
-	
-	template<class Derived>
-	class map_base
-	{
-	protected:
-		inline map_base(bstream::ibstream& is)
-		{
-			auto length = is.read_map_header();
-            if (length != _item_count())
-            {
-                throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
-            }
-		}
 
-        inline map_base() {};
-            
-        inline obstream& 
-        _serialize(obstream& os) const
+template<class Derived>
+class streaming_base
+{
+protected:
+    inline streaming_base(bstream::ibstream& is)
+    {			
+        auto length = is.read_array_header();
+        if (length != _item_count())
         {
-            return os.write_map_header(_item_count());
+            throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
         }
-        
-        inline ibstream&
-        _deserialize(ibstream& is)
-        {
-            auto length = is.read_map_header();
-            if (length != _item_count())
-            {
-                throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
-            }
-            return is;
-        }
-        
-        inline std::size_t
-        _item_count() const
-        {
-            return static_cast<const Derived&>(*this)._streamed_item_count();
-        }
-	};
-    
-    template<class Derived>
-    class array_base
+    }
+
+    inline streaming_base() {};
+
+    inline obstream& 
+    _serialize(obstream& os) const
     {
-    protected:
-        inline array_base(bstream::ibstream& is)
-        {			
-            auto length = is.read_array_header();
-            if (length != _item_count())
-            {
-                throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
-            }
-        }
-
-        inline array_base() {};
-            
-        inline obstream& 
-        _serialize(obstream& os) const
+        return os.write_array_header(_item_count());
+    }
+    
+    inline ibstream&
+    _deserialize(ibstream& is)
+    {
+        auto length = is.read_array_header();
+        if (length != _item_count())
         {
-            return os.write_array_header(_item_count());
+            throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
         }
-        
-        inline ibstream&
-        _deserialize(ibstream& is)
-        {
-            auto length = is.read_array_header();
-            if (length != _item_count())
-            {
-                throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
-            }
-            return is;
-        }
-        
-        inline std::size_t
-        _item_count() const
-        {
-            return static_cast<const Derived&>(*this)._streamed_item_count();
-        }
-    };
+        return is;
+    }
+    
+    inline std::size_t
+    _item_count() const
+    {
+        return static_cast<const Derived&>(*this)._streamed_item_count();
+    }
+};
 
 } // namespace bstream
 } // namespace nodeoze

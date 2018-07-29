@@ -565,17 +565,6 @@ public:
 	{
 		return m_reverse_order ? ( (bend::order::native == bend::order::little ) ? bend::order::big : bend::order::little ) : ( bend::order::native );
 	}
-/*
-	void 
-	dump( std::ostream& os, position_type pos, size_type length );
-
-	std::string 
-	strdump( position_type pos, size_type length );
-*/
-/*
-	void 
-	dump_state( std::ostream& os );
-*/
 
 protected:
 

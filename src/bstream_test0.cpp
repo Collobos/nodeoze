@@ -8,7 +8,7 @@
 
 using namespace nodeoze;
 
-namespace test_types
+namespace test_types_0
 {
 	struct simple_state
 	{
@@ -63,7 +63,9 @@ namespace test_types
 		fee(std::string const& nstr, int val) : simple_state{nstr, val} {}
 		fee(fee const& other) = default;
 		fee(fee&&) = default;
-		
+
+    	template<class _U, class _V, class _E> friend struct base_serialize;
+
 		bstream::obstream& serialize(bstream::obstream& os) const
 		{
 			os.write_array_header(2);
@@ -76,6 +78,7 @@ namespace test_types
 			is.check_array_header(2) >> name >> value;
 			return is;
 		}
+
 		fee& operator=(fee&& other) = default;
 		fee& operator=(fee const& other) = default;
 	};
@@ -83,9 +86,9 @@ namespace test_types
 
 namespace std 
 {
-	template<> struct hash<test_types::fee>  
+	template<> struct hash<test_types_0::fee>  
 	{
-		typedef test_types::fee argument_type;
+		typedef test_types_0::fee argument_type;
 		typedef std::hash<std::string>::result_type result_type;
 		result_type operator()( const argument_type& arg ) const  {
 			std::hash<std::string> hasher;
@@ -93,11 +96,11 @@ namespace std
 		}  
 	};
 
-	template<> struct less<test_types::fee>
+	template<> struct less<test_types_0::fee>
 	{
 
-		typedef test_types::fee first_argument_type;
-		typedef test_types::fee second_argument_type;
+		typedef test_types_0::fee first_argument_type;
+		typedef test_types_0::fee second_argument_type;
 		typedef bool result_type;
 		result_type operator()(const first_argument_type& x, const second_argument_type& y) const
 		{
@@ -106,7 +109,7 @@ namespace std
 	};
 }
 
-namespace test_types
+namespace test_types_0
 {
 	struct fie : public simple_state // serializer/value_deserializer/move ctor
 	{
@@ -121,9 +124,9 @@ namespace test_types
 
 namespace std 
 {
-	template<> struct hash<test_types::fie>  
+	template<> struct hash<test_types_0::fie>  
 	{
-		typedef test_types::fie argument_type;
+		typedef test_types_0::fie argument_type;
 		typedef std::hash<std::string>::result_type result_type;
 		result_type operator()( const argument_type& arg ) const  {
 			std::hash<std::string> hasher;
@@ -131,11 +134,11 @@ namespace std
 		}  
 	}; 
 	
-	template<> struct less<test_types::fie>
+	template<> struct less<test_types_0::fie>
 	{
 
-		typedef test_types::fie first_argument_type;
-		typedef test_types::fie second_argument_type;
+		typedef test_types_0::fie first_argument_type;
+		typedef test_types_0::fie second_argument_type;
 		typedef bool result_type;
 		result_type operator()(const first_argument_type& x, const second_argument_type& y) const
 		{
@@ -145,9 +148,9 @@ namespace std
 }
 
 template<>
-struct bstream::serializer<test_types::fie>
+struct bstream::serializer<test_types_0::fie>
 {
-	static inline bstream::obstream& put(bstream::obstream& os, test_types::fie const& obj)
+	static inline bstream::obstream& put(bstream::obstream& os, test_types_0::fie const& obj)
 	{
 		os.write_array_header(2);
 		os << obj.name << obj.value;
@@ -156,18 +159,18 @@ struct bstream::serializer<test_types::fie>
 };
 
 template<>
-struct bstream::value_deserializer<test_types::fie>
+struct bstream::value_deserializer<test_types_0::fie>
 {
-	static inline test_types::fie get(bstream::ibstream& is)
+	static inline test_types_0::fie get(bstream::ibstream& is)
 	{
 		is.check_array_header(2);
 		auto s = is.read_as<std::string>();
 		auto v = is.read_as<int>();
-		return test_types::fie(s, v);
+		return test_types_0::fie(s, v);
 	}
 };
 
-namespace test_types
+namespace test_types_0
 {
 	struct foe : public simple_state // serializer/ref_deserializer/default ctor/copy ctor
 	{
@@ -182,9 +185,9 @@ namespace test_types
 
 namespace std 
 {
-	template<> struct hash<test_types::foe>  
+	template<> struct hash<test_types_0::foe>  
 	{
-		typedef test_types::foe argument_type;
+		typedef test_types_0::foe argument_type;
 		typedef std::hash<std::string>::result_type result_type;
 		result_type operator()( const argument_type& arg ) const  {
 			std::hash<std::string> hasher;
@@ -192,11 +195,11 @@ namespace std
 		}  
 	};
 	
-	template<> struct less<test_types::foe>
+	template<> struct less<test_types_0::foe>
 	{
 
-		typedef test_types::foe first_argument_type;
-		typedef test_types::foe second_argument_type;
+		typedef test_types_0::foe first_argument_type;
+		typedef test_types_0::foe second_argument_type;
 		typedef bool result_type;
 		result_type operator()(const first_argument_type& x, const second_argument_type& y) const
 		{
@@ -206,9 +209,9 @@ namespace std
 }
 
 template<>
-struct bstream::serializer<test_types::foe>
+struct bstream::serializer<test_types_0::foe>
 {
-	static inline bstream::obstream& put(bstream::obstream& os, test_types::foe const& obj)
+	static inline bstream::obstream& put(bstream::obstream& os, test_types_0::foe const& obj)
 	{
 		os.write_array_header(2);
 		os << obj.name << obj.value;
@@ -216,9 +219,9 @@ struct bstream::serializer<test_types::foe>
 	}
 };
 template<>
-struct bstream::ref_deserializer<test_types::foe>
+struct bstream::ref_deserializer<test_types_0::foe>
 {
-	static inline bstream::ibstream& get(bstream::ibstream& is, test_types::foe& obj)
+	static inline bstream::ibstream& get(bstream::ibstream& is, test_types_0::foe& obj)
 	{
 		is.check_array_header(2);
 		is >> obj.name >> obj.value;
@@ -226,7 +229,7 @@ struct bstream::ref_deserializer<test_types::foe>
 	}
 };
 
-namespace test_types
+namespace test_types_0
 {
 	struct fum : public simple_state // serialize/istream ctor/move ctor
 	{
@@ -253,9 +256,9 @@ namespace test_types
 
 namespace std 
 {
-	template<> struct hash<test_types::fum>  
+	template<> struct hash<test_types_0::fum>  
 	{
-		typedef test_types::fum argument_type;
+		typedef test_types_0::fum argument_type;
 		typedef std::hash<std::string>::result_type result_type;
 		result_type operator()( const argument_type& arg ) const  {
 			std::hash<std::string> hasher;
@@ -263,11 +266,11 @@ namespace std
 		}  
 	};
 	
-	template<> struct less<test_types::fum>
+	template<> struct less<test_types_0::fum>
 	{
 
-		typedef test_types::fum first_argument_type;
-		typedef test_types::fum second_argument_type;
+		typedef test_types_0::fum first_argument_type;
+		typedef test_types_0::fum second_argument_type;
 		typedef bool result_type;
 		result_type operator()(const first_argument_type& x, const second_argument_type& y) const
 		{
@@ -276,17 +279,44 @@ namespace std
 	};
 }
 
-namespace test_types
+namespace test_types_0
 {
-	class foo : BSTRM_MAP_BASE(foo), 
-			protected fee, public fie, public foe, public fum
+	class foo : BSTRM_BASE(foo), 
+			public fee, public fie, public foe, public fum
 	{
 	public:
 		foo() {}
+//		virtual ~foo() {}
+
+//		friend struct nodeoze::bstream::base_serializer< foo, fee >;
+    	template<class _U, class _V, class _E> friend struct base_serialize;
+
 		foo(fee const& a, fie const& b, foe const& c, fum const& d, std::string const& l) :
 		fee{a}, fie{b}, foe{c}, fum{d}, label{l} {}
 
-		BSTRM_MAP_CLASS(foo, (fee, fie, foe, fum) , (label))
+		// BSTRM_MAP_CLASS(foo, (fee, fie, foe, fum) , (label))
+
+		BSTRM_FRIEND_BASE(foo)
+		BSTRM_CTOR( foo, ( fee, fie, foe, fum ), ( label ) )
+		BSTRM_ITEM_COUNT( ( fee, fie, foe, fum ), ( label ) )
+		BSTRM_SERIALIZE( foo, ( fee, fie, foe, fum ), ( label ) )
+
+		// virtual bstream::obstream&
+		// serialize( bstream::obstream& os ) const
+		// {
+		// 	base_type::_serialize(os);
+		// 	os << std::string("fee");
+		// 	fee::serialize(os);
+		// 	os << std::string("fie");
+		// 	bstream::serializer<fie>::put(os, static_cast<const fie&>(*this));
+		// 	os << std::string("foe");
+		// 	bstream::serializer<foe>::put(os, static_cast<const foe&>(*this));
+		// 	os << std::string("fum");
+		// 	fum::serialize(os);
+		// 	os << std::string("label");
+		// 	os << label; 
+		// 	return os;
+		// }
 
 		bool operator==(foo const& other) const
 		{
@@ -1022,185 +1052,185 @@ bool same_contents(std::unordered_map<K, V> const& a, std::unordered_map<K, V> c
 TEST_CASE("nodeoze/smoke/bstream/unordered_map")
 {
 	{
-		std::unordered_map<test_types::fee, test_types::fee> map0;
-		map0.emplace(test_types::fee{"zoot", 0}, test_types::fee{"arble", 100});
+		std::unordered_map<test_types_0::fee, test_types_0::fee> map0;
+		map0.emplace(test_types_0::fee{"zoot", 0}, test_types_0::fee{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fee, test_types::fee> map1;
+		std::unordered_map<test_types_0::fee, test_types_0::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fee, test_types::fie> map0;
-		map0.emplace(test_types::fee{"zoot", 0}, test_types::fie{"arble", 100});
+		std::unordered_map<test_types_0::fee, test_types_0::fie> map0;
+		map0.emplace(test_types_0::fee{"zoot", 0}, test_types_0::fie{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fee, test_types::fie> map1;
+		std::unordered_map<test_types_0::fee, test_types_0::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fee, test_types::foe> map0;
-		map0.emplace(test_types::fee{"zoot", 0}, test_types::foe{"arble", 100});
+		std::unordered_map<test_types_0::fee, test_types_0::foe> map0;
+		map0.emplace(test_types_0::fee{"zoot", 0}, test_types_0::foe{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fee, test_types::foe> map1;
+		std::unordered_map<test_types_0::fee, test_types_0::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fee, test_types::fum> map0;
-		map0.emplace(test_types::fee{"zoot", 0}, test_types::fum{"arble", 100});
+		std::unordered_map<test_types_0::fee, test_types_0::fum> map0;
+		map0.emplace(test_types_0::fee{"zoot", 0}, test_types_0::fum{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fee, test_types::fum> map1;
+		std::unordered_map<test_types_0::fee, test_types_0::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fie, test_types::fee> map0;
-		map0.emplace(test_types::fie{"zoot", 0}, test_types::fee{"arble", 100});
+		std::unordered_map<test_types_0::fie, test_types_0::fee> map0;
+		map0.emplace(test_types_0::fie{"zoot", 0}, test_types_0::fee{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fie, test_types::fee> map1;
+		std::unordered_map<test_types_0::fie, test_types_0::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fie, test_types::fie> map0;
-		map0.emplace(test_types::fie{"zoot", 0}, test_types::fie{"arble", 100});
+		std::unordered_map<test_types_0::fie, test_types_0::fie> map0;
+		map0.emplace(test_types_0::fie{"zoot", 0}, test_types_0::fie{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fie, test_types::fie> map1;
+		std::unordered_map<test_types_0::fie, test_types_0::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fie, test_types::foe> map0;
-		map0.emplace(test_types::fie{"zoot", 0}, test_types::foe{"arble", 100});
+		std::unordered_map<test_types_0::fie, test_types_0::foe> map0;
+		map0.emplace(test_types_0::fie{"zoot", 0}, test_types_0::foe{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fie, test_types::foe> map1;
+		std::unordered_map<test_types_0::fie, test_types_0::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fie, test_types::fum> map0;
-		map0.emplace(test_types::fie{"zoot", 0}, test_types::fum{"arble", 100});
+		std::unordered_map<test_types_0::fie, test_types_0::fum> map0;
+		map0.emplace(test_types_0::fie{"zoot", 0}, test_types_0::fum{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fie, test_types::fum> map1;
-		is >> map1;
-		CHECK(map1.size() == 1);
-		CHECK(same_contents(map1, map0));
-	}
-
-
-	{
-		std::unordered_map<test_types::foe, test_types::fee> map0;
-		map0.emplace(test_types::foe{"zoot", 0}, test_types::fee{"arble", 100});
-		bstream::ombstream os{1024};
-		os << map0;
-		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::foe, test_types::fee> map1;
-		is >> map1;
-		CHECK(map1.size() == 1);
-		CHECK(same_contents(map1, map0));
-	}
-	{
-		std::unordered_map<test_types::foe, test_types::fie> map0;
-		map0.emplace(test_types::foe{"zoot", 0}, test_types::fie{"arble", 100});
-		bstream::ombstream os{1024};
-		os << map0;
-		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::foe, test_types::fie> map1;
-		is >> map1;
-		CHECK(map1.size() == 1);
-		CHECK(same_contents(map1, map0));
-	}
-	{
-		std::unordered_map<test_types::foe, test_types::foe> map0;
-		map0.emplace(test_types::foe{"zoot", 0}, test_types::foe{"arble", 100});
-		bstream::ombstream os{1024};
-		os << map0;
-		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::foe, test_types::foe> map1;
-		is >> map1;
-		CHECK(map1.size() == 1);
-		CHECK(same_contents(map1, map0));
-	}
-	{
-		std::unordered_map<test_types::foe, test_types::fum> map0;
-		map0.emplace(test_types::foe{"zoot", 0}, test_types::fum{"arble", 100});
-		bstream::ombstream os{1024};
-		os << map0;
-		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::foe, test_types::fum> map1;
+		std::unordered_map<test_types_0::fie, test_types_0::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 
 
-
 	{
-		std::unordered_map<test_types::fum, test_types::fee> map0;
-		map0.emplace(test_types::fum{"zoot", 0}, test_types::fee{"arble", 100});
+		std::unordered_map<test_types_0::foe, test_types_0::fee> map0;
+		map0.emplace(test_types_0::foe{"zoot", 0}, test_types_0::fee{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fum, test_types::fee> map1;
+		std::unordered_map<test_types_0::foe, test_types_0::fee> map1;
+		is >> map1;
+		CHECK(map1.size() == 1);
+		CHECK(same_contents(map1, map0));
+	}
+	{
+		std::unordered_map<test_types_0::foe, test_types_0::fie> map0;
+		map0.emplace(test_types_0::foe{"zoot", 0}, test_types_0::fie{"arble", 100});
+		bstream::ombstream os{1024};
+		os << map0;
+		bstream::imbstream is{ os.get_buffer() };
+		std::unordered_map<test_types_0::foe, test_types_0::fie> map1;
+		is >> map1;
+		CHECK(map1.size() == 1);
+		CHECK(same_contents(map1, map0));
+	}
+	{
+		std::unordered_map<test_types_0::foe, test_types_0::foe> map0;
+		map0.emplace(test_types_0::foe{"zoot", 0}, test_types_0::foe{"arble", 100});
+		bstream::ombstream os{1024};
+		os << map0;
+		bstream::imbstream is{ os.get_buffer() };
+		std::unordered_map<test_types_0::foe, test_types_0::foe> map1;
+		is >> map1;
+		CHECK(map1.size() == 1);
+		CHECK(same_contents(map1, map0));
+	}
+	{
+		std::unordered_map<test_types_0::foe, test_types_0::fum> map0;
+		map0.emplace(test_types_0::foe{"zoot", 0}, test_types_0::fum{"arble", 100});
+		bstream::ombstream os{1024};
+		os << map0;
+		bstream::imbstream is{ os.get_buffer() };
+		std::unordered_map<test_types_0::foe, test_types_0::fum> map1;
+		is >> map1;
+		CHECK(map1.size() == 1);
+		CHECK(same_contents(map1, map0));
+	}
+
+
+
+	{
+		std::unordered_map<test_types_0::fum, test_types_0::fee> map0;
+		map0.emplace(test_types_0::fum{"zoot", 0}, test_types_0::fee{"arble", 100});
+		bstream::ombstream os{1024};
+		os << map0;
+		bstream::imbstream is{ os.get_buffer() };
+		std::unordered_map<test_types_0::fum, test_types_0::fee> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fum, test_types::fie> map0;
-		map0.emplace(test_types::fum{"zoot", 0}, test_types::fie{"arble", 100});
+		std::unordered_map<test_types_0::fum, test_types_0::fie> map0;
+		map0.emplace(test_types_0::fum{"zoot", 0}, test_types_0::fie{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fum, test_types::fie> map1;
+		std::unordered_map<test_types_0::fum, test_types_0::fie> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fum, test_types::foe> map0;
-		map0.emplace(test_types::fum{"zoot", 0}, test_types::foe{"arble", 100});
+		std::unordered_map<test_types_0::fum, test_types_0::foe> map0;
+		map0.emplace(test_types_0::fum{"zoot", 0}, test_types_0::foe{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fum, test_types::foe> map1;
+		std::unordered_map<test_types_0::fum, test_types_0::foe> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::unordered_map<test_types::fum, test_types::fum> map0;
-		map0.emplace(test_types::fum{"zoot", 0}, test_types::fum{"arble", 100});
+		std::unordered_map<test_types_0::fum, test_types_0::fum> map0;
+		map0.emplace(test_types_0::fum{"zoot", 0}, test_types_0::fum{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_map<test_types::fum, test_types::fum> map1;
+		std::unordered_map<test_types_0::fum, test_types_0::fum> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
 		CHECK(map1.size() == 1);
@@ -1232,185 +1262,185 @@ bool same_contents(std::map<K, V> const& a, std::map<K, V> const& b)
 TEST_CASE("nodeoze/smoke/bstream/map")
 {
 	{
-		std::map<test_types::fee, test_types::fee> map0;
-		map0.emplace(test_types::fee{"zoot", 0}, test_types::fee{"arble", 100});
+		std::map<test_types_0::fee, test_types_0::fee> map0;
+		map0.emplace(test_types_0::fee{"zoot", 0}, test_types_0::fee{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fee, test_types::fee> map1;
+		std::map<test_types_0::fee, test_types_0::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fee, test_types::fie> map0;
-		map0.emplace(test_types::fee{"zoot", 0}, test_types::fie{"arble", 100});
+		std::map<test_types_0::fee, test_types_0::fie> map0;
+		map0.emplace(test_types_0::fee{"zoot", 0}, test_types_0::fie{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fee, test_types::fie> map1;
+		std::map<test_types_0::fee, test_types_0::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fee, test_types::foe> map0;
-		map0.emplace(test_types::fee{"zoot", 0}, test_types::foe{"arble", 100});
+		std::map<test_types_0::fee, test_types_0::foe> map0;
+		map0.emplace(test_types_0::fee{"zoot", 0}, test_types_0::foe{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fee, test_types::foe> map1;
+		std::map<test_types_0::fee, test_types_0::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fee, test_types::fum> map0;
-		map0.emplace(test_types::fee{"zoot", 0}, test_types::fum{"arble", 100});
+		std::map<test_types_0::fee, test_types_0::fum> map0;
+		map0.emplace(test_types_0::fee{"zoot", 0}, test_types_0::fum{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fee, test_types::fum> map1;
+		std::map<test_types_0::fee, test_types_0::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fie, test_types::fee> map0;
-		map0.emplace(test_types::fie{"zoot", 0}, test_types::fee{"arble", 100});
+		std::map<test_types_0::fie, test_types_0::fee> map0;
+		map0.emplace(test_types_0::fie{"zoot", 0}, test_types_0::fee{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fie, test_types::fee> map1;
+		std::map<test_types_0::fie, test_types_0::fee> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fie, test_types::fie> map0;
-		map0.emplace(test_types::fie{"zoot", 0}, test_types::fie{"arble", 100});
+		std::map<test_types_0::fie, test_types_0::fie> map0;
+		map0.emplace(test_types_0::fie{"zoot", 0}, test_types_0::fie{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fie, test_types::fie> map1;
+		std::map<test_types_0::fie, test_types_0::fie> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fie, test_types::foe> map0;
-		map0.emplace(test_types::fie{"zoot", 0}, test_types::foe{"arble", 100});
+		std::map<test_types_0::fie, test_types_0::foe> map0;
+		map0.emplace(test_types_0::fie{"zoot", 0}, test_types_0::foe{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fie, test_types::foe> map1;
+		std::map<test_types_0::fie, test_types_0::foe> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fie, test_types::fum> map0;
-		map0.emplace(test_types::fie{"zoot", 0}, test_types::fum{"arble", 100});
+		std::map<test_types_0::fie, test_types_0::fum> map0;
+		map0.emplace(test_types_0::fie{"zoot", 0}, test_types_0::fum{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fie, test_types::fum> map1;
-		is >> map1;
-		CHECK(map1.size() == 1);
-		CHECK(same_contents(map1, map0));
-	}
-
-
-	{
-		std::map<test_types::foe, test_types::fee> map0;
-		map0.emplace(test_types::foe{"zoot", 0}, test_types::fee{"arble", 100});
-		bstream::ombstream os{1024};
-		os << map0;
-		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::foe, test_types::fee> map1;
-		is >> map1;
-		CHECK(map1.size() == 1);
-		CHECK(same_contents(map1, map0));
-	}
-	{
-		std::map<test_types::foe, test_types::fie> map0;
-		map0.emplace(test_types::foe{"zoot", 0}, test_types::fie{"arble", 100});
-		bstream::ombstream os{1024};
-		os << map0;
-		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::foe, test_types::fie> map1;
-		is >> map1;
-		CHECK(map1.size() == 1);
-		CHECK(same_contents(map1, map0));
-	}
-	{
-		std::map<test_types::foe, test_types::foe> map0;
-		map0.emplace(test_types::foe{"zoot", 0}, test_types::foe{"arble", 100});
-		bstream::ombstream os{1024};
-		os << map0;
-		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::foe, test_types::foe> map1;
-		is >> map1;
-		CHECK(map1.size() == 1);
-		CHECK(same_contents(map1, map0));
-	}
-	{
-		std::map<test_types::foe, test_types::fum> map0;
-		map0.emplace(test_types::foe{"zoot", 0}, test_types::fum{"arble", 100});
-		bstream::ombstream os{1024};
-		os << map0;
-		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::foe, test_types::fum> map1;
+		std::map<test_types_0::fie, test_types_0::fum> map1;
 		is >> map1;
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 
 
-
 	{
-		std::map<test_types::fum, test_types::fee> map0;
-		map0.emplace(test_types::fum{"zoot", 0}, test_types::fee{"arble", 100});
+		std::map<test_types_0::foe, test_types_0::fee> map0;
+		map0.emplace(test_types_0::foe{"zoot", 0}, test_types_0::fee{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fum, test_types::fee> map1;
+		std::map<test_types_0::foe, test_types_0::fee> map1;
+		is >> map1;
+		CHECK(map1.size() == 1);
+		CHECK(same_contents(map1, map0));
+	}
+	{
+		std::map<test_types_0::foe, test_types_0::fie> map0;
+		map0.emplace(test_types_0::foe{"zoot", 0}, test_types_0::fie{"arble", 100});
+		bstream::ombstream os{1024};
+		os << map0;
+		bstream::imbstream is{ os.get_buffer() };
+		std::map<test_types_0::foe, test_types_0::fie> map1;
+		is >> map1;
+		CHECK(map1.size() == 1);
+		CHECK(same_contents(map1, map0));
+	}
+	{
+		std::map<test_types_0::foe, test_types_0::foe> map0;
+		map0.emplace(test_types_0::foe{"zoot", 0}, test_types_0::foe{"arble", 100});
+		bstream::ombstream os{1024};
+		os << map0;
+		bstream::imbstream is{ os.get_buffer() };
+		std::map<test_types_0::foe, test_types_0::foe> map1;
+		is >> map1;
+		CHECK(map1.size() == 1);
+		CHECK(same_contents(map1, map0));
+	}
+	{
+		std::map<test_types_0::foe, test_types_0::fum> map0;
+		map0.emplace(test_types_0::foe{"zoot", 0}, test_types_0::fum{"arble", 100});
+		bstream::ombstream os{1024};
+		os << map0;
+		bstream::imbstream is{ os.get_buffer() };
+		std::map<test_types_0::foe, test_types_0::fum> map1;
+		is >> map1;
+		CHECK(map1.size() == 1);
+		CHECK(same_contents(map1, map0));
+	}
+
+
+
+	{
+		std::map<test_types_0::fum, test_types_0::fee> map0;
+		map0.emplace(test_types_0::fum{"zoot", 0}, test_types_0::fee{"arble", 100});
+		bstream::ombstream os{1024};
+		os << map0;
+		bstream::imbstream is{ os.get_buffer() };
+		std::map<test_types_0::fum, test_types_0::fee> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fum, test_types::fie> map0;
-		map0.emplace(test_types::fum{"zoot", 0}, test_types::fie{"arble", 100});
+		std::map<test_types_0::fum, test_types_0::fie> map0;
+		map0.emplace(test_types_0::fum{"zoot", 0}, test_types_0::fie{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fum, test_types::fie> map1;
+		std::map<test_types_0::fum, test_types_0::fie> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fum, test_types::foe> map0;
-		map0.emplace(test_types::fum{"zoot", 0}, test_types::foe{"arble", 100});
+		std::map<test_types_0::fum, test_types_0::foe> map0;
+		map0.emplace(test_types_0::fum{"zoot", 0}, test_types_0::foe{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fum, test_types::foe> map1;
+		std::map<test_types_0::fum, test_types_0::foe> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
 		CHECK(map1.size() == 1);
 		CHECK(same_contents(map1, map0));
 	}
 	{
-		std::map<test_types::fum, test_types::fum> map0;
-		map0.emplace(test_types::fum{"zoot", 0}, test_types::fum{"arble", 100});
+		std::map<test_types_0::fum, test_types_0::fum> map0;
+		map0.emplace(test_types_0::fum{"zoot", 0}, test_types_0::fum{"arble", 100});
 		bstream::ombstream os{1024};
 		os << map0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::map<test_types::fum, test_types::fum> map1;
+		std::map<test_types_0::fum, test_types_0::fum> map1;
 		is >> map1;
 		CHECK(map0.size() == 1);
 		CHECK(map1.size() == 1);
@@ -1421,51 +1451,51 @@ TEST_CASE("nodeoze/smoke/bstream/map")
 TEST_CASE("nodeoze/smoke/bstream/vector")
 {
 	{
-		std::vector<test_types::fee> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::vector<test_types_0::fee> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << vec0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::vector<test_types::fee> vec1;
+		std::vector<test_types_0::fee> vec1;
 		is >> vec1;
 		CHECK(vec0 == vec1);
 		is.rewind();
-		std::vector<test_types::fee> vec2{is.read_as<std::vector<test_types::fee>>()};
+		std::vector<test_types_0::fee> vec2{is.read_as<std::vector<test_types_0::fee>>()};
 		CHECK(vec0 == vec2);
 	}
 	{
-		std::vector<test_types::fie> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::vector<test_types_0::fie> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << vec0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::vector<test_types::fie> vec1;
+		std::vector<test_types_0::fie> vec1;
 		is >> vec1;
 		CHECK(vec0 == vec1);
 		is.rewind();
-		std::vector<test_types::fie> vec2{is.read_as<std::vector<test_types::fie>>()};
+		std::vector<test_types_0::fie> vec2{is.read_as<std::vector<test_types_0::fie>>()};
 		CHECK(vec0 == vec2);
 	}
 	{
-		std::vector<test_types::foe> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::vector<test_types_0::foe> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << vec0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::vector<test_types::foe> vec1;
+		std::vector<test_types_0::foe> vec1;
 		is >> vec1;
 		CHECK(vec0 == vec1);
 		is.rewind();
-		std::vector<test_types::foe> vec2{is.read_as<std::vector<test_types::foe>>()};
+		std::vector<test_types_0::foe> vec2{is.read_as<std::vector<test_types_0::foe>>()};
 		CHECK(vec0 == vec2);
 	}
 	{
-		std::vector<test_types::fum> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::vector<test_types_0::fum> vec0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << vec0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::vector<test_types::fum> vec1;
+		std::vector<test_types_0::fum> vec1;
 		is >> vec1;
 		CHECK(vec0 == vec1);
 		is.rewind();
-		std::vector<test_types::fum> vec2{is.read_as<std::vector<test_types::fum>>()};
+		std::vector<test_types_0::fum> vec2{is.read_as<std::vector<test_types_0::fum>>()};
 		CHECK(vec0 == vec2);
 	}
 }
@@ -1473,51 +1503,51 @@ TEST_CASE("nodeoze/smoke/bstream/vector")
 TEST_CASE("nodeoze/smoke/bstream/deque")
 {
 	{
-		std::deque<test_types::fee> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::deque<test_types_0::fee> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << deq0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::deque<test_types::fee> deq1;
+		std::deque<test_types_0::fee> deq1;
 		is >> deq1;
 		CHECK(deq0 == deq1);
 		is.rewind();
-		std::deque<test_types::fee> deq2{is.read_as<std::deque<test_types::fee>>()};
+		std::deque<test_types_0::fee> deq2{is.read_as<std::deque<test_types_0::fee>>()};
 		CHECK(deq0 == deq2);
 	}
 	{
-		std::deque<test_types::fie> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::deque<test_types_0::fie> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << deq0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::deque<test_types::fie> deq1;
+		std::deque<test_types_0::fie> deq1;
 		is >> deq1;
 		CHECK(deq0 == deq1);
 		is.rewind();
-		std::deque<test_types::fie> deq2{is.read_as<std::deque<test_types::fie>>()};
+		std::deque<test_types_0::fie> deq2{is.read_as<std::deque<test_types_0::fie>>()};
 		CHECK(deq0 == deq2);
 	}
 	{
-		std::deque<test_types::foe> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::deque<test_types_0::foe> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << deq0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::deque<test_types::foe> deq1;
+		std::deque<test_types_0::foe> deq1;
 		is >> deq1;
 		CHECK(deq0 == deq1);
 		is.rewind();
-		std::deque<test_types::foe> deq2{is.read_as<std::deque<test_types::foe>>()};
+		std::deque<test_types_0::foe> deq2{is.read_as<std::deque<test_types_0::foe>>()};
 		CHECK(deq0 == deq2);
 	}
 	{
-		std::deque<test_types::fum> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::deque<test_types_0::fum> deq0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << deq0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::deque<test_types::fum> deq1;
+		std::deque<test_types_0::fum> deq1;
 		is >> deq1;
 		CHECK(deq0 == deq1);
 		is.rewind();
-		std::deque<test_types::fum> deq2{is.read_as<std::deque<test_types::fum>>()};
+		std::deque<test_types_0::fum> deq2{is.read_as<std::deque<test_types_0::fum>>()};
 		CHECK(deq0 == deq2);
 	}
 }
@@ -1525,51 +1555,51 @@ TEST_CASE("nodeoze/smoke/bstream/deque")
 TEST_CASE("nodeoze/smoke/bstream/forward_list")
 {
 	{
-		std::forward_list<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::forward_list<test_types_0::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::forward_list<test_types::fee> obj1;
+		std::forward_list<test_types_0::fee> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::forward_list<test_types::fee> obj2{is.read_as<std::forward_list<test_types::fee>>()};
+		std::forward_list<test_types_0::fee> obj2{is.read_as<std::forward_list<test_types_0::fee>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::forward_list<test_types::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::forward_list<test_types_0::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::forward_list<test_types::fie> obj1;
+		std::forward_list<test_types_0::fie> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::forward_list<test_types::fie> obj2{is.read_as<std::forward_list<test_types::fie>>()};
+		std::forward_list<test_types_0::fie> obj2{is.read_as<std::forward_list<test_types_0::fie>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::forward_list<test_types::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::forward_list<test_types_0::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::forward_list<test_types::foe> obj1;
+		std::forward_list<test_types_0::foe> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::forward_list<test_types::foe> obj2{is.read_as<std::forward_list<test_types::foe>>()};
+		std::forward_list<test_types_0::foe> obj2{is.read_as<std::forward_list<test_types_0::foe>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::forward_list<test_types::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::forward_list<test_types_0::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::forward_list<test_types::fum> obj1;
+		std::forward_list<test_types_0::fum> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::forward_list<test_types::fum> obj2{is.read_as<std::forward_list<test_types::fum>>()};
+		std::forward_list<test_types_0::fum> obj2{is.read_as<std::forward_list<test_types_0::fum>>()};
 		CHECK(obj0 == obj2);
 	}
 }
@@ -1577,51 +1607,51 @@ TEST_CASE("nodeoze/smoke/bstream/forward_list")
 TEST_CASE("nodeoze/smoke/bstream/list")
 {
 	{
-		std::list<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::list<test_types_0::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::list<test_types::fee> obj1;
+		std::list<test_types_0::fee> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::list<test_types::fee> obj2{is.read_as<std::list<test_types::fee>>()};
+		std::list<test_types_0::fee> obj2{is.read_as<std::list<test_types_0::fee>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::list<test_types::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::list<test_types_0::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::list<test_types::fie> obj1;
+		std::list<test_types_0::fie> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::list<test_types::fie> obj2{is.read_as<std::list<test_types::fie>>()};
+		std::list<test_types_0::fie> obj2{is.read_as<std::list<test_types_0::fie>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::list<test_types::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::list<test_types_0::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::list<test_types::foe> obj1;
+		std::list<test_types_0::foe> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::list<test_types::foe> obj2{is.read_as<std::list<test_types::foe>>()};
+		std::list<test_types_0::foe> obj2{is.read_as<std::list<test_types_0::foe>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::list<test_types::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::list<test_types_0::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::list<test_types::fum> obj1;
+		std::list<test_types_0::fum> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::list<test_types::fum> obj2{is.read_as<std::list<test_types::fum>>()};
+		std::list<test_types_0::fum> obj2{is.read_as<std::list<test_types_0::fum>>()};
 		CHECK(obj0 == obj2);
 	}
 }
@@ -1629,51 +1659,51 @@ TEST_CASE("nodeoze/smoke/bstream/list")
 TEST_CASE("nodeoze/smoke/bstream/set")
 {
 	{
-		std::set<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::set<test_types_0::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::set<test_types::fee> obj1;
+		std::set<test_types_0::fee> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::set<test_types::fee> obj2{is.read_as<std::set<test_types::fee>>()};
+		std::set<test_types_0::fee> obj2{is.read_as<std::set<test_types_0::fee>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::set<test_types::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::set<test_types_0::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::set<test_types::fie> obj1;
+		std::set<test_types_0::fie> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::set<test_types::fie> obj2{is.read_as<std::set<test_types::fie>>()};
+		std::set<test_types_0::fie> obj2{is.read_as<std::set<test_types_0::fie>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::set<test_types::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::set<test_types_0::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::set<test_types::foe> obj1;
+		std::set<test_types_0::foe> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::set<test_types::foe> obj2{is.read_as<std::set<test_types::foe>>()};
+		std::set<test_types_0::foe> obj2{is.read_as<std::set<test_types_0::foe>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::set<test_types::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::set<test_types_0::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::set<test_types::fum> obj1;
+		std::set<test_types_0::fum> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::set<test_types::fum> obj2{is.read_as<std::set<test_types::fum>>()};
+		std::set<test_types_0::fum> obj2{is.read_as<std::set<test_types_0::fum>>()};
 		CHECK(obj0 == obj2);
 	}
 }
@@ -1681,51 +1711,51 @@ TEST_CASE("nodeoze/smoke/bstream/set")
 TEST_CASE("nodeoze/smoke/bstream/unordered_set")
 {
 	{
-		std::unordered_set<test_types::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::unordered_set<test_types_0::fee> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_set<test_types::fee> obj1;
+		std::unordered_set<test_types_0::fee> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::unordered_set<test_types::fee> obj2{is.read_as<std::unordered_set<test_types::fee>>()};
+		std::unordered_set<test_types_0::fee> obj2{is.read_as<std::unordered_set<test_types_0::fee>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::unordered_set<test_types::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::unordered_set<test_types_0::fie> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_set<test_types::fie> obj1;
+		std::unordered_set<test_types_0::fie> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::unordered_set<test_types::fie> obj2{is.read_as<std::unordered_set<test_types::fie>>()};
+		std::unordered_set<test_types_0::fie> obj2{is.read_as<std::unordered_set<test_types_0::fie>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::unordered_set<test_types::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::unordered_set<test_types_0::foe> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_set<test_types::foe> obj1;
+		std::unordered_set<test_types_0::foe> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::unordered_set<test_types::foe> obj2{is.read_as<std::unordered_set<test_types::foe>>()};
+		std::unordered_set<test_types_0::foe> obj2{is.read_as<std::unordered_set<test_types_0::foe>>()};
 		CHECK(obj0 == obj2);
 	}
 	{
-		std::unordered_set<test_types::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
+		std::unordered_set<test_types_0::fum> obj0 = {{"silly", 0}, {"sully", 1}, {"sally", 2}, {"solly", 3}};
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		std::unordered_set<test_types::fum> obj1;
+		std::unordered_set<test_types_0::fum> obj1;
 		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		std::unordered_set<test_types::fum> obj2{is.read_as<std::unordered_set<test_types::fum>>()};
+		std::unordered_set<test_types_0::fum> obj2{is.read_as<std::unordered_set<test_types_0::fum>>()};
 		CHECK(obj0 == obj2);
 	}
 }
@@ -1733,14 +1763,14 @@ TEST_CASE("nodeoze/smoke/bstream/unordered_set")
 TEST_CASE("nodeoze/smoke/bstream/tuple")
 {
 	{
-		using tup_type = std::tuple<test_types::fee, test_types::fie, test_types::foe, test_types::fum>;
+		using tup_type = std::tuple<test_types_0::fee, test_types_0::fie, test_types_0::foe, test_types_0::fum>;
 
 		CHECK(bstream::has_value_deserializer<tup_type>::value);
 		CHECK(bstream::is_value_deserializable<tup_type>::value);
 		CHECK(bstream::is_ref_deserializable<tup_type>::value);
 		CHECK(std::is_move_assignable<tup_type>::value);
 		CHECK(std::is_copy_assignable<tup_type>::value);
-		tup_type obj0(test_types::fee{"silly", 0}, test_types::fie{"sully", 1}, test_types::foe{"sally", 2}, test_types::fum{"solly", 3});
+		tup_type obj0(test_types_0::fee{"silly", 0}, test_types_0::fie{"sully", 1}, test_types_0::foe{"sally", 2}, test_types_0::fum{"solly", 3});
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
@@ -1756,123 +1786,123 @@ TEST_CASE("nodeoze/smoke/bstream/tuple")
 
 TEST_CASE("nodeoze/smoke/bstream/class_write_read")
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+	// std::this_thread::sleep_for (std::chrono::seconds(10));
 
 	{
-		CHECK(!bstream::is_ibstream_constructible<test_types::fee>::value);
-		CHECK(bstream::has_serialize_method<test_types::fee>::value);
-		CHECK(bstream::has_deserialize_method<test_types::fee>::value);
-		CHECK(bstream::has_serializer<test_types::fee>::value);
-		CHECK(!bstream::has_value_deserializer<test_types::fee>::value);
-		CHECK(bstream::has_ref_deserializer<test_types::fee>::value);
-		CHECK(bstream::has_ibstream_extraction_operator<test_types::fee>::value);
-		CHECK(bstream::has_obstream_insertion_operator<test_types::fee>::value);
+		CHECK(!bstream::is_ibstream_constructible<test_types_0::fee>::value);
+		CHECK(bstream::has_serialize_method<test_types_0::fee>::value);
+		CHECK(bstream::has_deserialize_method<test_types_0::fee>::value);
+		CHECK(!bstream::has_serializer<test_types_0::fee>::value);
+		CHECK(!bstream::has_value_deserializer<test_types_0::fee>::value);
+		CHECK(bstream::has_ref_deserializer<test_types_0::fee>::value);
+		CHECK(bstream::has_ibstream_extraction_operator<test_types_0::fee>::value);
+		CHECK(bstream::has_obstream_insertion_operator<test_types_0::fee>::value);
 		
-		CHECK(std::is_move_assignable<test_types::fee>::value);
-		test_types::fee obj0{"the answer is", 42}; 
+		CHECK(std::is_move_assignable<test_types_0::fee>::value);
+		test_types_0::fee obj0{"the answer is", 42}; 
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		test_types::fee obj1;
+		test_types_0::fee obj1;
 		is >> obj1;
 		CHECK(obj1 == obj0);
 		is.rewind();
-		test_types::foe obj2(is.read_as<test_types::foe>());
+		test_types_0::foe obj2(is.read_as<test_types_0::foe>());
 		CHECK(obj2 == obj0);
 	}
 	{
-		CHECK(!bstream::is_ibstream_constructible<test_types::fie>::value);
-		CHECK(!bstream::has_serialize_method<test_types::fie>::value);
-		CHECK(!bstream::has_deserialize_method<test_types::fie>::value);
-		CHECK(bstream::has_serializer<test_types::fie>::value);
-		CHECK(bstream::has_value_deserializer<test_types::fie>::value);
-		CHECK(!bstream::has_ref_deserializer<test_types::fie>::value);
-		CHECK(bstream::has_ibstream_extraction_operator<test_types::fie>::value);
-		CHECK(bstream::has_obstream_insertion_operator<test_types::fie>::value);
+		CHECK(!bstream::is_ibstream_constructible<test_types_0::fie>::value);
+		CHECK(!bstream::has_serialize_method<test_types_0::fie>::value);
+		CHECK(!bstream::has_deserialize_method<test_types_0::fie>::value);
+		CHECK(bstream::has_serializer<test_types_0::fie>::value);
+		CHECK(bstream::has_value_deserializer<test_types_0::fie>::value);
+		CHECK(!bstream::has_ref_deserializer<test_types_0::fie>::value);
+		CHECK(bstream::has_ibstream_extraction_operator<test_types_0::fie>::value);
+		CHECK(bstream::has_obstream_insertion_operator<test_types_0::fie>::value);
 		
-		test_types::fie obj0{"the answer is", 42}; 
+		test_types_0::fie obj0{"the answer is", 42}; 
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-//		test_types::fie obj1{bstream::imbstream_initializer<test_types::fie>::get(is)};
-		test_types::fie obj1;
+//		test_types_0::fie obj1{bstream::imbstream_initializer<test_types_0::fie>::get(is)};
+		test_types_0::fie obj1;
 		is >> obj1;
 		CHECK(obj1 == obj0);
 		is.rewind();
-		test_types::foe obj2(is.read_as<test_types::foe>());
+		test_types_0::foe obj2(is.read_as<test_types_0::foe>());
 		CHECK(obj0 == obj2);
 	}
 	{
-		CHECK(!bstream::is_ibstream_constructible<test_types::foe>::value);
-		CHECK(!bstream::has_serialize_method<test_types::foe>::value);
-		CHECK(!bstream::has_deserialize_method<test_types::foe>::value);
-		CHECK(bstream::has_serializer<test_types::foe>::value);
-		CHECK(!bstream::has_value_deserializer<test_types::foe>::value);
-		CHECK(bstream::has_ref_deserializer<test_types::foe>::value);
-		CHECK(bstream::has_ibstream_extraction_operator<test_types::foe>::value);
-		CHECK(bstream::has_obstream_insertion_operator<test_types::foe>::value);
+		CHECK(!bstream::is_ibstream_constructible<test_types_0::foe>::value);
+		CHECK(!bstream::has_serialize_method<test_types_0::foe>::value);
+		CHECK(!bstream::has_deserialize_method<test_types_0::foe>::value);
+		CHECK(bstream::has_serializer<test_types_0::foe>::value);
+		CHECK(!bstream::has_value_deserializer<test_types_0::foe>::value);
+		CHECK(bstream::has_ref_deserializer<test_types_0::foe>::value);
+		CHECK(bstream::has_ibstream_extraction_operator<test_types_0::foe>::value);
+		CHECK(bstream::has_obstream_insertion_operator<test_types_0::foe>::value);
 		
-		test_types::foe obj0{"the answer is", 42}; 
+		test_types_0::foe obj0{"the answer is", 42}; 
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		test_types::foe obj1;
+		test_types_0::foe obj1;
 		is >> obj1;
 		CHECK(obj1 == obj0);
 		is.rewind();
-		test_types::foe obj2(is.read_as<test_types::foe>());
+		test_types_0::foe obj2(is.read_as<test_types_0::foe>());
 		CHECK(obj0 == obj2);
 	}
 	{
-		CHECK(bstream::is_ibstream_constructible<test_types::fum>::value);
-		CHECK(bstream::has_serialize_method<test_types::fum>::value);
-		CHECK(!bstream::has_deserialize_method<test_types::fum>::value);
-		CHECK(bstream::has_serializer<test_types::fum>::value);
-		CHECK(bstream::has_value_deserializer<test_types::fum>::value);
-		CHECK(!bstream::has_ref_deserializer<test_types::fum>::value);
-		CHECK(bstream::has_ibstream_extraction_operator<test_types::fum>::value);
-		CHECK(bstream::has_obstream_insertion_operator<test_types::fum>::value);
+		CHECK(bstream::is_ibstream_constructible<test_types_0::fum>::value);
+		CHECK(bstream::has_serialize_method<test_types_0::fum>::value);
+		CHECK(!bstream::has_deserialize_method<test_types_0::fum>::value);
+		CHECK(!bstream::has_serializer<test_types_0::fum>::value);
+		CHECK(bstream::has_value_deserializer<test_types_0::fum>::value);
+		CHECK(!bstream::has_ref_deserializer<test_types_0::fum>::value);
+		CHECK(bstream::has_ibstream_extraction_operator<test_types_0::fum>::value);
+		CHECK(bstream::has_obstream_insertion_operator<test_types_0::fum>::value);
 
-		test_types::fum obj0{"the answer is", 42}; 
+		test_types_0::fum obj0{"the answer is", 42}; 
 		bstream::ombstream os{1024};
 		os << obj0;
 		bstream::imbstream is{ os.get_buffer() };
-		test_types::fum obj1;
+		test_types_0::fum obj1;
 		is >> obj1;
 		CHECK(obj1 == obj0);
 		is.rewind();
-		test_types::fum obj2(is.read_as<test_types::fum>());
+		test_types_0::fum obj2(is.read_as<test_types_0::fum>());
 		CHECK(obj0 == obj2);
 	}
 	{
-		CHECK(bstream::is_ibstream_constructible<test_types::fum>::value);
-		CHECK(bstream::has_serialize_method<test_types::fum>::value);
-		CHECK(!bstream::has_deserialize_method<test_types::fum>::value);
-		CHECK(bstream::has_serializer<test_types::fum>::value);
-		CHECK(bstream::has_value_deserializer<test_types::fum>::value);
-		CHECK(!bstream::has_ref_deserializer<test_types::fum>::value);
-		CHECK(bstream::has_ibstream_extraction_operator<test_types::fum>::value);
-		CHECK(bstream::has_obstream_insertion_operator<test_types::fum>::value);
+		CHECK(bstream::is_ibstream_constructible<test_types_0::foo>::value);
+		CHECK(bstream::has_serialize_method<test_types_0::foo>::value);
+		CHECK(bstream::has_deserialize_method<test_types_0::foo>::value);
+		CHECK(!bstream::has_serializer<test_types_0::foo>::value);
+		CHECK(bstream::has_value_deserializer<test_types_0::foo>::value);
+		CHECK(bstream::has_ref_deserializer<test_types_0::foo>::value);
+		CHECK(bstream::has_ibstream_extraction_operator<test_types_0::foo>::value);
+		CHECK(bstream::has_obstream_insertion_operator<test_types_0::foo>::value);
 
-		CHECK(! bstream::has_deserialize_method< test_types::foo >::value );
+//		CHECK(! bstream::has_deserialize_method< test_types_0::foo >::value );
 
-		test_types::foo obj0{test_types::fee{"shamma", 0}, test_types::fie{"lamma", 1}, 
-				test_types::foe{"ding", 2}, test_types::fum{"dong", 3}, "ooo mau mau" }; 
+		test_types_0::foo obj0{test_types_0::fee{"shamma", 0}, test_types_0::fie{"lamma", 1}, 
+				test_types_0::foe{"ding", 2}, test_types_0::fum{"dong", 3}, "ooo mau mau" }; 
 		bstream::ombstream os{1024};
 		os << obj0;
 //		bstream::dump_json(std::cout, os);
 		bstream::imbstream is{ os.get_buffer() };
 //		is.get_buffer().dump( std::cout );
-		test_types::foo obj1;
-		is >> obj1;
+		test_types_0::foo obj1( is );
+//		is >> obj1;
 		CHECK(obj0 == obj1);
 		is.rewind();
-		test_types::foo obj2(is.read_as<test_types::foo>());
+		test_types_0::foo obj2(is.read_as<test_types_0::foo>());
 		CHECK(obj0 == obj2);
 	}
 }
 
-namespace test_types
+namespace test_types_0
 {
 	struct fou : public simple_state // serializer/value_deserializer/move ctor
 	{
@@ -1887,9 +1917,9 @@ namespace test_types
 
 namespace std 
 {
-	template<> struct hash<test_types::fou>  
+	template<> struct hash<test_types_0::fou>  
 	{
-		typedef test_types::fou argument_type;
+		typedef test_types_0::fou argument_type;
 		typedef std::hash<std::string>::result_type result_type;
 		result_type operator()( const argument_type& arg ) const  {
 			std::hash<std::string> hasher;
@@ -1897,11 +1927,11 @@ namespace std
 		}  
 	}; 
 	
-	template<> struct less<test_types::fou>
+	template<> struct less<test_types_0::fou>
 	{
 
-		typedef test_types::fou first_argument_type;
-		typedef test_types::fou second_argument_type;
+		typedef test_types_0::fou first_argument_type;
+		typedef test_types_0::fou second_argument_type;
 		typedef bool result_type;
 		result_type operator()(const first_argument_type& x, const second_argument_type& y) const
 		{
@@ -1911,9 +1941,9 @@ namespace std
 }
 
 template<>
-struct bstream::serializer<test_types::fou>
+struct bstream::serializer<test_types_0::fou>
 {
-	static inline bstream::obstream& put(bstream::obstream& os, test_types::fou const& obj)
+	static inline bstream::obstream& put(bstream::obstream& os, test_types_0::fou const& obj)
 	{
 		os.write_array_header(2);
 		os << obj.name << obj.value;
@@ -1922,18 +1952,18 @@ struct bstream::serializer<test_types::fou>
 };
 
 template<>
-struct bstream::value_deserializer<test_types::fou>
+struct bstream::value_deserializer<test_types_0::fou>
 {
-	static inline test_types::fou get(bstream::ibstream& is)
+	static inline test_types_0::fou get(bstream::ibstream& is)
 	{
 		is.check_array_header(2);
 		auto s = is.read_as<std::string>();
 		auto v = is.read_as<int>();
-		return test_types::fou(s, v);
+		return test_types_0::fou(s, v);
 	}
 };
 
-namespace test_types
+namespace test_types_0
 {
 	struct flu : public simple_state // serializer/ref_deserializer/default ctor/copy ctor
 	{
@@ -1948,9 +1978,9 @@ namespace test_types
 
 namespace std 
 {
-	template<> struct hash<test_types::flu>  
+	template<> struct hash<test_types_0::flu>  
 	{
-		typedef test_types::flu argument_type;
+		typedef test_types_0::flu argument_type;
 		typedef std::hash<std::string>::result_type result_type;
 		result_type operator()( const argument_type& arg ) const  {
 			std::hash<std::string> hasher;
@@ -1958,11 +1988,11 @@ namespace std
 		}  
 	};
 	
-	template<> struct less<test_types::flu>
+	template<> struct less<test_types_0::flu>
 	{
 
-		typedef test_types::flu first_argument_type;
-		typedef test_types::flu second_argument_type;
+		typedef test_types_0::flu first_argument_type;
+		typedef test_types_0::flu second_argument_type;
 		typedef bool result_type;
 		result_type operator()(const first_argument_type& x, const second_argument_type& y) const
 		{
@@ -1972,9 +2002,9 @@ namespace std
 }
 
 template<>
-struct bstream::serializer<test_types::flu>
+struct bstream::serializer<test_types_0::flu>
 {
-	static inline bstream::obstream& put(bstream::obstream& os, test_types::flu const& obj)
+	static inline bstream::obstream& put(bstream::obstream& os, test_types_0::flu const& obj)
 	{
 		os.write_array_header(2);
 		os << obj.name << obj.value;
@@ -1982,9 +2012,9 @@ struct bstream::serializer<test_types::flu>
 	}
 };
 template<>
-struct bstream::ref_deserializer<test_types::flu>
+struct bstream::ref_deserializer<test_types_0::flu>
 {
-	static inline bstream::ibstream& get(bstream::ibstream& is, test_types::flu& obj)
+	static inline bstream::ibstream& get(bstream::ibstream& is, test_types_0::flu& obj)
 	{
 		is.check_array_header(2);
 		is >> obj.name >> obj.value;
@@ -1992,7 +2022,7 @@ struct bstream::ref_deserializer<test_types::flu>
 	}
 };
 
-namespace test_types
+namespace test_types_0
 {
 	struct fox : public simple_state // serializer/ref_deserializer/default ctor/move ctor
 	{
@@ -2007,9 +2037,9 @@ namespace test_types
 
 namespace std 
 {
-	template<> struct hash<test_types::fox>  
+	template<> struct hash<test_types_0::fox>  
 	{
-		typedef test_types::fox argument_type;
+		typedef test_types_0::fox argument_type;
 		typedef std::hash<std::string>::result_type result_type;
 		result_type operator()( const argument_type& arg ) const  {
 			std::hash<std::string> hasher;
@@ -2017,11 +2047,11 @@ namespace std
 		}  
 	};
 	
-	template<> struct less<test_types::fox>
+	template<> struct less<test_types_0::fox>
 	{
 
-		typedef test_types::fox first_argument_type;
-		typedef test_types::fox second_argument_type;
+		typedef test_types_0::fox first_argument_type;
+		typedef test_types_0::fox second_argument_type;
 		typedef bool result_type;
 		result_type operator()(const first_argument_type& x, const second_argument_type& y) const
 		{
@@ -2031,9 +2061,9 @@ namespace std
 }
 
 template<>
-struct bstream::serializer<test_types::fox>
+struct bstream::serializer<test_types_0::fox>
 {
-	static inline bstream::obstream& put(bstream::obstream& os, test_types::fox const& obj)
+	static inline bstream::obstream& put(bstream::obstream& os, test_types_0::fox const& obj)
 	{
 		os.write_array_header(2);
 		os << obj.name << obj.value;
@@ -2041,9 +2071,9 @@ struct bstream::serializer<test_types::fox>
 	}
 };
 template<>
-struct bstream::ref_deserializer<test_types::fox>
+struct bstream::ref_deserializer<test_types_0::fox>
 {
-	static inline bstream::ibstream& get(bstream::ibstream& is, test_types::fox& obj)
+	static inline bstream::ibstream& get(bstream::ibstream& is, test_types_0::fox& obj)
 	{
 		is.check_array_header(2);
 		is >> obj.name >> obj.value;
@@ -2056,13 +2086,13 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 	{
 		bstream::ombstream os{1024};
 
-		std::shared_ptr<test_types::fee> objp0 = std::make_shared<test_types::fee>("shamma", 0);
+		std::shared_ptr<test_types_0::fee> objp0 = std::make_shared<test_types_0::fee>("shamma", 0);
 
 		os << objp0;
 		
 		bstream::imbstream is{ os.get_buffer() };
 
-		std::shared_ptr<test_types::fee> objp1;
+		std::shared_ptr<test_types_0::fee> objp1;
 
 		is >> objp1;
 
@@ -2070,20 +2100,20 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 		
 		is.rewind();
 		
-		std::shared_ptr<test_types::fee> objp2 = is.read_as<std::shared_ptr<test_types::fee>>();
+		std::shared_ptr<test_types_0::fee> objp2 = is.read_as<std::shared_ptr<test_types_0::fee>>();
 		
 		CHECK(*objp0 == *objp2);
 	}
 	{
 		bstream::ombstream os{1024};
 
-		std::unique_ptr<test_types::fee> objp0 = std::make_unique<test_types::fee>("shamma", 0);
+		std::unique_ptr<test_types_0::fee> objp0 = std::make_unique<test_types_0::fee>("shamma", 0);
 
 		os << objp0;
 
 		bstream::imbstream is{ os.get_buffer() };
 
-		std::unique_ptr<test_types::fee> objp1;
+		std::unique_ptr<test_types_0::fee> objp1;
 
 		is >> objp1;
 
@@ -2091,20 +2121,20 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 		
 		is.rewind();
 		
-		std::unique_ptr<test_types::fee> objp2 = is.read_as<std::unique_ptr<test_types::fee>>();
+		std::unique_ptr<test_types_0::fee> objp2 = is.read_as<std::unique_ptr<test_types_0::fee>>();
 		
 		CHECK(*objp0 == *objp2);
 	}
 	{
 		bstream::ombstream os{1024};
 
-		std::unique_ptr<test_types::fou> objp0 = std::make_unique<test_types::fou>("shamma", 0);
+		std::unique_ptr<test_types_0::fou> objp0 = std::make_unique<test_types_0::fou>("shamma", 0);
 
 		os << objp0;
 
 		bstream::imbstream is{ os.get_buffer() };
 
-		std::unique_ptr<test_types::fou> objp1;
+		std::unique_ptr<test_types_0::fou> objp1;
 
 		is >> objp1;
 
@@ -2112,20 +2142,20 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 		
 		is.rewind();
 		
-		std::unique_ptr<test_types::fou> objp2 = is.read_as<std::unique_ptr<test_types::fou>>();
+		std::unique_ptr<test_types_0::fou> objp2 = is.read_as<std::unique_ptr<test_types_0::fou>>();
 		
 		CHECK(*objp0 == *objp2);
 	}
 	{
 		bstream::ombstream os{1024};
 
-		std::unique_ptr<test_types::flu> objp0 = std::make_unique<test_types::flu>("shamma", 0);
+		std::unique_ptr<test_types_0::flu> objp0 = std::make_unique<test_types_0::flu>("shamma", 0);
 
 		os << objp0;
 
 		bstream::imbstream is{ os.get_buffer() };
 
-		std::unique_ptr<test_types::flu> objp1;
+		std::unique_ptr<test_types_0::flu> objp1;
 
 		is >> objp1;
 
@@ -2133,36 +2163,36 @@ TEST_CASE("nodeoze/smoke/bstream/ptr")
 		
 		is.rewind();
 		
-		std::unique_ptr<test_types::flu> objp2 = is.read_as<std::unique_ptr<test_types::flu>>();
+		std::unique_ptr<test_types_0::flu> objp2 = is.read_as<std::unique_ptr<test_types_0::flu>>();
 		
 		CHECK(*objp0 == *objp2);
 	}
 	{
 		bstream::ombstream os{1024};
-		os.set_ptr_context();
-		std::shared_ptr<test_types::fee> objp0 = std::make_shared<test_types::fee>("shamma", 0);
+//		os.set_ptr_context();
+		std::shared_ptr<test_types_0::fee> objp0 = std::make_shared<test_types_0::fee>("shamma", 0);
 		auto objp0_copy = objp0;
 		os << objp0 << objp0_copy;
 		bstream::imbstream is{ os.get_buffer() };
-		is.set_ptr_context();
-		std::shared_ptr<test_types::fee> objp1;
+//		is.set_ptr_context();
+		std::shared_ptr<test_types_0::fee> objp1;
 		is >> objp1;
 		CHECK(*objp0 == *objp1);
-		std::shared_ptr<test_types::fee> objp2 = is.read_as<std::shared_ptr<test_types::fee>>();
+		std::shared_ptr<test_types_0::fee> objp2 = is.read_as<std::shared_ptr<test_types_0::fee>>();
 		CHECK(objp1 == objp2);
 	}
 	{
 		bstream::ombstream os{1024};
-		os.set_ptr_context();
-		std::shared_ptr<test_types::fee> objp0 = std::make_shared<test_types::fee>("shamma", 0);
+//		os.set_ptr_context();
+		std::shared_ptr<test_types_0::fee> objp0 = std::make_shared<test_types_0::fee>("shamma", 0);
 		os << objp0;
 		bstream::imbstream is{ os.get_buffer() };
-		is.set_ptr_context();
-		std::shared_ptr<test_types::fee> objp1;
+//		is.set_ptr_context();
+		std::shared_ptr<test_types_0::fee> objp1;
 		is >> objp1;
 		CHECK(*objp0 == *objp1);
 		is.rewind();
-		std::shared_ptr<test_types::fee> objp2 = is.read_as<std::shared_ptr<test_types::fee>>();
+		std::shared_ptr<test_types_0::fee> objp2 = is.read_as<std::shared_ptr<test_types_0::fee>>();
 		CHECK(objp1 != objp2);
 	}
 }
@@ -2173,11 +2203,11 @@ TEST_CASE("nodeoze/smoke/bstream/initializer")
 		/*
 		 *	fou has value_deserializer, move ctor
 		 */
-		bstream::ombstream os{1024, std::make_unique< bstream::obs_ptr_context >() };
-		test_types::fou objp0{"shamma", 0};
+		bstream::ombstream os{1024 };
+		test_types_0::fou objp0{"shamma", 0};
 		os << objp0;
-		bstream::imbstream is{ os.get_buffer(), std::make_unique< bstream::ibs_ptr_context >() };
-		test_types::fou objp1{bstream::ibstream_initializer<test_types::fou>::get(is)};
+		bstream::imbstream is{ os.get_buffer() };
+		test_types_0::fou objp1{bstream::ibstream_initializer<test_types_0::fou>::get(is)};
 		CHECK(objp0 == objp1);
 	}
 
@@ -2185,22 +2215,22 @@ TEST_CASE("nodeoze/smoke/bstream/initializer")
 		/*
 		 *	flu has ref_deserializer, copy ctor
 		 */
-		bstream::ombstream os{1024, std::make_unique< bstream::obs_ptr_context >() };
-		test_types::flu objp0{"shamma", 0};
+		bstream::ombstream os{1024};
+		test_types_0::flu objp0{"shamma", 0};
 		os << objp0;
-		bstream::imbstream is{ os.get_buffer(), std::make_unique< bstream::ibs_ptr_context >() };
-		test_types::flu objp1{bstream::ibstream_initializer<test_types::flu>::get(is)};
+		bstream::imbstream is{ os.get_buffer() };
+		test_types_0::flu objp1{bstream::ibstream_initializer<test_types_0::flu>::get(is)};
 		CHECK(objp0 == objp1);
 	}
 	{
 		/*
 		 *	fox has ref_deserializer, move ctor
 		 */
-		bstream::ombstream os{1024, std::make_unique< bstream::obs_ptr_context >() };
-		test_types::fox objp0{"shamma", 0};
+		bstream::ombstream os{1024 };
+		test_types_0::fox objp0{"shamma", 0};
 		os << objp0;
-		bstream::imbstream is{ os.get_buffer(), std::make_unique< bstream::ibs_ptr_context >() };
-		test_types::fox objp1{bstream::ibstream_initializer<test_types::fox>::get(is)};
+		bstream::imbstream is{ os.get_buffer() };
+		test_types_0::fox objp1{bstream::ibstream_initializer<test_types_0::fox>::get(is)};
 		CHECK(objp0 == objp1);
 	}
 }
@@ -2209,9 +2239,9 @@ TEST_CASE("nodeoze/smoke/bstream/pair")
 {
 	{
 		bstream::ombstream os{1024};
-		using pair_type = std::pair<test_types::fee, test_types::fie>;
-		test_types::fee fee1{"shamma", 0};
-		test_types::fie fie1{"lamma", 1};
+		using pair_type = std::pair<test_types_0::fee, test_types_0::fie>;
+		test_types_0::fee fee1{"shamma", 0};
+		test_types_0::fie fie1{"lamma", 1};
 		pair_type p0{fee1, fie1};
 		
 		os << p0;

@@ -59,6 +59,9 @@ enum class errc
 	read_past_end_of_stream,
 	type_error,
 	member_count_error,
+	context_mismatch,
+	invalid_err_category,
+	invalid_ptr_downcast,
 };
 
 class bstream_category_impl : public std::error_category
@@ -81,6 +84,12 @@ public:
 			return "type error";
 		case bstream::errc::member_count_error:
 			return "member count error";
+		case bstream::errc::context_mismatch:
+			return "context mismatch";
+		case bstream::errc::invalid_err_category:
+			return "invalid error category";
+		case bstream::errc::invalid_ptr_downcast:
+			return "invalid pointer downcast";
 		default:
 			return "unknown bstream error";
 		}
