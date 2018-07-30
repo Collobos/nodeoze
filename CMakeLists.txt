@@ -206,12 +206,12 @@ set(NODEOZE_SRCS
 	src/ibstream.cpp
 	src/obstream.cpp
 	src/fbstream.cpp
-	include/nodeoze/raft/error.cpp
-	include/nodeoze/raft/error.h
-	include/nodeoze/raft/rlog.cpp
-	include/nodeoze/raft/log.h
-	include/nodeoze/raft/state_machine.h
-	include/nodeoze/raft/types.h 
+#	include/nodeoze/raft/error.cpp
+#	include/nodeoze/raft/error.h
+#	include/nodeoze/raft/rlog.cpp
+#	include/nodeoze/raft/log.h
+#	include/nodeoze/raft/state_machine.h
+#	include/nodeoze/raft/types.h 
 	)
     
 
