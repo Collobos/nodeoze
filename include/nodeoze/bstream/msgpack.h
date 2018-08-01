@@ -140,10 +140,6 @@ namespace bstream
 	template<class T>
 	struct ref_deserializer<T, 
 			typename std::enable_if_t<
-//		!is_ibstream_constructible<T>::value &&
-//		!has_value_deserializer<T>::value &&
-//		!has_ref_deserializer<T>::value &&
-//		!has_deserialize_method<T>::value &&
 				!has_msgpack_unpack_method<T>::value &&
 				has_msgpack_cvt_adaptor<T>::value>>
 	{

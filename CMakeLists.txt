@@ -196,36 +196,40 @@ set(NODEOZE_SRCS
 	include/nodeoze/bstream/utils/traits.h
 	include/nodeoze/bstream/utils/memory.h
 	include/nodeoze/dump.h
-	include/nodeoze/membuf.h
+#	include/nodeoze/membuf.h
 	include/nodeoze/bstream/numstream.h
 	include/nodeoze/bstream/bstreambuf.h
 	src/bstreambuf.cpp
 	src/error_category_context.cpp
 	src/umstream.cpp
-	src/membuf.cpp
+#	src/membuf.cpp
 	src/ibstream.cpp
 	src/obstream.cpp
 	src/fbstream.cpp
-#	include/nodeoze/raft/error.cpp
-#	include/nodeoze/raft/error.h
-#	include/nodeoze/raft/rlog.cpp
-#	include/nodeoze/raft/log.h
-#	include/nodeoze/raft/state_machine.h
-#	include/nodeoze/raft/types.h 
+	src/raft/error.cpp
+	include/nodeoze/raft/error.h
+	include/nodeoze/raft/log.h
+	include/nodeoze/raft/log_frames.h
+	include/nodeoze/raft/state_machine.h
+	include/nodeoze/raft/types.h 
 	)
     
 
 set(NODEOZE_TEST_SRCS
 	test/address.cpp
+	test/buffer.cpp
 	test/bstream/test0.cpp
 	test/bstream/test1.cpp
 	test/bstream/test2.cpp
+	test/bstream/test3.cpp
+	test/bstream/test4.cpp
+	test/raft/log.cpp
 	test/event.cpp
 	test/fs.cpp
 	test/json.cpp
 	test/main.cpp
-	test/msgpack.cpp
-	test/tls.cpp)
+	test/msgpack.cpp)
+#	test/tls.cpp)
 
 set( NODEOZE_SRCS ${NODEOZE_SRCS} 
 	ext/libuv/src/uv-common.c 

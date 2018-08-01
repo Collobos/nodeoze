@@ -743,9 +743,6 @@ public:
     virtual void*
     create_raw_from_tag( poly_tag_type tag, ibstream& is ) const = 0;
 
-    // virtual std::shared_ptr< void >
-    // create_shared_ptr( poly_tag_type from, poly_tag_type to, ibstream& is ) const = 0;
-
     virtual std::shared_ptr< void >
     create_shared_from_tag( poly_tag_type tag, ibstream& is ) const = 0;
 
@@ -825,72 +822,10 @@ const std::vector< std::vector< bool > > can_downcast_ptr_table< Args... >::valu
     { can_downcast_ptr_row< Args, Args... >::row_values }... 
 };
 
-
-
-
-
-
-
-
-
-
-// using poly_sfactory_func = std::function< std::shared_ptr< void > ( ibstream& ) >;
-
-// template< class Derived, class Base >
-// struct poly_sfactory_builder
-// {
-//     static poly_sfactory_func build() 
-//     {
-//         poly_sfactory_func func = [] ( ibstream& is )
-//         {
-
-//             std::shared_ptr< void > result;
-
-//             if ( std::is_abstract< Derived >::value || ! has_shared_ptr_deserializer< Derived >::value || ! std::is_base_of< Base, Derived >::value )
-//             {
-//                 result = nullptr;
-//             }
-//             else
-//             {
-//                 std::shared_ptr< Derived > dptr = shared_ptr_deserializer< Derived >::get( is );
-//                 result = dptr;
-//             }
-//             return result;
-//         };
-//         return func;
-//     }
-// };
-
-
-
-	// template< class T, class... Args >
-	// struct sfactory_func_row
-	// {
-	// 	static const std::vector< poly_sfactory_func > row_values;
-	// };
-
-	// template< class T, class... Args >
-	// const std::vector< poly_sfactory_func > sfactory_func_row< T, Args... >::row_values = { poly_sfactory_builder< T, Args >::build()... };
-
-	// template< class... Args >
-	// struct poly_sfactory_table
-	// {
-	// 	static const std::vector< std::vector< poly_sfactory_func > > funcs;
-	// };
-
-	// template< class... Args >
-	// const std::vector< std::vector< poly_sfactory_func > > poly_sfactory_table< Args... >::funcs = 
-	// { 
-	// 	{ sfactory_func_row< Args, Args... >::row_values }... 
-	// };
-
-
-
 template< class... Args >
 class context_impl : public context_impl_base
 {
 public:
-//    using arglist = utils::_arg_list< Args... >;
 
     context_impl( bool dedup_shared_ptrs, boost::endian::order byte_order )
     :
@@ -935,11 +870,10 @@ public:
     }
 
 protected:
-    static const std::unordered_map< std::type_index, poly_tag_type >    m_type_tag_map;
-    static const can_downcast_ptr_table< Args... >               m_downcast_ptr_table;
-    static const std::vector< poly_raw_factory_func >                       m_factories;
+    static const std::unordered_map< std::type_index, poly_tag_type >   m_type_tag_map;
+    static const can_downcast_ptr_table< Args... >                      m_downcast_ptr_table;
+    static const std::vector< poly_raw_factory_func >                   m_factories;
     static const std::vector< poly_shared_factory_func >                m_shared_factories;
-//    static const poly_sfactory_table< Args... >                         m_factory_table;
 };
 
 template< class... Args >
@@ -948,12 +882,8 @@ const std::unordered_map< std::type_index, poly_tag_type > context_impl< Args...
     { typeid(Args), utils::index< Args, Args... >::value }... 
 };
 
-
 template< class... Args >
 const can_downcast_ptr_table< Args... > context_impl< Args... >::m_downcast_ptr_table;
-
-// template< class... Args >
-// const poly_sfactory_table< Args... > context_impl< Args... >::m_factory_table;
 
 template< class T, class Enable = void >
 struct poly_factory;
@@ -1790,7 +1720,6 @@ protected:
      *  streamed object, cast to the return type (possibly mediated 
      *  by the poly_context), and returned.
      * 
-     * 
      */
     template< class T >
     std::shared_ptr< T >
@@ -1847,7 +1776,28 @@ protected:
 
     template< class T >
     std::shared_ptr< T >
-    deserialize_as_shared_ptr( poly_tag_type tag )
+    deserialize_as_shared_ptr( std::enable_if_t< std::is_abstract< T >::value, poly_tag_type > tag )
+    {
+        std::shared_ptr< T > result{ nullptr };
+
+        if ( tag == invalid_tag )
+        {
+            throw std::system_error{ make_error_code( bstream::errc::abstract_non_poly_class ) };
+        }
+
+        result =  m_context->create_shared< T >( tag, *this );
+
+        if ( m_ptr_deduper )
+        {
+            m_ptr_deduper->save_ptr( result );
+        }
+
+        return result;
+    }
+
+    template< class T >
+    std::shared_ptr< T >
+    deserialize_as_shared_ptr( std::enable_if_t< ! std::is_abstract< T >::value, poly_tag_type > tag )
     {
         std::shared_ptr< T > result{ nullptr };
 

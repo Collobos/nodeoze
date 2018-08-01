@@ -62,6 +62,7 @@ enum class errc
 	context_mismatch,
 	invalid_err_category,
 	invalid_ptr_downcast,
+	abstract_non_poly_class,
 };
 
 class bstream_category_impl : public std::error_category
@@ -90,6 +91,8 @@ public:
 			return "invalid error category";
 		case bstream::errc::invalid_ptr_downcast:
 			return "invalid pointer downcast";
+		case bstream::errc::abstract_non_poly_class:
+			return "abstract class not found in polymorphic context";
 		default:
 			return "unknown bstream error";
 		}

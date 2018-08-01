@@ -2,7 +2,6 @@
 #define NODEOZE_BSTREAM_IMBSTREAM_H
 
 #include <nodeoze/bstream/ibstream.h>
-#include <nodeoze/membuf.h>
 
 namespace nodeoze
 {

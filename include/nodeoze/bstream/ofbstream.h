@@ -104,6 +104,18 @@ public:
         return bstream::utils::static_unique_ptr_cast< obfilebuf >( release_streambuf() );
     }
 
+    inline position_type
+    truncate( std::error_code& err )
+    {
+        return get_filebuf().truncate( err );
+    }
+
+    inline position_type
+    truncate()
+    {
+        return get_filebuf().truncate();
+    }
+
 protected:
 
 };

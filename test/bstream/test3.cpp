@@ -262,7 +262,7 @@ TEST_CASE("nodeoze/smoke/bstream/poly_unique_ptrs")
 
 	CHECK( raw_foop != nullptr );
 
-	std::cout << farp0->id() << std::endl;
+//	std::cout << farp0->id() << std::endl;
 
 
 	// CHECK(foop0->name() == foop1->name());

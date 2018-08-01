@@ -262,67 +262,17 @@ bstream::obstreambuf::really_flush( std::error_code& err )
     assert( dirty() && pnext() > dirty_start() );
 }
 
-/* 
 bool
 bstream::obmembuf::really_make_writable()
 {
-    bool result = m_buf.is_writable();
-    if ( ! result )
+    if ( ! m_buf.is_writable() )
     {
-        m_buf.make_unique();
+        position_type pos = pnext() - pbase();
+        m_buf.force_unique( pos );
+        auto new_base = m_buf.rdata();
+        set_ptrs( new_base, new_base + pos, new_base + m_buf.size() );
     }
-    return result;
-}
-
-void
-bstream::obmembuf::really_flush( std::error_code& err )
-{
-    clear_error( err );
-    assert( dirty() && pnext() > dirty_start() );
-}
-
-void
-bstream::obmembuf::really_touch( std::error_code& err )
-{
-    clear_error( err );
-    auto hwm = get_high_watermark();
-    auto pos = ppos();
-    assert( hwm < pend() - pbase() && pos <= pend() - pbase() );
-    assert( last_touched() != pos );
-
-    if ( hwm < pos )
-    {
-        dirty_start( pbase() + hwm );
-        size_type n = static_cast< size_type >( pos - hwm );
-        ::memset( dirty_start(), 0, n );
-        dirty( true );
-
-        flush( err );
-        if ( err ) goto exit;
-
-        assert( ppos() == pos );
-        assert( get_high_watermark() == pos );
-        assert( last_touched() == pos );
-    }
-    else
-    {
-        last_touched( pos );
-        assert( hwm >= pos );
-    }
-    
-exit:
-    return;
-}
- */
-bool
-bstream::obmembuf::really_make_writable()
-{
-    bool result = m_buf.is_writable();
-    if ( ! result )
-    {
-        m_buf.make_unique();
-    }
-    return result;
+    return true;
 }
 
 void

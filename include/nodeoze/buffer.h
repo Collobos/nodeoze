@@ -69,7 +69,7 @@ namespace detail
  * 	or modified (make_copy_on_write(), make_exclusive(), make_no_copy_on_write()). The
  * 	current state of a buffer with regards to sharing can be queried (is_unique()).
  * 	Although copy_on_write policy is enforced transparently when a buffeer is modified, 
- * 	it make be forced (make_unique()).
+ * 	it make be forced (force_unique()).
  * 
  *	#### copy_on_write 
  *	
@@ -183,6 +183,12 @@ public:
 	};
 
 private:
+
+#ifndef DOCTEST_CONFIG_DISABLE
+	bool invariants() const;
+#else
+	constexpr bool invariants() { return true; }
+#endif
 
 	class _buffer_shared
 	{
@@ -546,14 +552,6 @@ public:
 
 	static const size_type npos = std::numeric_limits< size_type >::max();
 
-	void debug_state() const
-	{
-		std::cout << "buffer: " << std::endl;
-		print_state();
-		dump( std::cout );
-		std::cout.flush();
-	}
-	
 	/** Default constructor
 	 * 
 	 * 	The constructed instance has no allocation, size is zero.
@@ -719,15 +717,7 @@ public:
 	{
 		swap( rhs );
 	}
-/*
-	inline
-	buffer( std::vector< elem_type > const& vec, policy pol = policy::copy_on_write )
-	:
-	m_shared{ new _buffer_shared{ vec, pol } },
-	m_data{ m_shared->data() },
-	m_size{ m_shared->size() }
-	{}
-*/
+
 	inline ~buffer()
 	{
 		unshare();
@@ -755,7 +745,7 @@ public:
 		assert( m_shared != nullptr );
 		if ( ! is_writable() )
 		{
-			clone();
+			force_unique();
 		}
 		return *this;
 	}
@@ -790,12 +780,33 @@ public:
 	 * 
 	 */
 	inline buffer&
-	make_unique()
+	force_unique()
 	{
 		assert( m_shared != nullptr );
 		if ( ! is_unique() )
 		{
 			clone();
+		}
+		return *this;
+	}
+	/** Force this instance to be unique (non-shared);
+	 *  Copy only the first nbytes bytes in the buffer when cloning.
+	 * 
+	 */
+	inline buffer&
+	force_unique( size_type nbytes )
+	{
+		assert( nbytes <= m_size );
+		assert( m_shared != nullptr );
+		if ( ! is_unique() )
+		{
+			assert( m_shared != nullptr );
+			auto cloned = new _buffer_shared{ m_size };
+			::memcpy( cloned->data(), m_shared->data(), nbytes );
+			unshare();
+			m_shared = cloned;
+			m_data = m_shared->data();
+			m_size = m_shared->size();
 		}
 		return *this;
 	}
@@ -819,7 +830,7 @@ public:
 		assert( m_shared != nullptr );
 		if ( ! is_exclusive() )
 		{
-			make_unique();
+			force_unique();
 			m_shared->set_exclusive();
 		}
 		return *this;
@@ -844,7 +855,7 @@ public:
 		assert( m_shared != nullptr );
 		if ( ! is_copy_on_write() )
 		{
-			make_unique();
+			force_unique();
 			m_shared->set_copy_on_write();
 		}
 		return *this;
@@ -869,7 +880,7 @@ public:
 		assert( m_shared != nullptr );
 		if ( ! is_no_copy_on_write() )
 		{
-			make_unique();
+			force_unique();
 			m_shared->set_no_copy_on_write();
 		}
 		return *this;
@@ -1189,7 +1200,7 @@ public:
 		{
 			if ( ! is_writable() )
 			{
-				// don't make_unique() -- it copies the buffer, which is just going to be overwritten by the fill
+				// don't force_unique() -- it copies the buffer, which is just going to be overwritten by the fill
 				auto tmp = new _buffer_shared{ m_size };
 				unshare();
 				m_shared = tmp;
@@ -1330,7 +1341,7 @@ public:
 	{
 		if ( ! is_writable() )
 		{
-			make_unique();
+			force_unique();
 		}
 		return m_data;
 	}
@@ -1441,7 +1452,7 @@ public:
 	{
 		if ( ! is_writable() )
 		{
-			make_unique();
+			force_unique();
 		}
 
 		*( m_data + index ) = value;
@@ -1467,7 +1478,7 @@ public:
 
 		if ( ! is_writable() )
 		{
-			make_unique();
+			force_unique();
 		}
 
 		*( m_data + index ) = value;
@@ -1486,7 +1497,7 @@ public:
 	{
 		if ( ! is_writable() )
 		{
-			make_unique();
+			force_unique();
 		}
 
 		::memcpy( m_data + index, data, length );
@@ -1512,7 +1523,7 @@ public:
 
 		if ( ! is_writable() )
 		{
-			make_unique();
+			force_unique();
 		}
 
 		::memcpy( m_data + index, data, length );
@@ -1542,7 +1553,7 @@ public:
 			{
 				if ( ! is_writable() )
 				{
-					make_unique();
+					force_unique();
 				}
 				std::memmove( m_data + to, m_data + from, end - from );
 			}
@@ -1644,43 +1655,6 @@ private:
 		ec = no_error;
 	}
 
-	void
-	print_state() const;
-
-	inline bool
-	invariants() const
-	{
-		bool result = true;
-		if ( m_shared == nullptr )
-		{
-			result = false;
-		}
-		else // m_shared != nullptr
-		{
-
-			if ( m_shared->data() != nullptr )
-			{
-				if ( m_data == nullptr ||  m_data < m_shared->data() || ( ( m_data + m_size ) > ( m_shared->data() + m_shared->size() ) ) )
-					result = false;
-			}
-			else
-			{
-				if ( m_data != nullptr  || m_size > 0 )
-					result = false;
-			}
-
-			if ( m_shared->is_exclusive() && m_shared->refs() > 1 ) result = false;
-
-		}
-
-		if ( ! result )
-		{
-			print_state();
-		}
-
-		return result;
-	}
-
 	inline _buffer_shared*
 	share( buffer const& rhs ) const
 	{
@@ -1716,24 +1690,6 @@ private:
 			m_size = rhs.m_size;
 		}
 	}
-
-/*
-	inline void
-	unshare( _buffer_shared* replacement )
-	{
-		assert( replacement != nullptr );
-		assert( m_shared != nullptr );
-		assert( m_shared->refs() > 0 );
-
-		if ( m_shared->decrement_refs() == 0 )
-		{
-			delete m_shared;
-		}
-		m_shared = replacement;
-		m_data = m_shared->data();
-		m_size = m_shared->size();
-	}
-*/
 
 	inline void
 	unshare()
