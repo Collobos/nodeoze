@@ -134,14 +134,14 @@ public:
 	inline onumstream& 
 	putn( buffer const& buf )
 	{
-		m_strmbuf->putn( buf.const_data(), buf.size() );
+		m_strmbuf->putn( buf.data(), buf.size() );
 		return *this;
 	}
 
 	inline onumstream& 
 	putn( buffer const& buf, std::error_code& err )
 	{
-		m_strmbuf->putn( buf.const_data(), buf.size(), err );
+		m_strmbuf->putn( buf.data(), buf.size(), err );
 		return *this;
 	}
 

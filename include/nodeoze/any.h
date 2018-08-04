@@ -359,7 +359,7 @@ public:
 	:
 		m_type( type_t::blob )
 	{
-		new ( &m_data.m_blob )  blob_type( val.const_data(), val.size() );
+		new ( &m_data.m_blob )  blob_type( val.data(), val.size() );
 	}
 	
 	/*!	\brief Constucts an instance containing an array value.
@@ -672,7 +672,7 @@ public:
 	{
 		clear();
 		m_type = type_t::blob;
-		new ( &m_data.m_blob ) blob_type( rhs.const_data(), rhs.size() );
+		new ( &m_data.m_blob ) blob_type( rhs.data(), rhs.size() );
 		
 		return *this;
 	}

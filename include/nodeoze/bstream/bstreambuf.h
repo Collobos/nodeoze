@@ -730,7 +730,7 @@ protected:
     inline void
     reset_ptrs()
     {
-        auto base = m_buf.rdata();
+        auto base = m_buf.data();
         set_ptrs( base, base, base + m_buf.size() );
     }
 
@@ -1214,7 +1214,7 @@ public:
     getn( size_type n, std::error_code& err )
     {
         buffer buf{ n };
-        auto got = getn( buf.rdata(), n, err );
+        auto got = getn( buf.data(), n, err );
         if ( got < n )
         {
             buf.size( got );
@@ -1226,7 +1226,7 @@ public:
     getn( size_type n )
     {
         buffer buf{ n };
-        auto got = getn( buf.rdata(), n );
+        auto got = getn( buf.data(), n );
         if ( got < n )
         {
             buf.size( got );
@@ -1466,7 +1466,7 @@ public:
     ibstreambuf{},
     m_buf{ buf }
     {
-        set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
+        set_ptrs( m_buf.data(), m_buf.data(), m_buf.data() + m_buf.size() );
     }
 
     inline
@@ -1475,7 +1475,7 @@ public:
     ibstreambuf{},
     m_buf{ std::move( buf ) }
     {
-        set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
+        set_ptrs( m_buf.data(), m_buf.data(), m_buf.data() + m_buf.size() );
     }
 
     inline buffer
@@ -1515,7 +1515,7 @@ protected:
     ibstreambuf{},
     m_buf{ size, buffer::policy::exclusive }
     {
-        set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
+        set_ptrs( m_buf.data(), m_buf.data(), m_buf.data() + m_buf.size() );
     }
 
     buffer      m_buf;
@@ -1662,7 +1662,7 @@ private:
     inline void
     reset_ptrs()
     {
-        auto base = m_buf.rdata();
+        auto base = m_buf.data();
         set_ptrs( base, base, base );
     }
 

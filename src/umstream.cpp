@@ -9,7 +9,7 @@ bstream::inumstream::dump( std::ostream& os, position_type pos, size_type length
 	if ( m_is_buffer )
 	{
 		buffer bslice = get_buffer().slice( pos, length );
-		dumpster{}.dump( os, bslice.const_data(), bslice.size() );
+		dumpster{}.dump( os, bslice.data(), bslice.size() );
 	}
 	else
 	{
@@ -42,7 +42,7 @@ bstream::onumstream::dump( std::ostream& os, position_type pos, size_type length
 	if ( m_is_buffer )
 	{
 		buffer bslice = get_buffer().slice( pos, length );
-		dumpster{}.dump( os, bslice.const_data(), bslice.size() );
+		dumpster{}.dump( os, bslice.data(), bslice.size() );
 	}
 	else
 	{
