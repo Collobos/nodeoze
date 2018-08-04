@@ -2,6 +2,7 @@
 #define NODEOZE_BSTREAM_IFBSTREAM_H
 
 #include <nodeoze/bstream/ibstream.h>
+#include <nodeoze/bstream/ibfilebuf.h>
 #include <nodeoze/bstream/utils/memory.h>
 #include <fstream>
 #include <system_error>

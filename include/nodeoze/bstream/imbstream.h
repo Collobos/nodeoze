@@ -2,6 +2,8 @@
 #define NODEOZE_BSTREAM_IMBSTREAM_H
 
 #include <nodeoze/bstream/ibstream.h>
+#include <nodeoze/bstream/ibmembuf.h>
+#include <nodeoze/bstream/utils/memory.h>
 
 namespace nodeoze
 {
@@ -22,13 +24,13 @@ public:
     {}
 
     inline
-    imbstream( buffer const& buf, context_base const& cntxt = get_default_context() )
+    imbstream( buffer const& buf, context_base const& cntxt = get_default_context(), bool share_buffer = true )
     :
     ibstream( std::make_unique< ibmembuf >( buf ), cntxt )
     {}
 
     inline
-    imbstream( buffer&& buf, context_base const& cntxt = get_default_context() )
+    imbstream( buffer&& buf, context_base const& cntxt = get_default_context(), bool share_buffer = true )
     :
     ibstream{ std::make_unique< ibmembuf >( std::move( buf ) ), cntxt }
     {}
@@ -48,16 +50,16 @@ public:
     }
 
     inline void
-    use ( buffer&& buf )
+    use ( buffer&& buf, bool share_buffer = true )
     {
-        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ) ) );
+        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ), share_buffer ) );
         reset();
     }
 
     inline void
-    use( buffer&& buf, std::error_code& err )
+    use( buffer&& buf, std::error_code& err, bool share_buffer = true )
     {
-        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ) ) );
+        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ), share_buffer ) );
         reset( err );
     }
 
@@ -65,29 +67,6 @@ public:
     get_buffer()
     {
         return get_membuf().get_buffer();
-    }
-
-	virtual buffer
-	getn( size_type nbytes, bool throw_on_incomplete = true ) override
-	{
-        buffer buf = get_membuf().get_slice( nbytes );
-        if ( buf.size() < nbytes && throw_on_incomplete )
-        {
-            throw std::system_error{ make_error_code( bstream::errc::read_past_end_of_stream ) };
-        }
-        return buf;
-	}
-
-    virtual buffer
-    getn( size_type nbytes, std::error_code& err, bool error_on_incomplete = true ) override
-    {
-        clear_error( err );
-        buffer buf = get_membuf().get_slice( nbytes );
-        if ( buf.size() < nbytes && error_on_incomplete )
-        {
-            err = make_error_code( bstream::errc::read_past_end_of_stream );
-        }
-        return buf;
     }
 
     inline ibmembuf&

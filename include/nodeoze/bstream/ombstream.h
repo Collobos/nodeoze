@@ -2,7 +2,8 @@
 #define NODEOZE_BSTREAM_OMBSTREAM_H
 
 #include <nodeoze/bstream/obstream.h>
-#include <nodeoze/bstream/bstreambuf.h>
+#include <nodeoze/bstream/obmembuf.h>
+#include <nodeoze/bstream/utils/memory.h>
 
 namespace nodeoze
 {
@@ -56,7 +57,6 @@ public:
     {
         return reinterpret_cast< obmembuf& >( * m_strmbuf );
     }
-
 };
 
 } // namespace bstream

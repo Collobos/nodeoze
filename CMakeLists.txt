@@ -192,20 +192,25 @@ set(NODEOZE_SRCS
 	include/nodeoze/bstream/ombstream.h
 	include/nodeoze/bstream/ofbstream.h
 	include/nodeoze/bstream/typecode.h
+	include/nodeoze/bstream/obstreambuf.h
+	src/obstreambuf.cpp
+	include/nodeoze/bstream/ibstreambuf.h
+	src/ibstreambuf.cpp
+	include/nodeoze/bstream/obmembuf.h
+	src/obmembuf.cpp
+	include/nodeoze/bstream/ibmembuf.h
+	include/nodeoze/bstream/obfilebuf.h
+	src/obfilebuf.cpp
+	include/nodeoze/bstream/ibfilebuf.h
+	src/ibfilebuf.cpp
 	include/nodeoze/bstream/utils/preprocessor.h
 	include/nodeoze/bstream/utils/traits.h
 	include/nodeoze/bstream/utils/memory.h
 	include/nodeoze/dump.h
-#	include/nodeoze/membuf.h
 	include/nodeoze/bstream/numstream.h
-	include/nodeoze/bstream/bstreambuf.h
-	src/bstreambuf.cpp
 	src/error_category_context.cpp
 	src/umstream.cpp
-#	src/membuf.cpp
 	src/ibstream.cpp
-	src/obstream.cpp
-	src/fbstream.cpp
 	src/raft/error.cpp
 	include/nodeoze/raft/error.h
 	include/nodeoze/raft/log.h
@@ -223,6 +228,8 @@ set(NODEOZE_TEST_SRCS
 	test/bstream/test2.cpp
 	test/bstream/test3.cpp
 	test/bstream/test4.cpp
+	test/bstream/bstreambuf.cpp
+	test/bstream/fbstream.cpp
 	test/raft/log.cpp
 	test/event.cpp
 	test/fs.cpp

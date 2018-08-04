@@ -20,6 +20,14 @@ static_unique_ptr_cast( std::unique_ptr< Base >&& p )
     return derp;     
 }
 
+
+// template< class Derived, class Base >
+// std::unique_ptr< Derived >
+// static_unique_ptr_cast( std::unique_ptr< Base >&& p )
+// {
+//     return std::unique_ptr< Derived >{ reinterpret_cast< Derived* >( p.release() ) };
+// }
+
 /*
 template<typename Derived, typename Base, typename Deleter>
 inline std::unique_ptr<Derived, Deleter> 

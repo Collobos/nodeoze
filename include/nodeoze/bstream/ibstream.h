@@ -1652,31 +1652,31 @@ public:
         }
     }
 
-    virtual void
+    void
     reset()
     {
         if ( m_ptr_deduper ) m_ptr_deduper->clear();
         position( 0 );
     }
 
-    virtual void
+    void
     reset( std::error_code& err )
     {
         if ( m_ptr_deduper ) m_ptr_deduper->clear();
         position( 0, err );
     }
 
-    virtual void 
-    rewind()
-    {
-        position( 0 );
-    }
+    // virtual void 
+    // rewind()
+    // {
+    //     position( 0 );
+    // }
 
-    virtual void 
-    rewind( std::error_code& err )
-    {
-        position( 0, err );
-    }
+    // virtual void 
+    // rewind( std::error_code& err )
+    // {
+    //     position( 0, err );
+    // }
 
     buffer
     get_msgpack_obj_buf();
@@ -1820,7 +1820,21 @@ protected:
 
     template< class T >
     std::unique_ptr< T >
-    deserialize_as_unique_ptr( poly_tag_type tag )
+    deserialize_as_unique_ptr( std::enable_if_t< std::is_abstract< T >::value, poly_tag_type > tag )
+    {
+        if ( tag == invalid_tag ) // read as T
+        {
+            throw std::system_error{ make_error_code( bstream::errc::abstract_non_poly_class ) };
+        }
+        else
+        {
+            return std::unique_ptr< T >( m_context->create_raw< T >( tag, *this ) );
+        }
+    }
+
+    template< class T >
+    std::unique_ptr< T >
+    deserialize_as_unique_ptr( std::enable_if_t< ! std::is_abstract< T >::value, poly_tag_type > tag )
     {
         if ( tag == invalid_tag ) // read as T
         {

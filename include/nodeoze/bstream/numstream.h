@@ -37,7 +37,8 @@
 #include <assert.h>
 #include <nodeoze/buffer.h>
 #include <nodeoze/bstream/error.h>
-#include <nodeoze/bstream/bstreambuf.h>
+#include <nodeoze/bstream/obstreambuf.h>
+#include <nodeoze/bstream/ibstreambuf.h>
 #include <boost/endian/conversion.hpp>
 
 namespace bend = boost::endian; 
@@ -95,8 +96,6 @@ public:
 	m_strmbuf{ std::move( strmbuf ) },
 	m_reverse_order{ order != bend::order::native }
 	{}
-
-	virtual ~onumstream() {}
 
 	inline bstream::obstreambuf&
 	get_streambuf()
@@ -322,8 +321,6 @@ public:
 	m_reverse_order{ order != bend::order::native }
 	{}
 
-	virtual ~inumstream() {}
-		
 	inline bstream::ibstreambuf&
 	get_streambuf()
 	{
@@ -506,7 +503,7 @@ public:
 		return reinterpret_cast< U& >( cval );
 	}
 
-	virtual buffer
+	buffer
 	getn( size_type nbytes, bool throw_on_incomplete = true )
 	{
 		buffer buf = m_strmbuf->getn( nbytes );
@@ -517,7 +514,7 @@ public:
 		return buf;
 	}
 
-	virtual buffer
+	buffer
 	getn( size_type nbytes, std::error_code& err, bool err_on_incomplete = true )
 	{
 		clear_error( err );

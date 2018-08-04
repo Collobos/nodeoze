@@ -63,6 +63,9 @@ enum class errc
 	invalid_err_category,
 	invalid_ptr_downcast,
 	abstract_non_poly_class,
+	invalid_operation,
+	invalid_state,
+	ibstreambuf_not_shareable,
 };
 
 class bstream_category_impl : public std::error_category
@@ -93,6 +96,12 @@ public:
 			return "invalid pointer downcast";
 		case bstream::errc::abstract_non_poly_class:
 			return "abstract class not found in polymorphic context";
+		case bstream::errc::invalid_operation:
+			return "invalid operation";
+		case bstream::errc::invalid_state:
+			return "invalid state";
+		case bstream::errc::ibstreambuf_not_shareable:
+			return "bstream buffer is not shareable";
 		default:
 			return "unknown bstream error";
 		}
