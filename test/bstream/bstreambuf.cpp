@@ -296,7 +296,7 @@ TEST_CASE( "nodeoze/smoke/obfilebuf/basic" )
 
 TEST_CASE( "nodeoze/smoke/ibfilebuf/basic" )
 {
-    std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
+    // std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
 
     std::error_code err;
     bstream::ibfilebuf ibf{ "filebuftest", err, 0, 32 };
