@@ -392,7 +392,7 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 			std::size_t bytes_available = in_recv_bufs[ 0 ].size();
 			std::size_t handshake_left	= 2 - m_recv_handshake.size();
 	
-			m_recv_handshake.append( in_recv_bufs[ 0 ].const_data(), std::min( handshake_left, bytes_available ) );
+			m_recv_handshake.append( in_recv_bufs[ 0 ].data(), std::min( handshake_left, bytes_available ) );
 			
 			if ( m_recv_handshake.size() < 2 )
 			{
@@ -436,7 +436,7 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 			std::size_t bytes_available = in_recv_bufs[ 0 ].size();
 			std::size_t handshake_left	= 2 - m_recv_handshake.size();
 	
-			m_recv_handshake.append( in_recv_bufs[ 0 ].const_data(), std::min( handshake_left, bytes_available ) );
+			m_recv_handshake.append( in_recv_bufs[ 0 ].data(), std::min( handshake_left, bytes_available ) );
 			
 			if ( m_recv_handshake.size() < 2 )
 			{
@@ -466,7 +466,7 @@ socks5_proxy::recv( std::vector< buffer > &in_recv_bufs, buffer &out_send_buf, s
 			std::size_t bytes_available = in_recv_bufs[ 0 ].size();
 			std::size_t handshake_left	= 4 - m_recv_handshake.size();
 	
-			m_recv_handshake.append( in_recv_bufs[ 0 ].const_data(), std::min( handshake_left, bytes_available ) );
+			m_recv_handshake.append( in_recv_bufs[ 0 ].data(), std::min( handshake_left, bytes_available ) );
 			
 			if ( m_recv_handshake.size() < 4 )
 			{

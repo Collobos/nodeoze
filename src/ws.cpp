@@ -761,7 +761,7 @@ ws_filter_impl::recv( std::vector< buffer > &in_bufs, buffer &out_send_buf, std:
 			{
 				std::vector< std::uint8_t > parsed_data( m_unparsed_recv_data.size() );
 
-				type = get_frame( m_unparsed_recv_data.const_data(), m_unparsed_recv_data.size(), &parsed_data[ 0 ], parsed_data.size(), &payload_len, &parsed_len );
+				type = get_frame( m_unparsed_recv_data.data(), m_unparsed_recv_data.size(), &parsed_data[ 0 ], parsed_data.size(), &payload_len, &parsed_len );
 				
 				if ( ( type == frame::type_t::text ) || ( type == frame::type_t::binary ) )
 				{
@@ -1120,7 +1120,7 @@ ws_filter_impl::parse( buffer &buf, http::message &message )
 	http_parser_init( &parser, HTTP_BOTH );
 	parser.data = &message;
 	
-	processed = http_parser_execute( &parser, &settings, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+	processed = http_parser_execute( &parser, &settings, reinterpret_cast< const char* >( buf.data() ), buf.size() );
 	
 	message.set_code( static_cast< http::code_t >( parser.status_code ) );
 	

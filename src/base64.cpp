@@ -34,7 +34,7 @@ using namespace nodeoze::codec;
 std::string
 base64::encode( const nodeoze::buffer &buf )
 {
-	return Botan::base64_encode( buf.const_data(), buf.size() );
+	return Botan::base64_encode( buf.data(), buf.size() );
 }
 
 nodeoze::buffer

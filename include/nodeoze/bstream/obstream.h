@@ -230,14 +230,14 @@ public:
 	inline obstream&
 	write_blob_body( nodeoze::buffer const& blob )
 	{
-		putn( blob.const_data(), blob.size() );
+		putn( blob.data(), blob.size() );
 		return *this;
 	}
 
 	inline obstream&
 	write_blob_body( nodeoze::buffer const& blob, std::error_code& err )
 	{
-		putn( blob.const_data(), blob.size(), err );
+		putn( blob.data(), blob.size(), err );
 		return *this;
 	}
 
@@ -332,13 +332,13 @@ public:
 				put_num( typecode::fixext_2 ).put_num( ext_type ).put_num( buf[ 0 ] ).put_num( buf[ 1 ] );
 				break;
 			case 4:
-				put_num( typecode::fixext_4 ).put_num( ext_type ).putn( buf.const_data(), 4 );
+				put_num( typecode::fixext_4 ).put_num( ext_type ).putn( buf.data(), 4 );
 				break;
 			case 8:
-				put_num( typecode::fixext_8 ).put_num( ext_type ).putn( buf.const_data(), 8 );
+				put_num( typecode::fixext_8 ).put_num( ext_type ).putn( buf.data(), 8 );
 				break;
 			case 16:
-				put_num( typecode::fixext_16 ).put_num( ext_type ).putn( buf.const_data(), 16 );
+				put_num( typecode::fixext_16 ).put_num( ext_type ).putn( buf.data(), 16 );
 				break;
 			default:
 				if ( size <= std::numeric_limits< std::uint8_t >::max() )
@@ -357,7 +357,7 @@ public:
 				{
 					throw std::system_error{ make_error_code( std::errc::invalid_argument ) };
 				}
-				putn( buf.const_data(), size );
+				putn( buf.data(), size );
 		}
 		return *this;
 	}

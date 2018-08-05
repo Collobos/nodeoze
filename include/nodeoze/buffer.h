@@ -92,7 +92,7 @@ namespace detail
  *  but the buffer is not copied when modifications are made. A buffer whose policy is set
  * 	to no_copy_on_write must be handled with care. In particular, modifications that 
  * 	cause a buffer to undergo reallocation (e.g., resizing ) may invalidate addresses
- * 	obtained from certain accessors ( see const_data(), mutable_data(), and rdata() ).
+ * 	obtained from certain accessors ( see data(), mutable_data(), and data() ).
  * 
  *  ### Custom allocators
  *  
@@ -1304,7 +1304,7 @@ public:
 	 * 	are preserved. If the value of \c nbytes is less than the previous size, the buffer's memory object 
 	 * 	is effectively truncated; previous contents at offsets greater than \c nbytes will not be preserved.
 	 * 
-	 * 	If memory object addresses were obtained by calling const_data(), mutable_data(), or rdata() prior 
+	 * 	If memory object addresses were obtained by calling data(), mutable_data(), or data() prior 
 	 * 	to this operation, those adresses may not be valid after this operation in invoked (the memory objects may have
 	 * 	been deallocated).
 	 * 
@@ -1405,7 +1405,7 @@ public:
 	}
 
 	inline elem_type*
-	rdata()
+	data()
 	{
 		return m_data;
 	}
@@ -1418,7 +1418,7 @@ public:
 	}
 	
 	inline const elem_type*
-	const_data() const
+	data() const
 	{
 		return m_data;
 	}

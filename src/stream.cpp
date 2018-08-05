@@ -136,6 +136,7 @@ stream::writable::start_write( buffer b )
 	},
 	[=]( auto err ) mutable
 	{
+        emit( "error", err );
 	} )
 	.finally( [=]() mutable
 	{
@@ -184,6 +185,9 @@ stream::duplex::~duplex()
 {
 }
 
+#if defined( __APPLE__ )
+#	pragma mark stream::transform implementation
+#endif
 
 stream::transform::transform()
 {
@@ -194,7 +198,18 @@ stream::transform::~transform()
 {
 }
 
+#if defined( __APPLE__ )
+#	pragma mark stream::dual implementation
+#endif
 
+stream::dual::dual()
+{
+}
+
+
+stream::dual::~dual()
+{
+}
 
 TEST_CASE( "nodeoze/smoke/stream" )
 {

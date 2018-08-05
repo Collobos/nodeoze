@@ -100,7 +100,7 @@ nodeoze::mpack::inflate( any& root, const buffer& buf )
 	{
 		mpack::parser p( root );
 	
-		return p.process( buf.const_data(), buf.size() );
+		return p.process( buf.data(), buf.size() );
 	}
 }
 
@@ -175,7 +175,7 @@ deflate( const any &root, ::msgpack::packer< nodeoze::bufwriter > &packer )
 		case any::type_t::blob:
 		{
 			auto buf = root.to_blob();
-			packer.pack_bin( static_cast< std::uint32_t >( root.size() ) ).pack_bin_body( reinterpret_cast< const char* >( buf.const_data() ), static_cast< std::uint32_t >( buf.size() ) );
+			packer.pack_bin( static_cast< std::uint32_t >( root.size() ) ).pack_bin_body( reinterpret_cast< const char* >( buf.data() ), static_cast< std::uint32_t >( buf.size() ) );
 		}
 		break;
 
@@ -522,7 +522,7 @@ nodeoze::mpack::rpc::connection::process( const buffer &buf )
 {
 	mlog( marker::msgpack, log::level_t::info, "received % bytes", buf.size() );
 
-	auto err = m_parser.process( buf.const_data(), buf.size() );
+	auto err = m_parser.process( buf.data(), buf.size() );
 	ncheck_error( !err, exit, "unable to process msgpack encoded rpc message" );
 
 	mlog( marker::msgpack, log::level_t::info, "after parsing: %", m_root );

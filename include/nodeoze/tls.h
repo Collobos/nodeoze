@@ -36,7 +36,86 @@ namespace nodeoze {
 
 namespace tls {
 
-class client : public stream::duplex
+enum class errc
+{
+	ok						= 0,
+	invalid_argument		= 1,
+	unsupported_argument	= 2,
+	invalid_state 			= 3,
+	lookup_error			= 4,
+	internal_error 			= 5,
+	invalid_key_length		= 6,
+	invalid_iv_length		= 7,
+	prng_unseeded			= 8,
+	policy_violation		= 9,
+	algorithm_not_found		= 10,
+	no_provider_found		= 11,
+	provider_not_found		= 12,
+	invalid_algorithm_name	= 13,
+	encoding_error			= 14,
+	decoding_error			= 15,
+	integrity_failure		= 16,
+	invalid_oid				= 17,
+	stream_io_error			= 18,
+	self_test_failure		= 19,
+	not_implemented 		= 20,
+	unknown                 = 21
+};
+
+std::error_code
+create_self_signed_cert( const std::string &common_name, const std::string &country, const std::string &organization, const std::string &email, std::string &pem_key, std::string &pem_cert );
+
+class private_key
+{
+public:
+
+	private_key( std::string pem )
+	:
+		m_pem( pem )
+	{
+	}
+
+	private_key( filesystem::path path )
+	{
+	}
+
+	inline const std::string&
+	pem() const
+	{
+		return m_pem;
+	}
+
+private:
+
+	std::string m_pem;
+};
+
+class certs
+{
+public:
+
+	certs( std::string pem )
+	:
+		m_pem( std::move( pem ) )
+	{
+	}
+
+	certs( filesystem::path path )
+	{
+	}
+
+	inline const std::string&
+	pem() const
+	{
+		return m_pem;
+	}
+
+private:
+
+	std::string m_pem;
+};
+
+class client : public stream::dual
 {
 public:
 
@@ -56,11 +135,9 @@ public:
 
 	static ptr
 	create( options options, std::error_code &err );
-
-	virtual ~client() = 0;
 };
 
-class server : public stream::duplex
+class server : public stream::dual
 {
 public:
 
@@ -72,50 +149,29 @@ public:
 		{
 		}
 
-		inline const buffer&
+		options( const private_key &key, const certs &certs )
+		:
+			m_key( key.pem() ),
+			m_certs( certs.pem() )
+		{
+		}
+
+		inline const std::string&
 		key() const
 		{
 			return m_key;
 		}
 
-		inline options&
-		key( buffer key )
+		inline const std::string&
+		certs() const
 		{
-			m_key = std::move( key );
-			return *this;
-		}
-
-		inline const buffer&
-		cert() const
-		{
-			return m_cert;
-		}
-
-		inline options&
-		cert( buffer cert ) 
-		{
-			m_cert = std::move( cert );
-			return *this;
-		}
-
-		inline const std::vector< buffer >&
-		intermediates() const
-		{
-			return m_intermediates;
-		}
-
-		inline options&
-		intermediates( std::vector< buffer > intermediates )
-		{
-			m_intermediates = std::move( intermediates );
-			return *this;
+			return m_certs;
 		}
 
 	private:
 
-		buffer					m_key;
-		buffer					m_cert;
-		std::vector< buffer >	m_intermediates;
+		std::string				m_key;
+		std::string				m_certs;
 	};
 
 	using ptr = std::shared_ptr< server >;
@@ -125,8 +181,6 @@ public:
 
 	static ptr
 	create( options options, std::error_code &err );
-
-	virtual ~server() = 0;
 };
 
 extern std::error_code
@@ -141,6 +195,15 @@ public:
 	
 	virtual ~filter();
 };
+
+const std::error_category&
+error_category();
+	
+inline std::error_code
+make_error_code( errc val )
+{
+	return std::error_code( static_cast< int >( val ), error_category() );
+}
 
 }
 

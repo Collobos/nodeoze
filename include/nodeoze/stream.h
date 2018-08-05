@@ -208,6 +208,24 @@ public:
 	virtual ~transform();
 };
 
+
+class dual
+{
+public:
+
+	using ptr = std::shared_ptr< dual >;
+
+	dual();
+
+	virtual ~dual();
+
+	virtual duplex::ptr
+	top() = 0;
+
+	virtual duplex::ptr
+	bottom() = 0;
+};
+
 }
 
 }

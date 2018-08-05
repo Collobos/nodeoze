@@ -99,7 +99,7 @@ namespace bstream
 		{
 			msgpack::object_handle handle;
 			buffer buf = is.get_msgpack_obj_buf();
-			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.data() ), buf.size() );
 			return T( handle.get() );
 		}
 	};
@@ -115,7 +115,7 @@ namespace bstream
 		{
 			msgpack::object_handle handle;
 			buffer buf = is.get_msgpack_obj_buf();
-			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.data() ), buf.size() );
 			return msgpack::adaptor::as<T>{}(handle.get());
 		}
 	};
@@ -131,7 +131,7 @@ namespace bstream
 		{
 			msgpack::object_handle handle;
 			buffer buf = is.get_msgpack_obj_buf();
-			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.data() ), buf.size() );
 			obj.msgpack_unpack(handle.get());
 			return is;
 		}
@@ -148,7 +148,7 @@ namespace bstream
 		{
 			msgpack::object_handle handle;
 			buffer buf = is.get_msgpack_obj_buf();
-			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+			msgpack::unpack( handle, reinterpret_cast< const char* >( buf.data() ), buf.size() );
 			msgpack::adaptor::convert<T>{}(handle.get(), obj);
 			return is;
 		}
@@ -183,7 +183,7 @@ namespace bstream
 	dump_json(std::ostream& os, buffer const& buf)
 	{
 		msgpack::object_handle oh;
-		msgpack::unpack(oh, reinterpret_cast<const char*>(buf.const_data()), buf.size());
+		msgpack::unpack(oh, reinterpret_cast<const char*>(buf.data()), buf.size());
 		os << oh.get() << std::endl;		
 	}
 	
@@ -191,7 +191,7 @@ namespace bstream
 	strdump_json(buffer const& buf)
 	{
 		msgpack::object_handle oh;
-		msgpack::unpack(oh, reinterpret_cast<const char*>(buf.const_data()), buf.size());
+		msgpack::unpack(oh, reinterpret_cast<const char*>(buf.data()), buf.size());
 		std::ostringstream oss;
 		oss << oh.get() << std::endl;
 		return oss.str();
@@ -203,7 +203,7 @@ namespace bstream
 	{
 		msgpack::object_handle handle;
 		buffer buf = is.get_msgpack_obj_buf();
-		msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+		msgpack::unpack( handle, reinterpret_cast< const char* >( buf.data() ), buf.size() );
 		os << handle.get() << std::endl;		
 	}
 	
@@ -212,7 +212,7 @@ namespace bstream
 	{
 		msgpack::object_handle handle;
 		buffer buf = is.get_msgpack_obj_buf();
-		msgpack::unpack( handle, reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+		msgpack::unpack( handle, reinterpret_cast< const char* >( buf.data() ), buf.size() );
 		std::ostringstream oss;
 		oss << handle.get() << std::endl;
 		return oss.str();

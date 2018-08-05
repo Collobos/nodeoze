@@ -947,7 +947,7 @@ http::message::body( std::ostream &os ) const
 	
 	if ( m_body.size() > 0 )
 	{
-		os.write( reinterpret_cast< const char* >( m_body.const_data() ), m_body.size() );
+		os.write( reinterpret_cast< const char* >( m_body.data() ), m_body.size() );
 	}
 	
 	ret.resolve();
@@ -1373,7 +1373,7 @@ http::connection::process( const buffer &buf )
 			m_reset_parser = false;
 		}
 		
-		std::streamsize processed = http_parser_execute( m_parser.get(), m_settings.get(), reinterpret_cast< const char* >( buf.const_data() ), buf.size() );
+		std::streamsize processed = http_parser_execute( m_parser.get(), m_settings.get(), reinterpret_cast< const char* >( buf.data() ), buf.size() );
 		
 		if ( !m_reset_parser && ( processed != std::streamsize( buf.size() ) ) )
 		{

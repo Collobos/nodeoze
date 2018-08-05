@@ -51,7 +51,7 @@ mac::address::address( const nodeoze::buffer &bytes )
 {
 	memset( m_bytes, 0, sizeof( m_bytes ) );
 	ncheck_error( bytes.size() == 6, exit );
-	memcpy( m_bytes, bytes.const_data(), sizeof( m_bytes ) );
+	memcpy( m_bytes, bytes.data(), sizeof( m_bytes ) );
 
 exit:
 

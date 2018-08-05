@@ -98,7 +98,7 @@ protected:
 	{
 		m_write_promise = promise< void >();
 
-		uv_buf_t iov = { reinterpret_cast< char* >( b.rdata() ), b.size() };
+		uv_buf_t iov = { reinterpret_cast< char* >( b.data() ), b.size() };
 
 		uv_fs_write( uv_default_loop(), &m_write_req, m_open_req.result, &iov, 1, -1, on_write );
 
@@ -230,7 +230,7 @@ protected:
 	inline void
 	really_really_read()
 	{
-		uv_buf_t iov = { reinterpret_cast< char* >( m_read_buf.rdata() ), m_read_buf.size() };
+		uv_buf_t iov = { reinterpret_cast< char* >( m_read_buf.data() ), m_read_buf.size() };
 		uv_fs_read( uv_default_loop(), &m_read_req, m_open_req.result, &iov, 1, -1, on_read );
 		m_read_req.ptr = this;
 	}
