@@ -124,7 +124,7 @@ public:
     getn( size_type n, std::error_code& err )
     {
         buffer buf{ n };
-        auto got = getn( buf.rdata(), n, err );
+        auto got = getn( buf.data(), n, err );
         if ( got < n )
         {
             buf.size( got );
@@ -136,7 +136,7 @@ public:
     getn( size_type n )
     {
         buffer buf{ n };
-        auto got = getn( buf.rdata(), n );
+        auto got = getn( buf.data(), n );
         if ( got < n )
         {
             buf.size( got );

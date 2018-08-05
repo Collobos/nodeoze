@@ -27,7 +27,7 @@ public:
     ibstreambuf{},
     m_buf{ buf, pol }
     {
-        set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
+        set_ptrs( m_buf.data(), m_buf.data(), m_buf.data() + m_buf.size() );
     }
 
     inline
@@ -36,7 +36,7 @@ public:
     ibstreambuf{},
     m_buf{ std::move( buf ), pol }
     {
-        set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
+        set_ptrs( m_buf.data(), m_buf.data(), m_buf.data() + m_buf.size() );
     }
 
     inline buffer
@@ -89,7 +89,7 @@ protected:
     ibstreambuf{},
     m_buf{ size, pol }
     {
-        set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
+        set_ptrs( m_buf.data(), m_buf.data(), m_buf.data() + m_buf.size() );
     }
 
     buffer      m_buf;

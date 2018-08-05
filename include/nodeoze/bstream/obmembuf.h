@@ -124,7 +124,7 @@ protected:
     inline void
     reset_ptrs()
     {
-        auto base = m_buf.rdata();
+        auto base = m_buf.data();
         set_ptrs( base, base, base + m_buf.size() );
     }
 

@@ -112,7 +112,7 @@ TEST_CASE( "nodeoze/smoke/obstreambuf/basic" )
     buffer tbuf0{ "zooble" };
     buffer tbuf1{ "gorn" };
     buffer tbuf2{ "black" };
-    obuf.putn( tbuf0.const_data(), tbuf0.size(), err );
+    obuf.putn( tbuf0.data(), tbuf0.size(), err );
     CHECK( ! err );
     CHECK( obuf.tell( bstream::seek_anchor::current, err ) == 6 );
     CHECK( ! err );
@@ -127,7 +127,7 @@ TEST_CASE( "nodeoze/smoke/obstreambuf/basic" )
     {
         obuf.seek( 8, err );
         CHECK( ! err );
-        obuf.putn( tbuf1.const_data(), tbuf1.size(), err );
+        obuf.putn( tbuf1.data(), tbuf1.size(), err );
         CHECK( !err );
         CHECK( obuf.tell( bstream::seek_anchor::current, err ) == 12 );
         CHECK( ! err );
@@ -140,7 +140,7 @@ TEST_CASE( "nodeoze/smoke/obstreambuf/basic" )
     }
 
     {
-        obuf.putn( tbuf2.const_data(), tbuf2.size(), err );
+        obuf.putn( tbuf2.data(), tbuf2.size(), err );
         CHECK( ! err );
     }
 
@@ -161,7 +161,7 @@ TEST_CASE( "nodeoze/smoke/ibstreambuf/basic" )
     // std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
 
     buffer buf{ "0123456789ABCDEF"};
-    bstream::ibstreambuf ibuf{ buf.rdata(), buf.size() };
+    bstream::ibstreambuf ibuf{ buf.data(), buf.size() };
 
     bstream::detail::ibs_test_probe probe{ ibuf };
     std::error_code err;
@@ -247,7 +247,7 @@ TEST_CASE( "nodeoze/smoke/obfilebuf/basic" )
     CHECK( ! probe.dirty() );
     CHECK( probe.end() == reinterpret_cast< bstream::byte_type* >( probe.base() ) + 32 );
     
-    obf.putn( buf.rdata(), 32, err );
+    obf.putn( buf.data(), 32, err );
     CHECK( ! err );
     CHECK( probe.base_offset() == 0 );
     CHECK( probe.next() == reinterpret_cast< bstream::byte_type* >( probe.base() ) + 32 );
@@ -283,7 +283,7 @@ TEST_CASE( "nodeoze/smoke/obfilebuf/basic" )
     CHECK( probe.hwm() == 32 );
     CHECK( ! probe.dirty() );
 
-    obf.putn( buf.rdata() + 32, 48, err );
+    obf.putn( buf.data() + 32, 48, err );
     CHECK( ! err );
     CHECK( probe.base_offset() == 96 );
     CHECK( probe.next() == reinterpret_cast< bstream::byte_type* >( probe.base() ) + 16 );

@@ -10,7 +10,7 @@ bstream::obmembuf::really_make_writable()
     {
         position_type pos = pnext() - pbase();
         m_buf.force_unique( pos );
-        auto new_base = m_buf.rdata();
+        auto new_base = m_buf.data();
         set_ptrs( new_base, new_base + pos, new_base + m_buf.size() );
     }
     return true;
@@ -95,7 +95,7 @@ bstream::obmembuf::really_seek( seek_anchor where, offset_type offset, std::erro
     else if ( result >= static_cast< position_type >( pend() - pbase() ) )
     {
         resize( result );
-        auto new_base = m_buf.rdata();
+        auto new_base = m_buf.data();
         set_ptrs( new_base, new_base + result, new_base + m_buf.size() );
     }
     else
@@ -116,6 +116,6 @@ bstream::obmembuf::really_overflow( size_type n, std::error_code& err )
     auto pos = ppos();
     size_type required = ( pnext() - pbase() ) + n;
     resize( required );
-    auto new_base = m_buf.rdata();
+    auto new_base = m_buf.data();
     set_ptrs( new_base, new_base + pos, new_base + m_buf.size() );
 }
