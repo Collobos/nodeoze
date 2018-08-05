@@ -44,12 +44,12 @@ class type_error : public std::logic_error
 public:
 	explicit type_error(const std::string& what_arg) 
 	: 
-	logic_error{what_arg} 
+	std::logic_error{what_arg} 
 	{}
 
 	explicit type_error(const char* what_arg)
 	: 
-	logic_error{what_arg} 
+	std::logic_error{what_arg} 
 	{}
 };
 

@@ -22,21 +22,19 @@ public:
     using ibstreambuf::getn;
 
     inline
-    ibmembuf( buffer const& buf, bool share_buffer = true )
+    ibmembuf( buffer const& buf, buffer::policy pol = buffer::policy::copy_on_write )
     :
     ibstreambuf{},
-    m_buf{ buf },
-    m_share_buffer{ share_buffer }
+    m_buf{ buf, pol }
     {
         set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
     }
 
     inline
-    ibmembuf( buffer&& buf, bool share_buffer = true )
+    ibmembuf( buffer&& buf, buffer::policy pol = buffer::policy::copy_on_write )
     :
     ibstreambuf{},
-    m_buf{ std::move( buf ) },
-    m_share_buffer{ share_buffer }
+    m_buf{ std::move( buf ), pol }
     {
         set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
     }
@@ -74,50 +72,27 @@ public:
     getn( size_type n, std::error_code& err ) override
     {
         clear_error( err );
-        if ( m_share_buffer )
-        {
-            return get_slice( n );
-        }
-        else
-        {
-            return ibstreambuf::getn( n, err );
-        }
+        return get_slice( n );
     }
 
     virtual buffer
     getn( size_type n ) override
     {
-        if ( m_share_buffer )
-        {
-            return get_slice( n );
-        }
-        else
-        {
-            return ibstreambuf::getn( n );
-        }
-        buffer buf{ n };
-        auto got = getn( buf.rdata(), n );
-        if ( got < n )
-        {
-            buf.size( got );
-        }
-        return buf;
+        return get_slice( n );
     }
 
 protected:
 
     inline
-    ibmembuf( size_type size, bool share_buffer = true )
+    ibmembuf( size_type size, buffer::policy pol = buffer::policy::copy_on_write )
     :
     ibstreambuf{},
-    m_buf{ size, buffer::policy::exclusive },
-    m_share_buffer{ share_buffer }
+    m_buf{ size, pol }
     {
         set_ptrs( m_buf.rdata(), m_buf.rdata(), m_buf.rdata() + m_buf.size() );
     }
 
     buffer      m_buf;
-    const bool  m_share_buffer;
 };
 
 } // namespace bstream

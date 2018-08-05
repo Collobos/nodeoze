@@ -718,6 +718,38 @@ public:
 		swap( rhs );
 	}
 
+	/** Copy constructor with policy
+	 * 
+	 * 
+	 */
+	inline
+	buffer( const buffer &rhs, policy pol )
+	:
+	m_shared{ nullptr },
+	m_data{ nullptr },
+	m_size{ 0 }
+	{
+		adopt( rhs );
+		set_policy( pol );
+	}
+
+	/** Move constructor with policy
+	 * 
+	 *	The move ctor avoids ref-count arithmetic and 
+	 *	potentially hastens freeing the memory because
+	 *	one fewer reference is extant.
+	 */
+	inline
+	buffer( buffer&& rhs, policy pol )
+	:
+	m_shared{ nullptr },
+	m_data{ nullptr },
+	m_size{ 0 }
+	{
+		swap( rhs );
+		set_policy( pol );
+	}
+
 	inline ~buffer()
 	{
 		unshare();
@@ -807,6 +839,32 @@ public:
 			m_shared = cloned;
 			m_data = m_shared->data();
 			m_size = m_shared->size();
+		}
+		return *this;
+	}
+
+	inline buffer&
+	set_policy( policy pol )
+	{
+		switch ( pol )
+		{
+			case policy::copy_on_write:
+			{
+				make_copy_on_write();
+			}
+			break;
+
+			case policy::exclusive:
+			{
+				make_exclusive();
+			}
+			break;
+
+			case policy::no_copy_on_write:
+			{
+				make_no_copy_on_write();
+			}
+			break;
 		}
 		return *this;
 	}

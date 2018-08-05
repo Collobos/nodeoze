@@ -24,15 +24,15 @@ public:
     {}
 
     inline
-    imbstream( buffer const& buf, context_base const& cntxt = get_default_context(), bool share_buffer = true )
+    imbstream( buffer const& buf, context_base const& cntxt = get_default_context(), buffer::policy pol = buffer::policy::copy_on_write )
     :
-    ibstream( std::make_unique< ibmembuf >( buf ), cntxt )
+    ibstream( std::make_unique< ibmembuf >( buf, pol ), cntxt )
     {}
 
     inline
-    imbstream( buffer&& buf, context_base const& cntxt = get_default_context(), bool share_buffer = true )
+    imbstream( buffer&& buf, context_base const& cntxt = get_default_context(), buffer::policy pol = buffer::policy::copy_on_write )
     :
-    ibstream{ std::make_unique< ibmembuf >( std::move( buf ) ), cntxt }
+    ibstream{ std::make_unique< ibmembuf >( std::move( buf ), pol ), cntxt }
     {}
 
     inline void
@@ -50,16 +50,16 @@ public:
     }
 
     inline void
-    use ( buffer&& buf, bool share_buffer = true )
+    use ( buffer&& buf, buffer::policy pol = buffer::policy::copy_on_write )
     {
-        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ), share_buffer ) );
+        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ), pol ) );
         reset();
     }
 
     inline void
-    use( buffer&& buf, std::error_code& err, bool share_buffer = true )
+    use( buffer&& buf, std::error_code& err, buffer::policy pol = buffer::policy::copy_on_write )
     {
-        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ), share_buffer ) );
+        inumstream::use( std::make_unique< ibmembuf >( std::move( buf ), pol ) );
         reset( err );
     }
 

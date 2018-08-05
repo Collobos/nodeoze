@@ -24,14 +24,14 @@ namespace nodeoze
 namespace bstream 
 {
 
-class ibfilebuf : public ibmembuf
+class ibfilebuf : public ibstreambuf
 {
 public:
 
     inline
     ibfilebuf( size_type buffer_size = NODEOZE_BSTREAM_DEFAULT_IBFILEBUF_SIZE )
     :
-    ibmembuf{ buffer_size, false },
+    m_buf{ buffer_size, buffer::policy::exclusive },
     m_filename{},
     m_is_open{ false },
     m_flags{ O_RDONLY },
@@ -41,7 +41,7 @@ public:
     inline
     ibfilebuf( std::string const& filename, std::error_code& err, int flag_overrides = 0, size_type buffer_size = NODEOZE_BSTREAM_DEFAULT_IBFILEBUF_SIZE )
     :
-    ibmembuf{ buffer_size, false },
+    m_buf{ buffer_size, buffer::policy::exclusive },
     m_filename{ filename },
     m_is_open{ false },
     m_flags{ O_RDONLY | flag_overrides },
@@ -53,7 +53,7 @@ public:
     inline
     ibfilebuf( std::string const& filename, int flag_overrides = 0, size_type buffer_size = NODEOZE_BSTREAM_DEFAULT_IBFILEBUF_SIZE )
     :
-    ibmembuf{ buffer_size, false },
+    m_buf{ buffer_size, buffer::policy::exclusive },
     m_filename{ filename },
     m_is_open{ false },
     m_flags{ O_RDONLY | flag_overrides },
@@ -192,6 +192,7 @@ private:
         return;
     }
 
+    buffer              m_buf;
     std::string         m_filename;
     bool                m_is_open;
     int                 m_flags;
