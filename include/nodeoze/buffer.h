@@ -60,7 +60,7 @@ namespace detail
  * 	modified subsequently queried (is_copy_on_write(), is_exclusive(), is_no_copy_on_write()),
  * 	or modified (make_copy_on_write(), make_exclusive(), make_no_copy_on_write()). The
  * 	current state of a buffer with regards to sharing can be queried (is_unique()).
- * 	Although copy_on_write policy is enforced transparently when a buffeer is modified, 
+ * 	Although copy_on_write policy is enforced transparently when a buffer is modified, 
  * 	it make be forced (force_unique()).
  * 
  *	#### copy_on_write 
@@ -68,7 +68,7 @@ namespace detail
  *	Buffers are internally reference-counted. The copy constructor and copy assignment operator
  *	copy a pointer to a shared buffer and increment its reference count. If an operation 
  *	that modifies the buffer is performed, and the reference count is greater than one, 
- *	a new buffer is allocated and the contents of the current buffer are copied to the
+ *	a new memory object is allocated and the current contents are copied to the
  *	new buffer before the modification is made.
  *	
  *  #### exclusive
@@ -182,7 +182,7 @@ private:
 	constexpr bool invariants() { return true; }
 #endif
 
-	class _buffer_shared
+	class mem_blk
 	{
 	public:
 
@@ -191,7 +191,7 @@ private:
 #endif
 		friend class buffer;
 
-		_buffer_shared()
+		mem_blk()
 		:
 		m_data{ nullptr },
 		m_size{ 0 },
@@ -201,7 +201,7 @@ private:
 		m_policy{ policy::copy_on_write }
 		{}
 
-		_buffer_shared( policy pol )
+		mem_blk( policy pol )
 		:
 		m_data{ nullptr },
 		m_size{ 0 },
@@ -233,7 +233,7 @@ private:
 			}
 		}
 
-		_buffer_shared( const void *src, size_type nbytes, policy pol = policy::copy_on_write )
+		mem_blk( const void *src, size_type nbytes, policy pol = policy::copy_on_write )
 		:
 		m_data{ nullptr },
 		m_size{ nbytes },
@@ -245,7 +245,7 @@ private:
 			initialize( src );
 		}
 
-		_buffer_shared( void* data, size_type size, policy pol, dealloc_function dealloc, realloc_function realloc )
+		mem_blk( void* data, size_type size, policy pol, dealloc_function dealloc, realloc_function realloc )
 		:
 		m_data{ nullptr },
 		m_size{ size },
@@ -293,7 +293,7 @@ private:
 			}
 		}
 
-		_buffer_shared( _buffer_shared const& rhs, policy pol = policy::copy_on_write )
+		mem_blk( mem_blk const& rhs, policy pol = policy::copy_on_write )
 		:
 		m_data{ nullptr },
 		m_size{ rhs.m_size },
@@ -305,7 +305,7 @@ private:
 			initialize( rhs.m_data );
 		}
 	
-		_buffer_shared( size_type nbytes, policy pol = policy::copy_on_write )
+		mem_blk( size_type nbytes, policy pol = policy::copy_on_write )
 		:
 		m_data{ nullptr },
 		m_size{ nbytes },
@@ -317,7 +317,7 @@ private:
 			initialize( nullptr );
 		}
 
-		_buffer_shared( std::vector< elem_type > const& vec, policy pol = policy::copy_on_write )
+		mem_blk( std::vector< elem_type > const& vec, policy pol = policy::copy_on_write )
 		:
 		m_data{ nullptr },
 		m_size{ vec.size() },
@@ -329,7 +329,7 @@ private:
 			initialize( vec.data() );
 		}
 
-		~_buffer_shared()
+		~mem_blk()
 		{
 			assert( m_refs == 0 );
 
@@ -532,7 +532,7 @@ private:
 
 	buffer( do_not_allocate_shared )
 	:
-	m_shared{ nullptr },
+	m_blk{ nullptr },
 	m_data{ nullptr },
 	m_size{ 0  }
 	{}
@@ -549,9 +549,9 @@ public:
 	 */
 	buffer()
 	:
-		m_shared{ new _buffer_shared{} },
-		m_data{ m_shared->data() },
-		m_size{ m_shared->size() }
+		m_blk{ new mem_blk{} },
+		m_data{ m_blk->data() },
+		m_size{ m_blk->size() }
 	{}
 
 	/** Construct with allocation of specified size and policy
@@ -565,9 +565,9 @@ public:
 	template< class T, class = typename std::enable_if_t< std::is_integral< T >::value, void > >
 	buffer( T size, policy pol = policy::copy_on_write )
 	:
-		m_shared{ new _buffer_shared{ static_cast< size_type >( size ), pol } },
-		m_data{ m_shared->data() },
-		m_size{ m_shared->size() }
+		m_blk{ new mem_blk{ static_cast< size_type >( size ), pol } },
+		m_data{ m_blk->data() },
+		m_size{ m_blk->size() }
 	{}
 
 	/** Construct from C-style string
@@ -607,9 +607,9 @@ public:
 	 */
 	buffer( const void *data, size_type size, policy pol = policy::copy_on_write )
 	:
-		m_shared{ new _buffer_shared{ data, size, pol } },
-		m_data{ m_shared->data() },
-		m_size{ m_shared->size() }
+		m_blk{ new mem_blk{ data, size, pol } },
+		m_data{ m_blk->data() },
+		m_size{ m_blk->size() }
 	{}
 
 	/** Constructor of limitless power and great peril
@@ -668,9 +668,9 @@ public:
 	 */ 
 	buffer( void *data, size_type size, policy pol, dealloc_function dealloc, realloc_function realloc )
 	:
-	m_shared{ new _buffer_shared{ data, size, pol, dealloc, realloc } },
-	m_data{ m_shared->data() },
-	m_size{ m_shared->size() }
+	m_blk{ new mem_blk{ data, size, pol, dealloc, realloc } },
+	m_data{ m_blk->data() },
+	m_size{ m_blk->size() }
 	{}
 
 	/** Copy constructor
@@ -679,7 +679,7 @@ public:
 	 */
 	buffer( const buffer &rhs )
 	:
-	m_shared{ nullptr },
+	m_blk{ nullptr },
 	m_data{ nullptr },
 	m_size{ 0 }
 	{
@@ -694,7 +694,7 @@ public:
 	 */
 	buffer( buffer&& rhs )
 	:
-	m_shared{ nullptr },
+	m_blk{ nullptr },
 	m_data{ nullptr },
 	m_size{ 0 }
 	{
@@ -707,7 +707,7 @@ public:
 	 */
 	buffer( const buffer &rhs, policy pol )
 	:
-	m_shared{ nullptr },
+	m_blk{ nullptr },
 	m_data{ nullptr },
 	m_size{ 0 }
 	{
@@ -723,7 +723,7 @@ public:
 	 */
 	buffer( buffer&& rhs, policy pol )
 	:
-	m_shared{ nullptr },
+	m_blk{ nullptr },
 	m_data{ nullptr },
 	m_size{ 0 }
 	{
@@ -745,7 +745,7 @@ public:
 	bool
 	is_writable()
 	{
-		assert( m_shared != nullptr );
+		assert( m_blk != nullptr );
 		return is_unique() || is_no_copy_on_write();
 	}
 
@@ -755,7 +755,7 @@ public:
 	buffer&
 	make_writable()
 	{
-		assert( m_shared != nullptr );
+		assert( m_blk != nullptr );
 		if ( ! is_writable() )
 		{
 			force_unique();
@@ -766,13 +766,13 @@ public:
  	buffer&
 	clone()
 	{
-		assert( m_shared != nullptr );
-		auto cloned = new _buffer_shared{ m_data, m_size };
+		assert( m_blk != nullptr );
+		auto cloned = new mem_blk{ m_data, m_size };
 		unshare();
-		m_shared = cloned;
-		m_data = m_shared->data();
-		m_size = m_shared->size();
-//		unshare( new _buffer_shared{ m_data, m_size } );
+		m_blk = cloned;
+		m_data = m_blk->data();
+		m_size = m_blk->size();
+//		unshare( new mem_blk{ m_data, m_size } );
 		return *this;
 	}
 
@@ -785,8 +785,8 @@ public:
 	bool
 	is_unique() const
 	{
-		assert( m_shared != nullptr );
-		return  m_shared->refs() == 1;
+		assert( m_blk != nullptr );
+		return  m_blk->refs() == 1;
 	}
 
 	/** Force this instance to be unique (non-shared).
@@ -795,7 +795,7 @@ public:
 	buffer&
 	force_unique()
 	{
-		assert( m_shared != nullptr );
+		assert( m_blk != nullptr );
 		if ( ! is_unique() )
 		{
 			clone();
@@ -810,16 +810,16 @@ public:
 	force_unique( size_type nbytes )
 	{
 		assert( nbytes <= m_size );
-		assert( m_shared != nullptr );
+		assert( m_blk != nullptr );
 		if ( ! is_unique() )
 		{
-			assert( m_shared != nullptr );
-			auto cloned = new _buffer_shared{ m_size };
-			::memcpy( cloned->data(), m_shared->data(), nbytes );
+			assert( m_blk != nullptr );
+			auto cloned = new mem_blk{ m_size };
+			::memcpy( cloned->data(), m_blk->data(), nbytes );
 			unshare();
-			m_shared = cloned;
-			m_data = m_shared->data();
-			m_size = m_shared->size();
+			m_blk = cloned;
+			m_data = m_blk->data();
+			m_size = m_blk->size();
 		}
 		return *this;
 	}
@@ -856,8 +856,8 @@ public:
 	bool
 	is_exclusive() const
 	{
-		assert( m_shared != nullptr );
-		return m_shared->is_exclusive();
+		assert( m_blk != nullptr );
+		return m_blk->is_exclusive();
 	}
 
 	/** Set this instance's sharing policy to exclusive
@@ -866,11 +866,11 @@ public:
 	buffer&
 	make_exclusive()
 	{
-		assert( m_shared != nullptr );
+		assert( m_blk != nullptr );
 		if ( ! is_exclusive() )
 		{
 			force_unique();
-			m_shared->set_exclusive();
+			m_blk->set_exclusive();
 		}
 		return *this;
 	}
@@ -881,8 +881,8 @@ public:
 	bool
 	is_copy_on_write() const
 	{
-		assert( m_shared != nullptr );
-		return m_shared->is_copy_on_write();
+		assert( m_blk != nullptr );
+		return m_blk->is_copy_on_write();
 	}
 	
 	/** Set this instance's sharing policy to copy_on_write
@@ -891,11 +891,11 @@ public:
 	buffer&
 	make_copy_on_write()
 	{
-		assert( m_shared != nullptr );
+		assert( m_blk != nullptr );
 		if ( ! is_copy_on_write() )
 		{
 			force_unique();
-			m_shared->set_copy_on_write();
+			m_blk->set_copy_on_write();
 		}
 		return *this;
 	}
@@ -906,8 +906,8 @@ public:
 	bool
 	is_no_copy_on_write() const
 	{
-		assert( m_shared != nullptr );
-		return m_shared->is_no_copy_on_write();
+		assert( m_blk != nullptr );
+		return m_blk->is_no_copy_on_write();
 	}
 	
 	/** Set this instance's sharing policy to no_copy_on_write
@@ -916,11 +916,11 @@ public:
 	buffer&
 	make_no_copy_on_write()
 	{
-		assert( m_shared != nullptr );
+		assert( m_blk != nullptr );
 		if ( ! is_no_copy_on_write() )
 		{
 			force_unique();
-			m_shared->set_no_copy_on_write();
+			m_blk->set_no_copy_on_write();
 		}
 		return *this;
 	}
@@ -928,11 +928,11 @@ public:
 	buffer&
 	reset_bounds()
 	{
-		assert( m_shared != nullptr );
+		assert( m_blk != nullptr );
 		if ( is_writable() )
 		{
-			m_data = m_shared->data();
-			m_size = m_shared->size();
+			m_data = m_blk->data();
+			m_size = m_blk->size();
 		}
 		return *this;
 	}
@@ -952,17 +952,17 @@ public:
 			slice_size = std::min( len, m_size - offset );
 			if ( slice_size > 0 )
 			{
-				if ( m_shared->is_exclusive() || force_copy )
+				if ( m_blk->is_exclusive() || force_copy )
 				{
-//					_buffer_shared *tmp = new _buffer_shared{ m_data + offset, slice_size };
-					result.m_shared = new _buffer_shared{ m_data + offset, slice_size };
-					result.m_data = result.m_shared->data();
-					result.m_size = result.m_shared->size();
+//					mem_blk *tmp = new mem_blk{ m_data + offset, slice_size };
+					result.m_blk = new mem_blk{ m_data + offset, slice_size };
+					result.m_data = result.m_blk->data();
+					result.m_size = result.m_blk->size();
 				}
 				else
 				{
-					result.m_shared = m_shared;
-					result.m_shared->increment_refs();
+					result.m_blk = m_blk;
+					result.m_blk->increment_refs();
 					result.m_data = m_data + offset;
 					result.m_size = slice_size;
 				}
@@ -970,9 +970,9 @@ public:
 		}
 
 		assert( invariants() );
-		if ( result.m_shared == nullptr )
+		if ( result.m_blk == nullptr )
 		{
-			result.m_shared = new _buffer_shared{};
+			result.m_blk = new mem_blk{};
 		}
 		assert( result.invariants() );
 		return result;
@@ -1028,13 +1028,13 @@ public:
 	void
 	swap( buffer &rhs )
 	{
-		_buffer_shared *tmp_shared = m_shared;
+		mem_blk *tmp_shared = m_blk;
 		elem_type *tmp_data = m_data;
 		size_type tmp_size = m_size;
-		m_shared = rhs.m_shared;
+		m_blk = rhs.m_blk;
 		m_data = rhs.m_data;
 		m_size = rhs.m_size;
-		rhs.m_shared = tmp_shared;
+		rhs.m_blk = tmp_shared;
 		rhs.m_data = tmp_data;
 		rhs.m_size = tmp_size;
 	}
@@ -1085,16 +1085,16 @@ public:
 		{
 			if ( is_writable() ) 
 			{
-				if ( length <= m_shared->size() )
+				if ( length <= m_blk->size() )
 				{
-					std::memcpy( m_shared->data(), data, length );
-					m_data = m_shared->data();
+					std::memcpy( m_blk->data(), data, length );
+					m_data = m_blk->data();
 					m_size = length;
 				}
 				else
 				{
 					m_size = 0; // don't preserve any buffer contents
-					m_shared->reallocate( length, ec );
+					m_blk->reallocate( length, ec );
 					if ( ec ) goto exit;
 					std::memcpy( m_data, data, m_size );
 				}
@@ -1102,9 +1102,9 @@ public:
 			else
 			{
 				unshare();
-				m_shared = new _buffer_shared{ data, length };
-				m_data = m_shared->data();
-				m_size = m_shared->size();
+				m_blk = new mem_blk{ data, length };
+				m_data = m_blk->data();
+				m_size = m_blk->size();
 			}
 		}
 		else
@@ -1144,7 +1144,7 @@ public:
 	clear()
 	{
 		unshare();
-		m_shared = new _buffer_shared{};
+		m_blk = new mem_blk{};
 		return *this;
 	}
 
@@ -1183,34 +1183,34 @@ public:
 			if ( is_writable() )
 			{
 				// if necessary, normalize the buffer
-				if ( m_data > m_shared->data() )
+				if ( m_data > m_blk->data() )
 				{
-					std::memmove( m_shared->data(), m_data, m_size );
-					m_data = m_shared->data();
+					std::memmove( m_blk->data(), m_data, m_size );
+					m_data = m_blk->data();
 				}
 				auto required_size = m_size + nbytes;
-				if ( required_size > m_shared->size() )
+				if ( required_size > m_blk->size() )
 				{
 					auto append_offset = m_size;
-					m_shared->reallocate( required_size, ec );
+					m_blk->reallocate( required_size, ec );
 					if ( ec ) goto exit;
-					std::memmove( m_shared->data() + append_offset, src, nbytes );
+					std::memmove( m_blk->data() + append_offset, src, nbytes );
 				}
 				else // enough space to append exists in allocated block
 				{
-					std::memmove( m_shared->data() + m_size, src, nbytes );
+					std::memmove( m_blk->data() + m_size, src, nbytes );
 					m_size += nbytes;
 				}
 			}
 			else
 			{
-				_buffer_shared *tmp = new _buffer_shared{ m_size + nbytes };
+				mem_blk *tmp = new mem_blk{ m_size + nbytes };
 				std::memmove( tmp->data(), m_data, m_size );
 				std::memmove( tmp->data() + m_size, src, nbytes );
 				unshare();
-				m_shared = tmp;
-				m_data = m_shared->data();
-				m_size = m_shared->size();
+				m_blk = tmp;
+				m_data = m_blk->data();
+				m_size = m_blk->size();
 			}
 		}
 		assert( invariants() );
@@ -1240,17 +1240,17 @@ public:
 			if ( ! is_writable() )
 			{
 				// don't force_unique() -- it copies the buffer, which is just going to be overwritten by the fill
-				auto tmp = new _buffer_shared{ m_size };
+				auto tmp = new mem_blk{ m_size };
 				unshare();
-				m_shared = tmp;
-				m_data = m_shared->data();
-				m_size = m_shared->size();
+				m_blk = tmp;
+				m_data = m_blk->data();
+				m_size = m_blk->size();
 				std::memset( m_data, value, m_size );
-				// unshare( new _buffer_shared{ m_size } );
+				// unshare( new mem_blk{ m_size } );
 			}
 			else
 			{
-				assert( m_shared->data() != nullptr && m_data != nullptr );
+				assert( m_blk->data() != nullptr && m_data != nullptr );
 				std::memset( m_data, value, m_size );
 			}
 		}
@@ -1323,28 +1323,28 @@ public:
 			if ( is_writable() )
 			{
 				// normalize if necessary
-				if ( m_data > m_shared->data() )
+				if ( m_data > m_blk->data() )
 				{
-					std::memmove( m_shared->data(), m_data, std::min( nbytes, m_size ) );
-					m_data = m_shared->data();
+					std::memmove( m_blk->data(), m_data, std::min( nbytes, m_size ) );
+					m_data = m_blk->data();
 				}
-				if ( nbytes > m_shared->size() )
+				if ( nbytes > m_blk->size() )
 				{
-					m_shared->reallocate( nbytes, ec );
+					m_blk->reallocate( nbytes, ec );
 					if ( ec ) goto exit;
-					m_data = m_shared->data();
+					m_data = m_blk->data();
 				}
 				m_size = nbytes;
 			}
 			else
 			{
 				size_type move_size = std::min( m_size, nbytes );
-				_buffer_shared *tmp = new _buffer_shared{ nbytes };
+				mem_blk *tmp = new mem_blk{ nbytes };
 				std::memcpy( tmp->data(), m_data, move_size );
 				unshare();
-				m_shared = tmp;
-				m_data = m_shared->data();
-				m_size = m_shared->size();
+				m_blk = tmp;
+				m_data = m_blk->data();
+				m_size = m_blk->size();
 			}
 		}
 		assert( invariants() );
@@ -1408,11 +1408,11 @@ public:
 	detach()
 	{
 		elem_type* result = nullptr;
-		result = m_shared->detach(); // null if not unique
+		result = m_blk->detach(); // null if not unique
 		if ( result ) 
 		{
-			m_data = m_shared->data();
-			m_size = m_shared->size();
+			m_data = m_blk->data();
+			m_size = m_blk->size();
 		}
 		return result;
 	}
@@ -1421,11 +1421,11 @@ public:
 	detach( size_type& size, dealloc_function& dealloc )
 	{
 		elem_type* result = nullptr;
-		result = m_shared->detach( size, dealloc );
+		result = m_blk->detach( size, dealloc );
 		if ( result )
 		{
-			m_data = m_shared->data();
-			m_size = m_shared->size();
+			m_data = m_blk->data();
+			m_size = m_blk->size();
 		}
 		return result;
 	}
@@ -1694,18 +1694,18 @@ private:
 		ec = no_error;
 	}
 
-	_buffer_shared*
+	mem_blk*
 	share( buffer const& rhs ) const
 	{
-		_buffer_shared* result = nullptr;
+		mem_blk* result = nullptr;
 
 		if ( rhs.is_exclusive() )
 		{
-			result = new _buffer_shared{ *rhs.m_shared };
+			result = new mem_blk{ *rhs.m_blk };
 		}
 		else
 		{
-			result = rhs.m_shared;
+			result = rhs.m_blk;
 			result->increment_refs();
 		}
 		return result;
@@ -1714,17 +1714,17 @@ private:
 	void
 	adopt( buffer const& rhs )
 	{
-		assert( m_shared == nullptr );
+		assert( m_blk == nullptr );
 		if ( rhs.is_exclusive() )
 		{
-			m_shared = new _buffer_shared{ rhs.m_data, rhs.m_size };
-			m_data = m_shared->data();
-			m_size = m_shared->size();
+			m_blk = new mem_blk{ rhs.m_data, rhs.m_size };
+			m_data = m_blk->data();
+			m_size = m_blk->size();
 		}
 		else
 		{
-			m_shared = rhs.m_shared;
-			m_shared->increment_refs();
+			m_blk = rhs.m_blk;
+			m_blk->increment_refs();
 			m_data = rhs.m_data;
 			m_size = rhs.m_size;
 		}
@@ -1733,21 +1733,21 @@ private:
 	void
 	unshare()
 	{
-		if ( m_shared )
+		if ( m_blk )
 		{
-			assert( m_shared->refs() > 0 );
+			assert( m_blk->refs() > 0 );
 
-			if ( m_shared->decrement_refs() == 0 )
+			if ( m_blk->decrement_refs() == 0 )
 			{
-				delete m_shared;
+				delete m_blk;
 			}
-			m_shared = nullptr;
+			m_blk = nullptr;
 			m_data = nullptr;
 			m_size = 0;
 		}
 	}
 
-	_buffer_shared*				m_shared;
+	mem_blk*					m_blk;
 	elem_type*					m_data;
 	size_type					m_size;
 };

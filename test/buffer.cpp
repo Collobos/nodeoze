@@ -40,22 +40,22 @@ public:
 	
 	std::size_t refcount() const
 	{
-		return m_target.m_shared->refs();
+		return m_target.m_blk->refs();
 	}
 
-	buffer::_buffer_shared* shared()
+	buffer::mem_blk* shared()
 	{
-		return m_target.m_shared;
+		return m_target.m_blk;
 	}
 
 	std::size_t shared_size() const
 	{
-		return m_target.m_shared->size();
+		return m_target.m_blk->size();
 	}
 
 	std::uint8_t* shared_data()
 	{
-		return reinterpret_cast< std::uint8_t* >( m_target.m_shared->data() );
+		return reinterpret_cast< std::uint8_t* >( m_target.m_blk->data() );
 	}
 
 	std::uint8_t* data()
@@ -70,21 +70,21 @@ public:
 
 	buffer::policy policy()
 	{
-		return m_target.m_shared->m_policy;
+		return m_target.m_blk->m_policy;
 	}
 
     void
     print_state( std::ostream& os, bool dump = false ) const
     {
-        os << "m_shared: " << reinterpret_cast< void* >( m_target.m_shared );
-        if ( m_target.m_shared )
+        os << "m_blk: " << reinterpret_cast< void* >( m_target.m_blk );
+        if ( m_target.m_blk )
         {
-            os << ", m_shared->data(): " << reinterpret_cast< void* >( m_target.m_shared->data() )
-                    << ", m_shared->size(): " << m_target.m_shared->size()
-                    << ", m_shared->refs(): " << m_target.m_shared->refs()
-                    << std::boolalpha << ", m_shared->is_exclusive(): " << m_target.m_shared->is_exclusive()
-                    << ", m_shared->is_copy_on_write(): " << m_target.m_shared->is_copy_on_write()
-                    << ", m_shared->is_no_copy_on_write(): " << m_target.m_shared->is_no_copy_on_write();
+            os << ", m_blk->data(): " << reinterpret_cast< void* >( m_target.m_blk->data() )
+                    << ", m_blk->size(): " << m_target.m_blk->size()
+                    << ", m_blk->refs(): " << m_target.m_blk->refs()
+                    << std::boolalpha << ", m_blk->is_exclusive(): " << m_target.m_blk->is_exclusive()
+                    << ", m_blk->is_copy_on_write(): " << m_target.m_blk->is_copy_on_write()
+                    << ", m_blk->is_no_copy_on_write(): " << m_target.m_blk->is_no_copy_on_write();
         }
         os << ", m_data: " << reinterpret_cast< void* >( m_target.m_data )
                 << ", m_size: " << m_target.m_size << std::endl;
@@ -105,16 +105,16 @@ bool
 buffer::invariants() const
 {
 	bool result = true;
-	if ( m_shared == nullptr )
+	if ( m_blk == nullptr )
 	{
 		result = false;
 	}
-	else // m_shared != nullptr
+	else // m_blk != nullptr
 	{
 
-		if ( m_shared->data() != nullptr )
+		if ( m_blk->data() != nullptr )
 		{
-			if ( m_data == nullptr ||  m_data < m_shared->data() || ( ( m_data + m_size ) > ( m_shared->data() + m_shared->size() ) ) )
+			if ( m_data == nullptr ||  m_data < m_blk->data() || ( ( m_data + m_size ) > ( m_blk->data() + m_blk->size() ) ) )
 				result = false;
 		}
 		else
@@ -123,7 +123,7 @@ buffer::invariants() const
 				result = false;
 		}
 
-		if ( m_shared->is_exclusive() && m_shared->refs() > 1 ) result = false;
+		if ( m_blk->is_exclusive() && m_blk->refs() > 1 ) result = false;
 
 	}
 
