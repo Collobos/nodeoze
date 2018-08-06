@@ -3,17 +3,18 @@
 #include <experimental/type_traits>
 #include <thread>
 #include <chrono>
+#include <iostream>
 
 using namespace nodeoze;
 using namespace raft;
 
-TEST_CASE("nodeoze/smoke/raft/basic")
+TEST_CASE( "nodeoze/smoke/raft/basic" )
 {
 	{
-//		std::this_thread::sleep_for (std::chrono::seconds(10));
+//		std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 		std::error_code ec;
-		raft::log oak(1, "logfile.log", "logfile.tmp");
-		oak.initialize( 1, 1, 0, ec);
+		raft::log oak( 1, "logfile.log", "logfile.tmp" );
+		oak.initialize( 1, 1, 0, ec );
 		CHECK( ! ec );
 		oak.update_replicant_state( raft::replicant_state{ 1, 2, 3 }, ec );
 		CHECK( ! ec );
@@ -22,8 +23,8 @@ TEST_CASE("nodeoze/smoke/raft/basic")
 	}
 	{
 		std::error_code ec;
-		raft::log oak(1, "logfile.log", "logfile.tmp");
-		oak.restart( 1, ec);
+		raft::log oak( 1, "logfile.log", "logfile.tmp" );
+		oak.restart( 1, ec );
 		CHECK( ! ec );
 		CHECK( oak.current_replicant_state().term() == 2 );
 		CHECK( oak.current_replicant_state().vote() == 3 );
@@ -32,13 +33,13 @@ TEST_CASE("nodeoze/smoke/raft/basic")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/raft/payload")
+TEST_CASE( "nodeoze/smoke/raft/payload" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 	{
 		std::error_code ec;
-		raft::log oak(1, "logfile.log", "logfile.tmp");
-		oak.initialize( 1, 1, 0, ec);
+		raft::log oak( 1, "logfile.log", "logfile.tmp" );
+		oak.initialize( 1, 1, 0, ec );
 		CHECK( ! ec );
 		oak.update_replicant_state( raft::replicant_state{ 1, 1, 0 }, ec );
 		CHECK( ! ec );
@@ -60,8 +61,8 @@ TEST_CASE("nodeoze/smoke/raft/payload")
 	}
 	{
 		std::error_code ec;
-		raft::log oak(1, "logfile.log", "logfile.tmp");
-		oak.restart( 1, ec);
+		raft::log oak( 1, "logfile.log", "logfile.tmp" );
+		oak.restart( 1, ec );
 		if ( ec ) { std::cout << "error code is " << ec.message() << std::endl; }
 		CHECK( ! ec );
 		CHECK( oak.current_replicant_state().term() == 1 );
@@ -81,8 +82,8 @@ TEST_CASE("nodeoze/smoke/raft/payload")
 
 	{
 		std::error_code ec;
-		raft::log oak(1, "logfile.log", "logfile.tmp");
-		oak.restart( 1, ec);
+		raft::log oak( 1, "logfile.log", "logfile.tmp" );
+		oak.restart( 1, ec );
 		CHECK( ! ec );
 
 		oak.prune_front( 2, ec );
@@ -105,5 +106,5 @@ TEST_CASE("nodeoze/smoke/raft/payload")
 	
 }
 
-// TEST_CASE("nodeoze/smoke/raft/basic")
+// TEST_CASE( "nodeoze/smoke/raft/basic" )
 

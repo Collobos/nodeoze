@@ -218,7 +218,7 @@ public:
         if ( self )
         {
             self->update_term( term );
-            self->handle_append_entries_message( sender_id, term, prev_log_index, prev_log_term, commit_index, entries)
+            self->handle_append_entries_message( sender_id, term, prev_log_index, prev_log_term, commit_index, entries )
         }
     }
 
@@ -242,13 +242,13 @@ public:
         }
     }
 
-	void handle_request_vote_message(replicant_id_type candidate_id, term_type candidate_term, term_type last_term, index_type last_index)
+	void handle_request_vote_message( replicant_id_type candidate_id, term_type candidate_term, term_type last_term, index_type last_index )
 	{
 		bool log_ok = last_term > m_log.back()->term() ||
 			( last_term == m_log.back()->term() && last_index >= m_log.back()->index() );
 		bool grant = candidate_term == m_current_term && log_ok &&
 			( m_voted_for == 0 || m_voted_for == candidate_id );
-		if (grant)
+		if ( grant )
 		{
 			m_voted_for = candidate_id;
 		}
@@ -272,9 +272,9 @@ public:
         }
     }
 
-	void update_term(std::size_t incoming_term)
+	void update_term( std::size_t incoming_term )
 	{
-		if (incoming_term > m_current_term)
+		if ( incoming_term > m_current_term )
 		{
 			m_current_term = incoming_term;
 			m_role = role::follower;
@@ -294,12 +294,12 @@ public:
         return m_role == role::candidate && term == m_current_term;
     }
 
-	inline std::chrono::milliseconds
-	randomize_timeout(std::chrono::milliseconds timer_base)
+	std::chrono::milliseconds
+	randomize_timeout( std::chrono::milliseconds timer_base )
 	{
-		static std::mt19937_64 mt{entropy()};
-		std::uniform_int_distribution<std::uint64_t> dist(0, timer_base.count());
-		return timer_base + std::chrono::milliseconds{dist(mt)};
+		static std::mt19937_64 mt{ entropy() };
+		std::uniform_int_distribution< std::uint64_t > dist( 0, timer_base.count() );
+		return timer_base + std::chrono::milliseconds{ dist( mt ) };
 	}
 
     static replicant::ptr

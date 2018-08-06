@@ -4,21 +4,20 @@
 #include <nodeoze/bstream/imbstream.h>
 #include <thread>
 #include <chrono>
-// #include <bstream/msgpack.h>
 
 using namespace nodeoze;
 
 namespace test_types_3
 {
 
-class far : BSTRM_BASE(far)
+class far : BSTRM_BASE( far )
 {
 public:
 	far() {}
-	far( const std::string& name ) : name_{name} {}
+	far( const std::string& name ) : name_{ name } {}
 	virtual ~far() {}
 	
-	BSTRM_POLY_CLASS(far, , (name_))
+	BSTRM_POLY_CLASS( far, , ( name_ ) )
 	
     const std::string& name() const
     {
@@ -35,15 +34,15 @@ protected:
 };
 
 
-class foo : BSTRM_BASE(foo), public far
+class foo : BSTRM_BASE( foo ), public far
 {
 public:
-	BSTRM_FRIEND_BASE(foo)
-	BSTRM_CTOR(foo, ( far ), )
+	BSTRM_FRIEND_BASE( foo )
+	BSTRM_CTOR( foo, ( far ), )
 	BSTRM_ITEM_COUNT( ( far ), )
-	BSTRM_POLY_SERIALIZE(foo, ( far ), )
+	BSTRM_POLY_SERIALIZE( foo, ( far ), )
 	
-	foo(std::string const& name ) : far{ name } {}
+	foo( std::string const& name ) : far{ name } {}
 			
 	virtual std::string id() const override
 	{
@@ -68,9 +67,9 @@ using namespace test_types_3;
 
 #if 0
 
-TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs_no_erasure")
+TEST_CASE( "nodeoze/smoke/bstream/poly_shared_ptrs_no_erasure" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 
 	auto foop_test = std::make_shared< foo >( "france is pork" );
 
@@ -81,9 +80,9 @@ TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs_no_erasure")
 	CHECK( foop_cast );
 }
 
-TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs_erasure")
+TEST_CASE( "nodeoze/smoke/bstream/poly_shared_ptrs_erasure" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 
 	auto foop = std::make_shared< foo >( "france is pork" );
 
@@ -98,9 +97,9 @@ TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs_erasure")
 	CHECK( foop_dcast ); 
 }
 
-TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs_half_erasure")
+TEST_CASE( "nodeoze/smoke/bstream/poly_shared_ptrs_half_erasure" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 
 	auto foop = std::make_shared< foo >( "france is pork" );
 
@@ -122,9 +121,9 @@ TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs_half_erasure")
 	}
 }
 
-TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs_factory_func")
+TEST_CASE( "nodeoze/smoke/bstream/poly_shared_ptrs_factory_func" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 
 	std::shared_ptr< far > farp_recast = std::static_pointer_cast< far >( foo_far( "france is ham" ) );
 
@@ -142,9 +141,9 @@ TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs_factory_func")
 
 
 
-TEST_CASE("nodeoze/smoke/bstream/poly_raw_ptrs_no_erasure")
+TEST_CASE( "nodeoze/smoke/bstream/poly_raw_ptrs_no_erasure" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 
 	auto raw_foop = new foo( "france is pork" );
 
@@ -157,9 +156,9 @@ TEST_CASE("nodeoze/smoke/bstream/poly_raw_ptrs_no_erasure")
 	CHECK( raw_foop_dcast ); 
 }
 
-TEST_CASE("nodeoze/smoke/bstream/poly_raw_ptrs_erasure")
+TEST_CASE( "nodeoze/smoke/bstream/poly_raw_ptrs_erasure" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 
 	auto raw_foop = new foo( "france is pork" );
 
@@ -176,9 +175,9 @@ TEST_CASE("nodeoze/smoke/bstream/poly_raw_ptrs_erasure")
 
 #endif
 
-TEST_CASE("nodeoze/smoke/bstream/poly_raw_ptrs_half_erasure")
+TEST_CASE( "nodeoze/smoke/bstream/poly_raw_ptrs_half_erasure" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 
 	auto raw_foop = new foo( "france is pork" );
 
@@ -201,7 +200,7 @@ TEST_CASE("nodeoze/smoke/bstream/poly_raw_ptrs_half_erasure")
 }
 
 
-TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs")
+TEST_CASE( "nodeoze/smoke/bstream/poly_shared_ptrs" )
 {
 	bstream::context< foo, far > cntxt;
 	
@@ -217,7 +216,7 @@ TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs")
 
 	is >> farp0;
 
-//	far f1 = is.read_as<far>();
+//	far f1 = is.read_as< far >();
 
 	CHECK( farp0 );
 
@@ -231,12 +230,12 @@ TEST_CASE("nodeoze/smoke/bstream/poly_shared_ptrs")
 
 	CHECK( foop1 );
 
-	// CHECK(foop0->name() == foop1->name());
-	// CHECK(foop0->number() == foop1->number());
-	// CHECK(foop0->real() == foop1->real());
+	// CHECK( foop0->name() == foop1->name() );
+	// CHECK( foop0->number() == foop1->number() );
+	// CHECK( foop0->real() == foop1->real() );
 }
 
-TEST_CASE("nodeoze/smoke/bstream/poly_unique_ptrs")
+TEST_CASE( "nodeoze/smoke/bstream/poly_unique_ptrs" )
 {
 	bstream::context< foo, far > cntxt;
 	
@@ -252,7 +251,7 @@ TEST_CASE("nodeoze/smoke/bstream/poly_unique_ptrs")
 
 	is >> farp0;
 
-//	far f1 = is.read_as<far>();
+//	far f1 = is.read_as< far >();
 
 	CHECK( farp0 );
 
@@ -265,7 +264,7 @@ TEST_CASE("nodeoze/smoke/bstream/poly_unique_ptrs")
 //	std::cout << farp0->id() << std::endl;
 
 
-	// CHECK(foop0->name() == foop1->name());
-	// CHECK(foop0->number() == foop1->number());
-	// CHECK(foop0->real() == foop1->real());
+	// CHECK( foop0->name() == foop1->name() );
+	// CHECK( foop0->number() == foop1->number() );
+	// CHECK( foop0->real() == foop1->real() );
 }

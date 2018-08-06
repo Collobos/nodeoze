@@ -154,7 +154,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 	SUBCASE( "size constructor" )
 	{
 		buffer b{ 16, buffer::policy::exclusive };
-		detail::buffer_test_probe probe{b};
+		detail::buffer_test_probe probe{ b};
 		CHECK( probe.shared() != nullptr );
 		CHECK( probe.shared_data() != nullptr );
 		CHECK( probe.shared_size() == 16 );
@@ -169,7 +169,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s.c_str() };
-		detail::buffer_test_probe probe{b};
+		detail::buffer_test_probe probe{ b};
 		CHECK( probe.shared() != nullptr );
 		CHECK( probe.shared_data() != nullptr );
 		CHECK( probe.shared_size() == s.size() );
@@ -178,7 +178,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 		CHECK( probe.size() == s.size() );
 		CHECK( probe.refcount() == 1 );
 		CHECK( probe.policy() == buffer::policy::copy_on_write );
-		CHECK( (void*)probe.shared_data() != (void*)s.data() );
+		CHECK( ( void* )probe.shared_data() != ( void* )s.data() );
 		CHECK( ::memcmp( probe.shared_data(), s.data(), s.size() ) == 0 );
 	}
 
@@ -186,7 +186,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s };
-		detail::buffer_test_probe probe{b};
+		detail::buffer_test_probe probe{ b};
 		CHECK( probe.shared() != nullptr );
 		CHECK( probe.shared_data() != nullptr );
 		CHECK( probe.shared_size() == s.size() );
@@ -195,7 +195,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 		CHECK( probe.size() == s.size() );
 		CHECK( probe.refcount() == 1 );
 		CHECK( probe.policy() == buffer::policy::copy_on_write );
-		CHECK( (void*)probe.shared_data() != (void*)s.data() );
+		CHECK( ( void* )probe.shared_data() != ( void* )s.data() );
 		CHECK( ::memcmp( probe.shared_data(), s.data(), s.size() ) == 0 );
 	}
 
@@ -205,7 +205,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 		std::uint8_t* p = new std::uint8_t[ s.size() ];
 		::memcpy( p, s.data(), s.size() );
 		buffer b{ p, s.size() };
-		detail::buffer_test_probe probe{b};
+		detail::buffer_test_probe probe{ b};
 		CHECK( probe.shared() != nullptr );
 		CHECK( probe.shared_data() != nullptr );
 		CHECK( probe.shared_size() == s.size() );
@@ -214,7 +214,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 		CHECK( probe.size() == s.size() );
 		CHECK( probe.refcount() == 1 );
 		CHECK( probe.policy() == buffer::policy::copy_on_write );
-		CHECK( (void*)probe.shared_data() != (void*)p );
+		CHECK( ( void* )probe.shared_data() != ( void* )p );
 		CHECK( ::memcmp( probe.shared_data(), p, s.size() ) == 0 );
 		delete [] p;
 	}
@@ -231,7 +231,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 				delete [] ptr;
 			}, nullptr  };
 
-			detail::buffer_test_probe probe{b};
+			detail::buffer_test_probe probe{ b};
 			CHECK( probe.shared() != nullptr );
 			CHECK( probe.shared_data() != nullptr );
 			CHECK( probe.shared_size() == s.size() );
@@ -240,7 +240,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 			CHECK( probe.size() == s.size() );
 			CHECK( probe.refcount() == 1 );
 			CHECK( probe.policy() == buffer::policy::exclusive );
-			CHECK( (void*)probe.shared_data() == (void*)p );
+			CHECK( ( void* )probe.shared_data() == ( void* )p );
 		}
 //		delete [] p; // this will cause memory sanitize to abort
 	}
@@ -249,7 +249,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s };
-		detail::buffer_test_probe probe_b{b};
+		detail::buffer_test_probe probe_b{ b};
 		CHECK( probe_b.shared() != nullptr );
 		CHECK( probe_b.shared_data() != nullptr );
 		CHECK( probe_b.shared_size() == s.size() );
@@ -258,11 +258,11 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 		CHECK( probe_b.size() == s.size() );
 		CHECK( probe_b.refcount() == 1 );
 		CHECK( probe_b.policy() == buffer::policy::copy_on_write );
-		CHECK( (void*)probe_b.shared_data() != (void*)s.data() );
+		CHECK( ( void* )probe_b.shared_data() != ( void* )s.data() );
 		CHECK( ::memcmp( probe_b.shared_data(), s.data(), s.size() ) == 0 );
 
 		buffer c{ b };
-		detail::buffer_test_probe probe_c{c};
+		detail::buffer_test_probe probe_c{ c};
 		CHECK( probe_c.shared() != nullptr );
 		CHECK( probe_b.shared() == probe_c.shared() );
 		CHECK( probe_b.shared_data() == probe_c.shared_data() );
@@ -276,7 +276,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s };
-		detail::buffer_test_probe probe_b{b};
+		detail::buffer_test_probe probe_b{ b};
 		CHECK( probe_b.shared() != nullptr );
 		CHECK( probe_b.shared_data() != nullptr );
 		CHECK( probe_b.shared_size() == s.size() );
@@ -285,7 +285,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 		CHECK( probe_b.size() == s.size() );
 		CHECK( probe_b.refcount() == 1 );
 		CHECK( probe_b.policy() == buffer::policy::copy_on_write );
-		CHECK( (void*)probe_b.shared_data() != (void*)s.data() );
+		CHECK( ( void* )probe_b.shared_data() != ( void* )s.data() );
 		CHECK( ::memcmp( probe_b.shared_data(), s.data(), s.size() ) == 0 );
 
 		auto b_shared = probe_b.shared();
@@ -295,7 +295,7 @@ TEST_CASE( "nodeoze/smoke/buffer/constructors" )
 		auto b_size = probe_b.size();
 
 		buffer c{ std::move( b ) };
-		detail::buffer_test_probe probe_c{c};
+		detail::buffer_test_probe probe_c{ c};
 		CHECK( probe_c.shared() != nullptr );
 		CHECK( probe_c.shared() == b_shared );
 		CHECK( probe_c.shared_data() == b_shared_data );
@@ -317,11 +317,11 @@ TEST_CASE( "nodeoze/smoke/buffer/policies" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s };
-		detail::buffer_test_probe pb{b};
+		detail::buffer_test_probe pb{ b};
 		CHECK( pb.policy() == buffer::policy::copy_on_write );
 
 		buffer c{ b };
-		detail::buffer_test_probe pc{c};
+		detail::buffer_test_probe pc{ c};
 		CHECK( pc.refcount() == 2 );
 		CHECK( pc.shared() == pb.shared() );
 		
@@ -342,11 +342,11 @@ TEST_CASE( "nodeoze/smoke/buffer/policies" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s, buffer::policy::exclusive };
-		detail::buffer_test_probe pb{b};
+		detail::buffer_test_probe pb{ b};
 		CHECK( pb.policy() == buffer::policy::exclusive );
 
 		buffer c{ b };
-		detail::buffer_test_probe pc{c};
+		detail::buffer_test_probe pc{ c};
 
 		CHECK( pc.policy() == buffer::policy::copy_on_write );
 
@@ -364,11 +364,11 @@ TEST_CASE( "nodeoze/smoke/buffer/policies" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s, buffer::policy::exclusive };
-		detail::buffer_test_probe pb{b};
+		detail::buffer_test_probe pb{ b};
 		CHECK( pb.policy() == buffer::policy::exclusive );
 
-		buffer c = b.slice(0, b.size() ); 
-		detail::buffer_test_probe pc{c};
+		buffer c = b.slice( 0, b.size() ); 
+		detail::buffer_test_probe pc{ c};
 
 		CHECK( pc.policy() == buffer::policy::copy_on_write );
 
@@ -386,11 +386,11 @@ TEST_CASE( "nodeoze/smoke/buffer/policies" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s, buffer::policy::no_copy_on_write };
-		detail::buffer_test_probe pb{b};
+		detail::buffer_test_probe pb{ b};
 		CHECK( pb.policy() == buffer::policy::no_copy_on_write );
 
 		buffer c{ b };
-		detail::buffer_test_probe pc{c};
+		detail::buffer_test_probe pc{ c};
 
 		CHECK( pc.policy() == buffer::policy::no_copy_on_write );
 
@@ -425,11 +425,11 @@ TEST_CASE( "nodeoze/smoke/buffer/policies" )
 	{
 		std::string s{ "abcdefghijklmnop" };
 		buffer b{ s };
-		detail::buffer_test_probe pb{b};
+		detail::buffer_test_probe pb{ b};
 		CHECK( pb.policy() == buffer::policy::copy_on_write );
 
 		buffer c{ b };
-		detail::buffer_test_probe pc{c};
+		detail::buffer_test_probe pc{ c};
 		CHECK( pc.refcount() == 2 );
 		CHECK( pc.shared() == pb.shared() );
 		CHECK( pc.policy() == buffer::policy::copy_on_write );

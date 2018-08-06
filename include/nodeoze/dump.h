@@ -35,6 +35,7 @@
 #include <iostream>
 #include <cstdint>
 #include <vector>
+#include <iomanip>
 
 namespace nodeoze
 {

@@ -29,38 +29,38 @@
  * Created on July 5, 2017, 11:21 AM
  */
 
-#ifndef UTILS_PREPROCESSOR_H
-#define UTILS_PREPROCESSOR_H
+#ifndef NODEOZE_BSTREAM_UTILS_PREPROCESSOR_H
+#define NODEOZE_BSTREAM_UTILS_PREPROCESSOR_H
 
-#define UTILS_PP_ARG16_(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, ...) _15
-#define UTILS_PP_HAS_COMMA_(...) UTILS_PP_ARG16_(__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-#define UTILS_PP_TRIGGER_PARENTHESIS_(...) ,
+#define UTILS_PP_ARG16_( _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, ... ) _15
+#define UTILS_PP_HAS_COMMA_( ... ) UTILS_PP_ARG16_( __VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 )
+#define UTILS_PP_TRIGGER_PARENTHESIS_( ... ) ,
 
-#define UTILS_PP_ISEMPTY(...)                                                    \
-UTILS_PP_ISEMPTY_(                                                               \
-          /* test if there is just one argument, eventually an empty    \
-             one */                                                     \
-          UTILS_PP_HAS_COMMA_(__VA_ARGS__),                                       \
-          /* test if UTILS_PP_TRIGGER_PARENTHESIS_ together with the argument   \
-             adds a comma */                                            \
-          UTILS_PP_HAS_COMMA_(UTILS_PP_TRIGGER_PARENTHESIS_ __VA_ARGS__),                 \
-          /* test if the argument together with a parenthesis           \
-             adds a comma */                                            \
-          UTILS_PP_HAS_COMMA_(__VA_ARGS__ (/*empty*/)),                           \
-          /* test if placing it between UTILS_PP_TRIGGER_PARENTHESIS_ and the   \
-             parenthesis adds a comma */                                \
-          UTILS_PP_HAS_COMMA_(UTILS_PP_TRIGGER_PARENTHESIS_ __VA_ARGS__ (/*empty*/))      \
+#define UTILS_PP_ISEMPTY( ... )																\
+UTILS_PP_ISEMPTY_(																			\
+          /* test if there is just one argument, eventually an empty						\
+             one */																			\
+          UTILS_PP_HAS_COMMA_( __VA_ARGS__ ),												\
+          /* test if UTILS_PP_TRIGGER_PARENTHESIS_ together with the argument				\
+             adds a comma */																\
+          UTILS_PP_HAS_COMMA_( UTILS_PP_TRIGGER_PARENTHESIS_ __VA_ARGS__ ),					\
+          /* test if the argument together with a parenthesis								\
+             adds a comma */																\
+          UTILS_PP_HAS_COMMA_( __VA_ARGS__ ( /*empty*/ ) ),									\
+          /* test if placing it between UTILS_PP_TRIGGER_PARENTHESIS_ and the				\
+             parenthesis adds a comma */													\
+          UTILS_PP_HAS_COMMA_( UTILS_PP_TRIGGER_PARENTHESIS_ __VA_ARGS__ ( /*empty*/ ) )	\
           )
           
-#define UTILS_PP_PASTE5_(_0, _1, _2, _3, _4) _0 ## _1 ## _2 ## _3 ## _4
-#define UTILS_PP_ISEMPTY_(_0, _1, _2, _3) UTILS_PP_HAS_COMMA_(UTILS_PP_PASTE5_(UTILS_PP_IS_EMPTY_CASE_, _0, _1, _2, _3))
+#define UTILS_PP_PASTE5_( _0, _1, _2, _3, _4 ) _0 ## _1 ## _2 ## _3 ## _4
+#define UTILS_PP_ISEMPTY_( _0, _1, _2, _3 ) UTILS_PP_HAS_COMMA_( UTILS_PP_PASTE5_( UTILS_PP_IS_EMPTY_CASE_, _0, _1, _2, _3 ) )
 #define UTILS_PP_IS_EMPTY_CASE_0001 ,
 
-#define UTILS_PP_ECHO(...) __VA_ARGS__
+#define UTILS_PP_ECHO( ... ) __VA_ARGS__
 
-#define UTILS_PP_WRAP_ECHO(...) (__VA_ARGS__)
+#define UTILS_PP_WRAP_ECHO( ... ) ( __VA_ARGS__ )
 
-#define UTILS_PP_DO_NOTHING(...)
+#define UTILS_PP_DO_NOTHING( ... )
 
-#endif /* UTILS_PREPROCESSOR_H */
+#endif /* NODEOZE_BSTREAM_UTILS_PREPROCESSOR_H */
 

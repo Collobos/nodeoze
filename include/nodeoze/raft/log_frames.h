@@ -48,7 +48,6 @@ public:
 
     using ptr = std::shared_ptr< frame >;
 
-	inline
 	frame()
 	:
 	m_pos{ -1 }
@@ -65,7 +64,7 @@ public:
 	BSTRM_POLY_SERIALIZE( frame, , ( m_pos ) )
 
 	// virtual bstream::obstream&
-	// serialize(nodeoze::bstream::obstream& os) const
+	// serialize( nodeoze::bstream::obstream& os ) const
 	// {
 	// 	base_type::_serialize( os );
 	// 	os << m_pos;
@@ -76,7 +75,7 @@ public:
 	get_type() const noexcept = 0;
 
 	template< class T >
-	inline typename std::enable_if_t< std::is_base_of< frame, T >::value, T& >
+	typename std::enable_if_t< std::is_base_of< frame, T >::value, T& >
 	as()
 	{
 		if ( T::type() != get_type() )
@@ -87,7 +86,7 @@ public:
 	}
 
 	template< class T >
-	inline typename std::enable_if_t< std::is_base_of< frame, T >::value, const T& >
+	typename std::enable_if_t< std::is_base_of< frame, T >::value, const T& >
 	as() const
 	{
 		if ( T::type() != get_type() )
@@ -97,14 +96,14 @@ public:
 		return reinterpret_cast< const T& >( *this );
 	}
 
-	inline file_position_type
+	file_position_type
 	file_position() const noexcept
 	{
 		return m_pos;
 	}
 
-	inline void
-	file_position(file_position_type pos)
+	void
+	file_position( file_position_type pos )
 	{
 		m_pos = pos;
 	}
@@ -137,7 +136,6 @@ public:
 		return type();
 	}
 
-	inline
 	replicant_state()
 	:
 	m_dirty{ false },
@@ -146,7 +144,6 @@ public:
 	m_vote{ 0 }
 	{}
 
-	inline
 	replicant_state( replicant_id_type self, term_type term = 1, replicant_id_type vote = 0 )
 	:
 	m_dirty{ false },
@@ -166,7 +163,7 @@ public:
 	operator=( replicant_state&& ) = delete;
 
 	// virtual bstream::obstream&
-	// serialize(nodeoze::bstream::obstream& os) const override
+	// serialize( nodeoze::bstream::obstream& os ) const override
 	// {
 	// 	base_type::_serialize( os );
 	// 	frame::serialize( os );
@@ -174,14 +171,14 @@ public:
 	// 	return os;
 	// }
 
-	inline void
+	void
 	update( term_type t, replicant_id_type v )
 	{
 		term( t );
 		vote( v );
 	}
 
-	inline void
+	void
 	update( replicant_state const& rhs )
 	{
 		if ( rhs.m_self != m_self )
@@ -192,7 +189,7 @@ public:
 		vote( rhs.vote() );
 	}
 
-	inline void
+	void
 	update( replicant_state const& rhs, std::error_code& err )
 	{
 		clear_error( err );
@@ -207,13 +204,13 @@ public:
 		}
 	}
 
-	inline void
+	void
 	clean()
 	{
 		m_dirty = false;
 	}
 
-	inline void
+	void
 	clear( replicant_id_type self )
 	{
 		m_self = self;
@@ -222,25 +219,25 @@ public:
 		m_vote = 0;
 	}
 
-	inline replicant_id_type
+	replicant_id_type
 	self() const noexcept
 	{
 		return m_self;
 	}
 
-	inline term_type
+	term_type
 	term() const noexcept
 	{
 		return m_term;
 	}
 
-	inline replicant_id_type
+	replicant_id_type
 	vote() const noexcept
 	{
 		return m_vote;
 	}
 
-	inline void
+	void
 	term( term_type trm )
 	{
 		assert( trm >= m_term );
@@ -251,7 +248,7 @@ public:
 		}
 	}
 
-	inline void
+	void
 	vote( replicant_id_type id )
 	{
 		if ( id != m_vote )
@@ -261,7 +258,7 @@ public:
 		}
 	}
 
-	inline bool
+	bool
 	is_dirty() const noexcept
 	{
 		return m_dirty;
@@ -287,7 +284,6 @@ public:
 	m_index{ index }
 	{}
 
-	inline
 	entry()
 	:
 	frame{},
@@ -304,7 +300,7 @@ public:
 	BSTRM_POLY_SERIALIZE( entry, ( frame ), ( m_term, m_index ) )
 
 	// virtual bstream::obstream&
-	// serialize(nodeoze::bstream::obstream& os) const
+	// serialize( nodeoze::bstream::obstream& os ) const
 	// {
 	// 	base_type::_serialize( os );
 	// 	frame::serialize( os );
@@ -312,13 +308,13 @@ public:
 	// 	return os;
 	// }
 
-	inline index_type
+	index_type
 	index() const noexcept
 	{
 		return m_index;
 	}
 	
-	inline term_type
+	term_type
 	term() const noexcept
 	{
 		return m_term;
@@ -345,11 +341,11 @@ public:
 	// :
 	// base_type{ is },
 	// entry{ is },
-	// m_payload{ nodeoze::bstream::ibstream_initializer<decltype(m_payload)>::get(is) }
+	// m_payload{ nodeoze::bstream::ibstream_initializer< decltype( m_payload ) >::get( is ) }
 	// {}
 
 	// virtual bstream::obstream&
-	// serialize(nodeoze::bstream::obstream& os) const override
+	// serialize( nodeoze::bstream::obstream& os ) const override
 	// {
 	// 	base_type::_serialize( os );
 	// 	entry::serialize( os );
@@ -357,14 +353,12 @@ public:
 	// 	return os;
 	// }
 
-	inline
 	state_machine_update( term_type term, index_type index, buffer&& payload )
 	:
 	entry{ term, index },
 	m_payload{ std::move( payload ) }
 	{}
 
-	inline
 	state_machine_update()
 	:
 	entry{},
@@ -383,7 +377,7 @@ public:
 		return type();
 	}
 
-	inline buffer
+	buffer
 	payload() const
 	{
 		return m_payload;

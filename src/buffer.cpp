@@ -25,7 +25,6 @@
  */
 
 #include <nodeoze/buffer.h>
-//#include <nodeoze/macros.h>
 #include <nodeoze/dump.h>
 #include <iostream>
 #include <boost/crc.hpp>

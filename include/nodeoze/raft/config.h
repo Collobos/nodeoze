@@ -12,17 +12,17 @@ namespace raft
 class configuration
 {
 public:
-	configuration(server_id_type id)
+	configuration( server_id_type id )
 	:
-	m_id{id},
-	m_log_dir{"logs/"},
-	m_log_file_name{std::string("server_").append(std::to_string(id).append(".log")},
-	m_log_temp_name{std::string("server_").append(std::to_string(id).append(".tmp")},
-	m_election_timeout{std::chrono::milliseconds{200}},
-	m_heartbeat_timeout{std::chrono::milliseconds{50}}
+	m_id{ id },
+	m_log_dir{ "logs/" },
+	m_log_file_name{ std::string( "server_" ).append( std::to_string( id ).append( ".log" ) },
+	m_log_temp_name{ std::string( "server_" ).append( std::to_string( id ).append( ".tmp" ) },
+	m_election_timeout{ std::chrono::milliseconds{ 200 } },
+	m_heartbeat_timeout{ std::chrono::milliseconds{ 50 } }
 	{}
 
-	inline server_id_type
+	server_id_type
 	id() const noexcept
 	{
 		return m_id;
@@ -34,49 +34,49 @@ public:
 		return m_log_dir;
 	}
 
-	inline void
-	log_directory(std::string const& dir)
+	void
+	log_directory( std::string const& dir )
 	{
 		m_log_dir = dir;
 	}
 
-	inline std::string const&
+	std::string const&
 	log_filename() const noexcept
 	{
 		return m_log_filename;
 	}
 
-	inline void
-	log_filename(std::string const& filename) 
+	void
+	log_filename( std::string const& filename ) 
 	{
 		m_log_filename = filename;
 	}
 
-	inline std::string const&
+	std::string const&
 	log_temp_filename() const noexcept
 	{
 		return m_log_temp_filename;
 	}
 
-	inline void
-	log_temp_filename(std::string const& filename) 
+	void
+	log_temp_filename( std::string const& filename ) 
 	{
 		m_log_temp_filename = filename;
 	}
 
-	inline std::string 
+	std::string 
 	log_full_pathname() const noexcept
 	{
-		std::string pathname{m_log_dir};
-		pathname.append(m_log_filename);
+		std::string pathname{ m_log_dir };
+		pathname.append( m_log_filename );
 		return pathname;
 	}
 
-	inline std::string
+	std::string
 	log_temp_full_pathname() const noexcept
 	{
-		std::string pathname{m_log_dir};
-		pathname.append(m_log_temp_filename);
+		std::string pathname{ m_log_dir };
+		pathname.append( m_log_temp_filename );
 		return pathname;
 	}
 		

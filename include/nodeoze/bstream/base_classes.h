@@ -29,8 +29,8 @@
  * Created on June 30, 2017, 7:58 PM
  */
 
-#ifndef BSTREAM_BASE_CLASSES_H
-#define BSTREAM_BASE_CLASSES_H
+#ifndef NODEOZE_BSTREAM_BASE_CLASSES_H
+#define NODEOZE_BSTREAM_BASE_CLASSES_H
 
 #include <nodeoze/bstream/ibstream.h>
 #include <nodeoze/bstream/obstream.h>
@@ -41,46 +41,46 @@ namespace nodeoze
 namespace bstream
 {
 
-template<class Derived>
+template< class Derived >
 class streaming_base
 {
 protected:
-    inline streaming_base(bstream::ibstream& is)
+    streaming_base( ibstream& is )
     {			
         auto length = is.read_array_header();
-        if (length != _item_count())
+        if ( length != _item_count() )
         {
             throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
         }
     }
 
-    inline streaming_base() {};
+    streaming_base() {};
 
-    inline obstream& 
-    _serialize(obstream& os) const
+    obstream& 
+    _serialize( obstream& os ) const
     {
-        return os.write_array_header(_item_count());
+        return os.write_array_header( _item_count() );
     }
     
-    inline ibstream&
-    _deserialize(ibstream& is)
+    ibstream&
+    _deserialize( ibstream& is )
     {
         auto length = is.read_array_header();
-        if (length != _item_count())
+        if ( length != _item_count() )
         {
             throw std::system_error{ make_error_code( bstream::errc::member_count_error ) };
         }
         return is;
     }
     
-    inline std::size_t
+    std::size_t
     _item_count() const
     {
-        return static_cast<const Derived&>(*this)._streamed_item_count();
+        return static_cast< const Derived& >( *this )._streamed_item_count();
     }
 };
 
 } // namespace bstream
 } // namespace nodeoze
 
-#endif /* BSTREAM_BASE_CLASSES_H */
+#endif // NODEOZE_BSTREAM_BASE_CLASSES_H

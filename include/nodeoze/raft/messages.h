@@ -16,7 +16,7 @@ public:
 	BSTRM_ITEM_COUNT( , ( m_src, m_dest, m_term ) )
 
 	virtual bstream::obstream&
-	serialize(nodeoze::bstream::obstream& os) const
+	serialize( nodeoze::bstream::obstream& os ) const
 	{
 		base_type::_serialize( os );
 		os << m_src << m_dest << m_term;
@@ -32,19 +32,19 @@ public:
 
     virtual ~message() {}
 
-    inline replicant_id_type
+    replicant_id_type
     src() const noexcept
     {
         return m_src;
     }
     
-    inline replicant_id_type
+    replicant_id_type
     dest() const noexcept
     {
         return m_dest;
     }
     
-    inline term_type
+    term_type
     term() const noexcept
     {
         return m_term;
@@ -71,13 +71,13 @@ public:
     m_last_log_index{ last_log_index }
     {}
 
-    inline term_type
+    term_type
     last_log_term() const noexcept
     {
         return m_last_log_term;
     }
 
-    inline index_type
+    index_type
     last_log_index() const noexcept
     {
         return m_last_log_index;
@@ -100,7 +100,7 @@ public:
     message( src, dest, term ),
     m_granted{ granted }
 
-    inline bool
+    bool
     granted() const noexcept
     {
         return m_granted;
@@ -124,13 +124,13 @@ public:
     m_last_log_index{ last_log_index }
     {}
 
-    inline term_type
+    term_type
     last_log_term() const noexcept
     {
         return m_last_log_term;
     }
 
-    inline index_type
+    index_type
     last_log_index() const noexcept
     {
         return m_last_log_index;

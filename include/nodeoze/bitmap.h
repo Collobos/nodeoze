@@ -46,7 +46,6 @@ public:
 			
 			Creates an empty bit vector, corresponding to an empty set.
 		*/
-	inline
 	bitmap()
 	:
 		m_words()
@@ -75,9 +74,9 @@ public:
 
 	bitmap( std::size_t num_words, std::size_t bit_position )
 	:
-		m_words( (num_words > ((bit_position / bitword_size) + 1)) ? num_words: ((bit_position / bitword_size) + 1), 0ULL )
+		m_words( ( num_words > ( ( bit_position / bitword_size) + 1)) ? num_words: ( ( bit_position / bitword_size) + 1), 0ULL )
 	{
-		set_bit(bit_position);
+		set_bit( bit_position);
 	}
 		
 	/*! \brief Construct from word vector (copy)
@@ -88,8 +87,7 @@ public:
 		the underlying vector of the created instance.
 	*/
 
-	inline
-	bitmap( const std::vector<bitword>& words )
+	bitmap( const std::vector< bitword >& words )
 	:
 		m_words( words )
 	{
@@ -103,8 +101,7 @@ public:
 		the underlying vector of the created instance.
 	*/
 
-	inline
-	bitmap( std::vector<bitword>&& words )
+	bitmap( std::vector< bitword >&& words )
 	:
 		m_words( std::move( words ) )
 	{
@@ -117,7 +114,6 @@ public:
 		into the created instance.
 	*/
 
-	inline
 	bitmap( const bitmap& rhs )
 	:
 		m_words( rhs.m_words )
@@ -131,7 +127,6 @@ public:
 		into the created instance.
 	*/
 
-	inline
 	bitmap( bitmap&& rhs )
 	:
 		m_words( std::move( rhs.m_words ) )
@@ -146,7 +141,7 @@ public:
 		vector of this instance.
 	*/
 
-	inline bitmap&
+	bitmap&
 	operator=( const bitmap& rhs )
 	{
 		m_words = rhs.m_words;
@@ -161,7 +156,7 @@ public:
 		vector of this instance.
 	*/
 
-	inline bitmap&
+	bitmap&
 	operator=( bitmap&& rhs )
 	{
 		m_words = std::move( rhs.m_words );
@@ -176,7 +171,7 @@ public:
 		\f$ \emptyset \f$.
 	*/
 
-	inline bool
+	bool
 	empty() const
 	{
 		return hamming_weight() == 0;
@@ -189,12 +184,12 @@ public:
 		\f$ \emptyset \f$ to the represented set.
 	*/
 
-	inline void
+	void
 	clear()
 	{
 		for ( auto i = 0u; i < m_words.size(); ++i )
 		{
-			m_words[i] = 0ULL;
+			m_words[ i ] = 0ULL;
 		}
 	}
 		
@@ -206,7 +201,7 @@ public:
 		cardinality of the represented set.
 	*/
 
-	inline size_t
+	size_t
 	hamming_weight() const
 	{
 		std::size_t bcount = 0u;
@@ -227,7 +222,7 @@ public:
 		Otherwise, return \c false.
 	*/
 
-	inline bool
+	bool
 	is_bit_set( std::size_t bit_position ) const
 	{
 		auto word_offset = bit_position / bitword_size;
@@ -239,7 +234,7 @@ public:
 		else
 		{
 			auto bit_offset = bit_position % bitword_size;
-			return ( m_words[word_offset] & (1ULL << bit_offset) ) != 0ULL;
+			return ( m_words[ word_offset ] & ( 1ULL << bit_offset) ) != 0ULL;
 		}
 	}
 		
@@ -251,7 +246,7 @@ public:
 		element is added to the represented set, if absent.
 	*/
 
-	inline bitmap&
+	bitmap&
 	set_bit( std::size_t bit_position )
 	{
 		auto word_offset = bit_position / bitword_size;
@@ -262,7 +257,7 @@ public:
 		}
 
 		auto bit_offset = bit_position % bitword_size;
-		m_words[word_offset] |= (1ULL << bit_offset);
+		m_words[ word_offset ] |= ( 1ULL << bit_offset);
 		return *this;
 	}
 		
@@ -274,7 +269,7 @@ public:
 		element is removed from the represented set, if present.
 	*/
 
-	inline bitmap&
+	bitmap&
 	clear_bit( std::size_t bit_position )
 	{
 		auto word_offset = bit_position / bitword_size;
@@ -285,7 +280,7 @@ public:
 		}
 
 		auto bit_offset = bit_position % bitword_size;
-		m_words[word_offset] &= (~(1ULL << bit_offset));
+		m_words[ word_offset ] &= ( ~( 1ULL << bit_offset));
 		return *this;
 	}
 
@@ -302,7 +297,7 @@ public:
 		comparison for equality of the represented sets.
 	*/
 	
-	inline bool
+	bool
 	operator==( const bitmap& rhs) const
 	{
 		if ( m_words.size() > rhs.m_words.size())
@@ -311,14 +306,14 @@ public:
 			{
 				if ( i < rhs.m_words.size() )
 				{
-					if (m_words[i] !=  rhs.m_words[i] )
+					if ( m_words[ i ] !=  rhs.m_words[ i ] )
 					{
 						return false;
 					}
 				}
 				else
 				{
-					if ( m_words[i] != 0ULL )
+					if ( m_words[ i ] != 0ULL )
 					{
 						return false;
 					}
@@ -332,14 +327,14 @@ public:
 			{
 				if ( i < m_words.size() )
 				{
-					if ( m_words[i] !=  rhs.m_words[i] )
+					if ( m_words[ i ] !=  rhs.m_words[ i ] )
 					{
 						return false;
 					}
 				}
 				else
 				{
-					if ( rhs.m_words[i] != 0ULL )
+					if ( rhs.m_words[ i ] != 0ULL )
 					{
 						return false;
 					}
@@ -362,10 +357,10 @@ public:
 		comparison for inequality of the represented sets.
 	*/
 	
-	inline bool
+	bool
 	operator!=( const bitmap& rhs) const
 	{
-		return ! this->operator==(rhs);
+		return ! this->operator==( rhs);
 	}
 		
 	/*! \brief Bitwise OR operator
@@ -377,15 +372,15 @@ public:
 		to the union of the two represented sets.
 	*/
 	
-	inline bitmap
+	bitmap
 	operator|( const bitmap& rhs ) const
 	{
 		auto usize = std::max( m_words.size(), rhs.m_words.size() );
-		std::vector<bitword> uwords( usize, 0ULL );
+		std::vector< bitword > uwords( usize, 0ULL );
 
 		for ( auto i = 0u; i < usize; ++i )
 		{
-			uwords[i] = ( (i < m_words.size()) ? m_words[i] : 0ULL ) | ( ( i < rhs.m_words.size() ) ? rhs.m_words[i] : 0ULL );
+			uwords[ i ] = ( ( i < m_words.size()) ? m_words[ i ] : 0ULL ) | ( ( i < rhs.m_words.size() ) ? rhs.m_words[ i ] : 0ULL );
 		}
 
 		return bitmap( std::move( uwords ) );	
@@ -400,15 +395,15 @@ public:
 		to the intersection of the two represented sets.
 	*/
 
-	inline bitmap
+	bitmap
 	operator&( const bitmap& rhs ) const
 	{
 		auto result_size = std::max( m_words.size(), rhs.m_words.size() );
-		std::vector<bitword> result_words( result_size, 0ULL );
+		std::vector< bitword > result_words( result_size, 0ULL );
 
 		for ( auto i = 0u; i < result_size; ++i )
 		{
-			result_words[i] = ( (i < m_words.size()) ? m_words[i] : 0ULL ) & ( ( i < rhs.m_words.size() ) ? rhs.m_words[i] : 0ULL );
+			result_words[ i ] = ( ( i < m_words.size()) ? m_words[ i ] : 0ULL ) & ( ( i < rhs.m_words.size() ) ? rhs.m_words[ i ] : 0ULL );
 		}
 
 		return bitmap( std::move( result_words ) );
@@ -430,11 +425,11 @@ public:
 	operator-( const bitmap& rhs ) const
 	{
 		auto result_size = std::max( m_words.size(), rhs.m_words.size() );
-		std::vector<bitword> result_words( result_size, 0ULL );
+		std::vector< bitword > result_words( result_size, 0ULL );
 
 		for ( auto i = 0u; i < result_size; ++i )
 		{
-			result_words[i] = ( (i < m_words.size()) ? m_words[i] : 0ULL ) & (~ ( ( i < rhs.m_words.size() ) ? rhs.m_words[i] : 0ULL ) );
+			result_words[ i ] = ( ( i < m_words.size()) ? m_words[ i ] : 0ULL ) & ( ~ ( ( i < rhs.m_words.size() ) ? rhs.m_words[ i ] : 0ULL ) );
 		}
 
 		return bitmap( std::move( result_words ) );
@@ -449,18 +444,18 @@ public:
 		to <code> *this = *this | rhs </code>.
 	*/
 
-	inline bitmap&
+	bitmap&
 	operator|=( const bitmap& rhs )
 	{
 		for ( auto i = 0ULL; i < rhs.m_words.size(); ++i )
 		{
 			if ( i < m_words.size() )
 			{
-				m_words[i] |= rhs.m_words[i];
+				m_words[ i ] |= rhs.m_words[ i ];
 			}
 			else
 			{
-				m_words.push_back( rhs.m_words[i] );
+				m_words.push_back( rhs.m_words[ i ] );
 			}
 		}
 
@@ -482,18 +477,18 @@ public:
 
 	*/
 	
-	inline bitmap&
+	bitmap&
 	operator&=( const bitmap& rhs )
 	{
 		for ( auto i = 0ULL; i < rhs.m_words.size(); ++i )
 		{
 			if ( i < m_words.size() )
 			{
-				m_words[i] &= rhs.m_words[i];
+				m_words[ i ] &= rhs.m_words[ i ];
 			}
 			else
 			{
-				m_words.push_back( rhs.m_words[i] );
+				m_words.push_back( rhs.m_words[ i ] );
 			}
 		}
 
@@ -509,7 +504,7 @@ public:
 		<code> *this = *this & ( ~ rhs ) </code>.
 	*/
 
-	inline bitmap&
+	bitmap&
 	operator-=( const bitmap& rhs )
 	{
 		for ( auto i = 0u; i < rhs.m_words.size(); ++i )
@@ -519,7 +514,7 @@ public:
 				break;
 			}
 
-			m_words[i] &= ( ~ ( rhs.m_words[i] ) );
+			m_words[ i ] &= ( ~ ( rhs.m_words[ i ] ) );
 		}
 
 		return *this;
@@ -543,7 +538,7 @@ public:
 	{
 		for ( auto i = 0u; i < m_words.size(); ++i )
 		{
-			if (m_words[i] != (m_words[i] & ( ( i < rhs.m_words.size() ) ? rhs.m_words[i] : 0ULL )))
+			if ( m_words[ i ] != ( m_words[ i ] & ( ( i < rhs.m_words.size() ) ? rhs.m_words[ i ] : 0ULL )))
 			{
 				return false;
 			}
@@ -568,10 +563,10 @@ public:
 	bool
 	operator>=( const bitmap& rhs ) const
 	{
-		return rhs <= (*this);
+		return rhs <= ( *this);
 	}
 		
-	inline const std::vector<bitword>&
+	const std::vector< bitword >&
 	get_words() const
 	{
 		return m_words;
@@ -596,8 +591,8 @@ public:
 			if
 			(
 				(
-					( ( i < lhs.m_words.size() ) ? lhs.m_words[i] : 0ULL ) &
-					( ( i < rhs.m_words.size() ) ? rhs.m_words[i] : 0ULL )
+					( ( i < lhs.m_words.size() ) ? lhs.m_words[ i ] : 0ULL ) &
+					( ( i < rhs.m_words.size() ) ? rhs.m_words[ i ] : 0ULL )
 				) != 0ULL
 			)
 			{
@@ -627,8 +622,8 @@ public:
 
 protected:
 	
-	inline static
-	size_t count_bits_set(bitword bset)
+	static
+	size_t count_bits_set( bitword bset)
 	{
 		/*
 		* A.K.A. Hamming weight.
@@ -643,21 +638,21 @@ protected:
 		* of which sucked notoriously, largely for lack of a hardware barrel
 		* shifter. Modern crypto algorithms demand it; they tend to be shifty.
 		*/
-		bset = bset - ((bset >> 1) & 0x5555555555555555ULL);
-		bset = (bset & 0x3333333333333333ULL) + ((bset >> 2) & 0x3333333333333333ULL);
-		return (std::size_t) ((((bset + (bset >> 4)) & 0x0F0F0F0F0F0F0F0FULL) * 0x0101010101010101ULL) >> 56);
+		bset = bset - ( ( bset >> 1 ) & 0x5555555555555555ULL );
+		bset = ( bset & 0x3333333333333333ULL ) + ( ( bset >> 2 ) & 0x3333333333333333ULL );
+		return ( std::size_t ) ( ( ( ( bset + ( bset >> 4 ) ) & 0x0F0F0F0F0F0F0F0FULL ) * 0x0101010101010101ULL ) >> 56 );
 	}
 
-	inline static bool
+	static bool
 	power_of_2( bitword n )
 	{
 		return ( n != 0 ) && ( ( n & ( n - 1 ) ) == 0 );
 	}
 
-	inline static int
+	static int
 	bit_position( bitword n )
 	{
-		if (! power_of_2( n ) )
+		if ( ! power_of_2( n ) )
 		{
 			return -1;
 		}
@@ -673,7 +668,7 @@ protected:
 		return count;
 	}
 	
-	std::vector<bitword> m_words;
+	std::vector< bitword > m_words;
 };
 
 }

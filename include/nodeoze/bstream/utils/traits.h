@@ -1,5 +1,5 @@
-#ifndef UTILS_TRAITS_H
-#define UTILS_TRAITS_H
+#ifndef NODEOZE_BSTREAM_UTILS_TRAITS_H
+#define NODEOZE_BSTREAM_UTILS_TRAITS_H
 
 #include <type_traits>
 #include <utility>
@@ -10,23 +10,23 @@ namespace bstream
 {
 namespace utils
 {
-template<class> struct sfinae_true_if : std::true_type {};
+template< class > struct sfinae_true_if : std::true_type {};
 
-template <bool... B>
+template < bool... B >
 struct conjunction {};
 
-template <bool Head, bool... Tail>
-struct conjunction<Head, Tail...>
-	: std::integral_constant<bool, Head && conjunction<Tail...>::value>{};
+template < bool Head, bool... Tail >
+struct conjunction< Head, Tail... >
+	: std::integral_constant< bool, Head && conjunction< Tail... >::value >{};
 
-template <bool B>
-struct conjunction<B> : std::integral_constant<bool, B> {};
+template < bool B >
+struct conjunction< B > : std::integral_constant< bool, B > {};
 
-template <class T, class... Ts>
+template < class T, class... Ts >
 struct index;
 
-template <class T, class... Ts>
-struct index<T, T, Ts...> : std::integral_constant< std::size_t, 0 > {};
+template < class T, class... Ts >
+struct index< T, T, Ts... > : std::integral_constant< std::size_t, 0 > {};
 
 template < class T, class U, class... Ts >
 struct index< T, U, Ts... > : std::integral_constant< std::size_t, 1 + index< T, Ts... >::value > {};
@@ -65,4 +65,4 @@ using nth_element = typename decltype( select< I > (
 } // namespace bstream
 } // namespace nodeoze
 
-#endif // UTILS_TRAITS_H
+#endif // NODEOZE_BSTREAM_UTILS_TRAITS_H

@@ -29,8 +29,8 @@
  * Created on June 23, 2017, 9:09 PM
  */
 
-#ifndef BSTREAM_TYPECODE_H
-#define BSTREAM_TYPECODE_H
+#ifndef NODEOZE_BSTREAM_TYPECODE_H
+#define NODEOZE_BSTREAM_TYPECODE_H
 
 #include <cstdint>
 
@@ -88,62 +88,62 @@ struct typecode
 	static constexpr type negative_fixint_min = 0xe0;
 	static constexpr type negative_fixint_max = 0xff;
 		
-	static inline bool
-	is_positive_int(type code)
+	static bool
+	is_positive_int( type code )
 	{
 		return code <= positive_fixint_max || code == uint_8 || code == uint_16 || code == uint_64;
 	}
 		
-	static inline bool
-	is_int(type code)
+	static bool
+	is_int( type code )
 	{
-		return is_positive_int(code) || (code >= negative_fixint_min && code <= negative_fixint_max) || 
+		return is_positive_int( code ) || ( code >= negative_fixint_min && code <= negative_fixint_max ) || 
 				code == int_8 || code == int_16 || code == int_64;
 	}
 
-	static inline bool
-	is_floating(type code)
+	static bool
+	is_floating( type code )
 	{
 		return code == float_32 || code == float_64;
 	}
 
-	static inline bool
-	is_nil(type code)
+	static bool
+	is_nil( type code )
 	{
 		return code == nil;
 	}
 		
-	static inline bool
-	is_array(type code)
+	static bool
+	is_array( type code )
 	{
-		return (code >= fixarray_min && code <= fixarray_max) || code == array_16 || code == array_32;
+		return ( code >= fixarray_min && code <= fixarray_max ) || code == array_16 || code == array_32;
 	}
 
-	static inline bool
-	is_map(type code)
+	static bool
+	is_map( type code )
 	{
-		return (code >= fixmap_min && code <= fixmap_max) || code == map_16 || code == map_32;
+		return ( code >= fixmap_min && code <= fixmap_max ) || code == map_16 || code == map_32;
 	}
 
-	static inline bool
-	is_string(type code)
+	static bool
+	is_string( type code )
 	{
-		return (code >= fixstr_min && code <= fixstr_max) || code == str_8 || code == str_16 || code == str_32;
+		return ( code >= fixstr_min && code <= fixstr_max ) || code == str_8 || code == str_16 || code == str_32;
 	}
 
-	static inline bool
-	is_blob(type code)
+	static bool
+	is_blob( type code )
 	{
 		return code == bin_8 || code == bin_16 || code == bin_32;
 	}
 
-	static inline bool
-	is_bool(type code)
+	static bool
+	is_bool( type code )
 	{
 		return code == bool_true || code == bool_false;
 	}
 
-	static inline bool
+	static bool
 	is_ext( type code )
 	{
 		return code == fixext_1 
@@ -188,9 +188,8 @@ namespace detail
 	};
 
 } // namespace detail
-
 } // namespace bstream
 } // namespace nodeoze
 
-#endif /* BSTREAM_TYPECODES_H */
+#endif // NODEOZE_BSTREAM_TYPECODE_H
 

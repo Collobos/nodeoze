@@ -90,7 +90,7 @@ public:
 		return;
 	}
 
-	inline void
+	void
 	close( std::error_code& err )
 	{
 		write_frame( m_state, err );
@@ -102,7 +102,7 @@ public:
 		return;
 	}
 
-	inline void
+	void
 	append( entry::ptr ep, std::error_code& err )
 	{
 		m_log.push_back( ep );
@@ -116,13 +116,13 @@ public:
 		return;
 	}
 
-	inline void
+	void
 	update_replicant_state( replicant_id_type self, term_type current_term, replicant_id_type voted_for, std::error_code& err )
 	{
 		update_replicant_state( replicant_state{ self, current_term, voted_for }, err );
 	}
 
-	inline void
+	void
 	update_replicant_state( replicant_state const& new_state, std::error_code& err )
 	{
 		m_state->update( new_state );
@@ -136,7 +136,7 @@ public:
 		}
 	}
 
-	inline replicant_state const&
+	replicant_state const&
 	current_replicant_state() const
 	{
 		return *m_state;
@@ -157,7 +157,7 @@ public:
 		}
 	}
 
-	inline void
+	void
 	write_frame( frame::ptr fp, std::error_code& err, bool flush = true )
 	{
 		clear_error( err );
@@ -213,7 +213,7 @@ public:
 		else
 		{
 			try 
-			{		
+			{
 				bstream::ifbstream is;
 				is.open( m_log_pathname );
 				std::size_t file_size = is.size();
@@ -264,13 +264,13 @@ public:
 		}
 	}
 
-	inline bool
+	bool
 	empty() const
 	{
 		return m_log.empty();
 	}
 
-	inline entry::ptr
+	entry::ptr
 	back() const
 	{
 		if ( m_log.empty() )
@@ -280,7 +280,7 @@ public:
 		return m_log.back();
 	}
 
-	inline  entry::ptr
+	entry::ptr
 	front() const
 	{
 		if ( m_log.empty() )
@@ -290,22 +290,22 @@ public:
 		return m_log.front();
 	}
 
-	inline  entry::ptr
-	operator[](index_type index) const
+	entry::ptr
+	operator[]( index_type index ) const
 	{
-		if (index_check(index))
+		if ( index_check( index ) )
 		{
 			throw std::system_error{ make_error_code( raft::errc::log_index_out_of_range ) };
 		}
 		auto i = index - front()->index();
-		return m_log[i];
+		return m_log[ i ];
 	}
 
 	/*
 	 *  remove entries with indices higher than the specified index
 	 */
 	void
-	prune_back(index_type index, std::error_code& err)
+	prune_back( index_type index, std::error_code& err )
 	{
 		clear_error( err );
 		assert( ! m_log.empty() );
@@ -340,7 +340,7 @@ public:
 	 *  remove entries with indices lower than the specified index
 	 */
 	void
-	prune_front(index_type index, std::error_code& err)
+	prune_front( index_type index, std::error_code& err )
 	{
 		clear_error( err );
 		assert( ! m_log.empty() );
@@ -370,7 +370,7 @@ public:
 					for ( auto it = m_log.begin(); it != m_log.end(); ++it )
 					{
 						auto pos = m_os.position();
-						(*it)->file_position( pos );
+						( *it )->file_position( pos );
 						write_frame( *it, false );
 					}
 
@@ -404,7 +404,7 @@ public:
 protected:
 
 	bool 
-	index_check(index_type index) const noexcept
+	index_check( index_type index ) const noexcept
 	{
 		return !m_log.empty() && index >= front()->index() && index <= back()->index();
 	}
@@ -412,7 +412,7 @@ protected:
 	bool
 	integrity_check() const noexcept
 	{
-		return m_log.empty() || (m_log.size() == ((m_log.back()->index() + 1) - m_log.front()->index()));
+		return m_log.empty() || ( m_log.size() == ( ( m_log.back()->index() + 1 ) - m_log.front()->index() ) );
 	}
 
 	replicant_id_type							m_self;

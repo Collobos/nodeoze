@@ -2,7 +2,7 @@
 #define NODEOZE_BSTREAM_TYPES_H
 
 #include <cstdint>
-#include <nodeoze/bstream/error.h>
+#include <system_error>
 
 namespace nodeoze 
 {
@@ -32,6 +32,13 @@ namespace bstream
         at_end,
         at_begin,
     };
+
+	inline void
+	clear_error( std::error_code& ec )
+	{
+		static const std::error_code good = std::error_code{};
+		ec = good;
+	}
 
 
 } // namespace bstream

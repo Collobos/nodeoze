@@ -7,6 +7,7 @@
 #include <nodeoze/bstream/ibfilebuf.h>
 #include <nodeoze/bstream/obfilebuf.h>
 #include <nodeoze/test.h>
+#include <nodeoze/bstream/error.h>
 
 using namespace nodeoze;
 using namespace bstream;
@@ -160,7 +161,7 @@ TEST_CASE( "nodeoze/smoke/ibstreambuf/basic" )
 {
     // std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
 
-    buffer buf{ "0123456789ABCDEF"};
+    buffer buf{ "0123456789ABCDEF" };
     bstream::ibstreambuf ibuf{ buf.data(), buf.size() };
 
     bstream::detail::ibs_test_probe probe{ ibuf };
@@ -188,16 +189,16 @@ TEST_CASE( "nodeoze/smoke/ibstreambuf/basic" )
     CHECK( ! err );
     auto b = ibuf.get( err );
     CHECK( ! err );
-    CHECK( b == buf[3] );
+    CHECK( b == buf[3 ] );
     CHECK( ibuf.seek( bstream::seek_anchor::current, 5, err  ) == 9 );
     b = ibuf.get( err );
     CHECK( ! err );
-    CHECK( b == buf[9] );
+    CHECK( b == buf[9 ] );
 
     CHECK( ibuf.seek( bstream::seek_anchor::end, -1, err ) == 15 );
     b = ibuf.get( err );
     CHECK( ! err );
-    CHECK( b == buf[15]);
+    CHECK( b == buf[15 ] );
 
     b = ibuf.get( err );
     CHECK( err );
@@ -212,7 +213,7 @@ TEST_CASE( "nodeoze/smoke/ibstreambuf/basic" )
     CHECK( bf.size() == 7 );
     CHECK( ibuf.tell( bstream::seek_anchor::current, err ) == 7 );
     CHECK( ! err );
-    CHECK( bf.to_string() == std::string{"0123456"} ); 
+    CHECK( bf.to_string() == std::string{ "0123456" } ); 
 
     CHECK( ibuf.seek( bstream::seek_anchor::current, -8, err ) == bstream::invalid_position );
     CHECK( err );

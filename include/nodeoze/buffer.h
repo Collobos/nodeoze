@@ -24,19 +24,11 @@
  *
  */
 
-#ifndef _nodeoze_buffer_h
-#define _nodeoze_buffer_h
+#ifndef NODEOZE_BUFFER_H
+#define NODEOZE_BUFFER_H
 
-#include <functional>
-#include <algorithm>
-#include <stdexcept>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <cassert>
-#include <string>
-#include <iomanip>
-#include <iostream>
+ #include <functional>
+ #include <system_error>
 #include <vector>
 
 namespace nodeoze {
@@ -350,7 +342,7 @@ private:
 			}
 		}
 
-		inline elem_type*
+		elem_type*
 		detach()
 		{
 			elem_type* result = nullptr;
@@ -369,7 +361,7 @@ private:
 			return result;
 		}
 
-		inline elem_type*
+		elem_type*
 		detach( size_type& size, dealloc_function& dealloc )
 		{
 			// if detach() doesn't work, don't side-effect the arguments--be nice.
@@ -384,7 +376,7 @@ private:
 			return result;
 		}
 
-		inline void
+		void
 		reallocate( size_type new_size )
 		{
 			if ( ! m_realloc )
@@ -404,7 +396,7 @@ private:
 			}
 		}
 	
-		inline void
+		void
 		reallocate( size_type new_size, std::error_code& ec )
 		{
 			clear_error( ec );
@@ -431,97 +423,97 @@ private:
 			return;
 		}
 	
-		inline elem_type*
+		elem_type*
 		data()
 		{
 			return m_data;
 		}
 	
-		inline const elem_type*
+		const elem_type*
 		data() const
 		{
 			return m_data;
 		}
 	
-		inline size_type
+		size_type
 		size() const
 		{
 			return m_size;
 		}
 
-		inline void
+		void
 		size( size_type val )
 		{
 			m_size = val;
 		}
 	
-		inline std::size_t
+		std::size_t
 		refs() const
 		{
 			return m_refs;
 		}
 	
-		inline void
+		void
 		refs( std::size_t val )
 		{
 			m_refs = val;
 		}
 
-		inline std::size_t
+		std::size_t
 		increment_refs()
 		{
 			return ++m_refs;
 		}
 
-		inline std::size_t
+		std::size_t
 		decrement_refs()
 		{
 			return --m_refs;
 		}
 
-		inline bool
+		bool
 		is_policy( policy value ) const
 		{
 			return m_policy == value;
 		}
 
-		inline void
+		void
 		set_policy( policy value )
 		{
 			m_policy = value;
 		}
 
-		inline bool
+		bool
 		is_exclusive() const
 		{
 			return is_policy( policy::exclusive );
 		}
 
-		inline void
+		void
 		set_exclusive()
 		{
 			set_policy( policy::exclusive );
 		}
 
-		inline bool
+		bool
 		is_copy_on_write() const
 		{
 			return is_policy( policy::copy_on_write );
 		}
 
-		inline void
+		void
 		set_copy_on_write()
 		{
 			set_policy( policy::copy_on_write );
 		}
 
-		inline bool
+		bool
 		is_no_copy_on_write() const
 		{
 			return is_policy( policy::no_copy_on_write );
 		}
 
-		inline void
+		void
 		set_no_copy_on_write()
 		{
 			set_policy( policy::no_copy_on_write );
@@ -538,7 +530,6 @@ private:
 
 	struct do_not_allocate_shared {};
 
-	inline
 	buffer( do_not_allocate_shared )
 	:
 	m_shared{ nullptr },
@@ -556,7 +547,6 @@ public:
 	 * 
 	 * 	The constructed instance has no allocation, size is zero.
 	 */
-	inline
 	buffer()
 	:
 		m_shared{ new _buffer_shared{} },
@@ -573,7 +563,6 @@ public:
 	 * 	\param pol sharing policy of the constructed instance, defaults to copy_on_write
 	 */
 	template< class T, class = typename std::enable_if_t< std::is_integral< T >::value, void > >
-	inline
 	buffer( T size, policy pol = policy::copy_on_write )
 	:
 		m_shared{ new _buffer_shared{ static_cast< size_type >( size ), pol } },
@@ -590,7 +579,6 @@ public:
 	 * 	\param data a null-terminiated character string
 	 * 	\param pol sharing policy of the constructed instance, defaults to copy_on_write
 	 */
-	inline
 	buffer( const char *data, policy pol = policy::copy_on_write )
 	:
 		buffer{ data, data ? strlen( data ) : 0, pol }
@@ -603,7 +591,6 @@ public:
 	 * 
 	 * 	\param data string whose contents are copied to the constucted instance
 	 */
-	inline
 	buffer( const std::string &data, policy pol = policy::copy_on_write )
 	:
 		buffer{ data.c_str(), data.size(), pol }
@@ -618,7 +605,6 @@ public:
 	 * 	\parap size the number of bytes to copy
 	 * 	\param pol sharing policy of the constructed instance, defaults to copy_on_write
 	 */
-	inline
 	buffer( const void *data, size_type size, policy pol = policy::copy_on_write )
 	:
 		m_shared{ new _buffer_shared{ data, size, pol } },
@@ -680,7 +666,6 @@ public:
 	 * 	subsequent operations that require reallocation or deallocation.
 	 * 
 	 */ 
-	inline 
 	buffer( void *data, size_type size, policy pol, dealloc_function dealloc, realloc_function realloc )
 	:
 	m_shared{ new _buffer_shared{ data, size, pol, dealloc, realloc } },
@@ -692,7 +677,6 @@ public:
 	 * 
 	 * 
 	 */
-	inline
 	buffer( const buffer &rhs )
 	:
 	m_shared{ nullptr },
@@ -708,7 +692,6 @@ public:
 	 *	potentially hastens freeing the memory because
 	 *	one fewer reference is extant.
 	 */
-	inline
 	buffer( buffer&& rhs )
 	:
 	m_shared{ nullptr },
@@ -722,7 +705,6 @@ public:
 	 * 
 	 * 
 	 */
-	inline
 	buffer( const buffer &rhs, policy pol )
 	:
 	m_shared{ nullptr },
@@ -739,7 +721,6 @@ public:
 	 *	potentially hastens freeing the memory because
 	 *	one fewer reference is extant.
 	 */
-	inline
 	buffer( buffer&& rhs, policy pol )
 	:
 	m_shared{ nullptr },
@@ -750,7 +731,7 @@ public:
 		set_policy( pol );
 	}
 
-	inline ~buffer()
+	~buffer()
 	{
 		unshare();
 	}
@@ -761,7 +742,7 @@ public:
 	 * 
 	 * 
 	 */
-	inline bool
+	bool
 	is_writable()
 	{
 		assert( m_shared != nullptr );
@@ -771,7 +752,7 @@ public:
 	/** Force this instance to be unique (non-shared).
 	 * 
 	 */
-	inline buffer&
+	buffer&
 	make_writable()
 	{
 		assert( m_shared != nullptr );
@@ -782,7 +763,7 @@ public:
 		return *this;
 	}
 			
- 	inline buffer&
+ 	buffer&
 	clone()
 	{
 		assert( m_shared != nullptr );
@@ -801,7 +782,7 @@ public:
 	 * 
 	 * 
 	 */ 
-	inline bool
+	bool
 	is_unique() const
 	{
 		assert( m_shared != nullptr );
@@ -811,7 +792,7 @@ public:
 	/** Force this instance to be unique (non-shared).
 	 * 
 	 */
-	inline buffer&
+	buffer&
 	force_unique()
 	{
 		assert( m_shared != nullptr );
@@ -825,7 +806,7 @@ public:
 	 *  Copy only the first nbytes bytes in the buffer when cloning.
 	 * 
 	 */
-	inline buffer&
+	buffer&
 	force_unique( size_type nbytes )
 	{
 		assert( nbytes <= m_size );
@@ -843,7 +824,7 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	set_policy( policy pol )
 	{
 		switch ( pol )
@@ -872,7 +853,7 @@ public:
 	/** Determine whether this instance's current sharing policy is exclusive
 	 * 
 	 */
-	inline bool
+	bool
 	is_exclusive() const
 	{
 		assert( m_shared != nullptr );
@@ -882,7 +863,7 @@ public:
 	/** Set this instance's sharing policy to exclusive
 	 * 
 	 */
-	inline buffer&
+	buffer&
 	make_exclusive()
 	{
 		assert( m_shared != nullptr );
@@ -897,7 +878,7 @@ public:
 	/** Determine whether this instance's current sharing policy is copy_on_write
 	 * 
 	 */
-	inline bool
+	bool
 	is_copy_on_write() const
 	{
 		assert( m_shared != nullptr );
@@ -907,7 +888,7 @@ public:
 	/** Set this instance's sharing policy to copy_on_write
 	 * 
 	 */
-	inline buffer&
+	buffer&
 	make_copy_on_write()
 	{
 		assert( m_shared != nullptr );
@@ -922,7 +903,7 @@ public:
 	/** Determine whether this instance's current sharing policy is no_copy_on_write
 	 * 
 	 */
-	inline bool
+	bool
 	is_no_copy_on_write() const
 	{
 		assert( m_shared != nullptr );
@@ -932,7 +913,7 @@ public:
 	/** Set this instance's sharing policy to no_copy_on_write
 	 * 
 	 */
-	inline buffer&
+	buffer&
 	make_no_copy_on_write()
 	{
 		assert( m_shared != nullptr );
@@ -944,7 +925,7 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	reset_bounds()
 	{
 		assert( m_shared != nullptr );
@@ -957,7 +938,7 @@ public:
 	}
 				
 
-	inline buffer
+	buffer
 	slice( size_type offset, size_type len, bool force_copy = false ) const
 	{
 
@@ -1024,7 +1005,7 @@ public:
 	}
 
 
-	inline bool
+	bool
 	operator==( const buffer &rhs ) const
 	{
 		return 
@@ -1038,13 +1019,13 @@ public:
 		) ? true : false;
 	}
 	
-	inline bool
+	bool
 	operator!=( const buffer &rhs ) const
 	{
 		return !( *this == rhs );
 	}
 
-	inline void
+	void
 	swap( buffer &rhs )
 	{
 		_buffer_shared *tmp_shared = m_shared;
@@ -1058,35 +1039,35 @@ public:
 		rhs.m_size = tmp_size;
 	}
 
-	inline buffer&
+	buffer&
 	assign( const char *data )
 	{
 		assign( data, data ? strlen( data ) : 0 );
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	assign( const char *data, std::error_code& ec )
 	{
 		assign( data, data ? strlen( data ) : 0, ec );
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	assign( const std::string &data )
 	{
 		assign( data.c_str(), data.size() );
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	assign( const std::string &data, std::error_code& ec )
 	{
 		assign( data.c_str(), data.size(), ec );
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	assign( const void *data, size_type length )
 	{
 		std::error_code ec;
@@ -1095,7 +1076,7 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	assign( const void *data, size_type length, std::error_code& ec )
 	{
 		clear_error( ec );
@@ -1121,7 +1102,7 @@ public:
 			else
 			{
 				unshare();
-				m_shared = new _buffer_shared{data, length};
+				m_shared = new _buffer_shared{ data, length };
 				m_data = m_shared->data();
 				m_size = m_shared->size();
 			}
@@ -1135,7 +1116,7 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	assign( const void* data, size_type pos, size_type length )
 	{
 		if ( pos > m_size )
@@ -1152,14 +1133,14 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	assign( buffer const& buf, size_type pos )
 	{
 		assign( buf.m_data, pos, buf.m_size );
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	clear()
 	{
 		unshare();
@@ -1167,21 +1148,21 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	append( const buffer& rhs )
 	{
 		append( rhs.m_data, rhs.m_size );
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	append( const buffer& rhs, std::error_code& ec )
 	{
 		append( rhs.m_data, rhs.m_size, ec );
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	append( const void* src, size_type nbytes )
 	{
 		std::error_code ec;
@@ -1190,12 +1171,12 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	append( const void* src, size_type nbytes, std::error_code& ec )
 	{
 		clear_error( ec );
 
-		assert(invariants());
+		assert( invariants() );
 
 		if ( src != nullptr && nbytes > 0 )
 		{
@@ -1232,13 +1213,13 @@ public:
 				m_size = m_shared->size();
 			}
 		}
-		assert(invariants());
+		assert( invariants() );
 
 	exit:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	fill( elem_type value = 0 )
 	{
 		std::error_code ec;
@@ -1247,12 +1228,12 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	fill( elem_type value, std::error_code& ec )
 	{
 		clear_error( ec );
 
-		assert(invariants());
+		assert( invariants() );
 
 		if ( m_size > 0 ) // implies pointers are non-null
 		{
@@ -1280,7 +1261,7 @@ public:
 	 * 
 	 * 	\return the size of the instance's memory object, in bytes.
 	 */
-	inline size_type
+	size_type
 	size() const
 	{
 		return m_size;
@@ -1289,7 +1270,7 @@ public:
 	/** \deprecated (see size() )
 	 * 
 	 */
-	inline size_type
+	size_type
 	capacity() const
 	{
 		return m_size;
@@ -1317,7 +1298,7 @@ public:
 	 *	\param nbytes the requested size of this instances memory object, in bytes.
 	 *	\return a reference to this instance of buffer
 	 */
-	inline buffer&
+	buffer&
 	size( size_type nbytes )
 	{
 		std::error_code ec;
@@ -1326,12 +1307,12 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	size( size_type nbytes, std::error_code& ec )
 	{
 		clear_error( ec );
 
-		assert(invariants());
+		assert( invariants() );
 
 		if ( nbytes <= m_size )
 		{
@@ -1372,14 +1353,14 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	capacity( size_type nbytes )
 	{
 		size( nbytes );
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	capacity( size_type nbytes, std::error_code& ec )
 	{
 		clear_error( ec );
@@ -1387,14 +1368,14 @@ public:
 		return *this;
 	}
 
-	inline bool
+	bool
 	empty() const
 	{
 		return ( m_size == 0 );
 	}
 
 
-	inline elem_type*
+	elem_type*
 	mutable_data()
 	{
 		if ( ! is_writable() )
@@ -1404,26 +1385,26 @@ public:
 		return m_data;
 	}
 
-	inline elem_type*
+	elem_type*
 	data()
 	{
 		return m_data;
 	}
 
-	inline elem_type*
+	elem_type*
 	exclusive_data()
 	{
 		make_exclusive();
 		return m_data;
 	}
 	
-	inline const elem_type*
+	const elem_type*
 	data() const
 	{
 		return m_data;
 	}
 
-	inline elem_type*
+	elem_type*
 	detach()
 	{
 		elem_type* result = nullptr;
@@ -1436,7 +1417,7 @@ public:
 		return result;
 	}
 
-	inline elem_type*
+	elem_type*
 	detach( size_type& size, dealloc_function& dealloc )
 	{
 		elem_type* result = nullptr;
@@ -1449,19 +1430,19 @@ public:
 		return result;
 	}
 
-	inline elem_type
+	elem_type
 	operator[]( size_type index ) const
 	{
 		return at( index );
 	}
 
-	inline elem_type
+	elem_type
 	at( size_type index ) const
 	{
-		return *(m_data + index);
+		return *( m_data + index );
 	}
 	
-	inline elem_type
+	elem_type
 	at( size_type index, std::error_code& ec )
 	{
 		elem_type result = 0;
@@ -1479,21 +1460,21 @@ public:
 			goto exit;
 		}
 
-		result = *(m_data + index);
+		result = *( m_data + index );
 
 	exit:
 		return result;
 	}
 
 
-	inline buffer&
+	buffer&
 	rput( position_type pos, elem_type value )
 	{
 		*( m_data + pos  ) = value;
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	rputn( position_type pos, const void *data, size_type length )
 	{
 		std::memmove( m_data + pos, data, length );
@@ -1505,7 +1486,7 @@ public:
 	 *	or put outside of buffer bounds results in undefined behavior
 	 * 
 	 */
-	inline buffer&
+	buffer&
 	put( size_type index, elem_type value )
 	{
 		if ( ! is_writable() )
@@ -1517,7 +1498,7 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	put( size_type index, elem_type value, std::error_code& ec )
 	{
 		clear_error( ec );
@@ -1550,7 +1531,7 @@ public:
 	 *	or put outside of buffer bounds results in undefined behavior
 	 * 
 	 */
-	inline buffer&
+	buffer&
 	put( size_type index, const void* data, size_type length )
 	{
 		if ( ! is_writable() )
@@ -1562,7 +1543,7 @@ public:
 		return *this;
 	}
 
-	inline buffer&
+	buffer&
 	put( size_type index, const void* data, size_type length, std::error_code& ec )
 	{
 		clear_error( ec );
@@ -1592,7 +1573,7 @@ public:
 
 	// TODO: fix/make alternative signature with error_code& argument
 	// TODO: confused by name; not sure this is doing whatever it is supposed to be doing
-	inline std::error_code
+	std::error_code
 	rotate( size_type to, size_type from, size_type end ) 
 	{
 		auto err = std::error_code();
@@ -1620,7 +1601,7 @@ public:
 		return err;
 	}
 
-	inline size_type
+	size_type
 	find( elem_type c, size_type pos = 0 ) const
 	{
 		if ( m_size == 0 || pos >= m_size )
@@ -1628,11 +1609,11 @@ public:
 			return npos;
 		}
 
-		const elem_type* p (static_cast<const elem_type*>( std::memchr( m_data + pos, c, m_size - pos ) ) );
-		return p != 0 ? static_cast<size_type>( p - m_data ) : npos;
+		const elem_type* p ( static_cast< const elem_type* >( std::memchr( m_data + pos, c, m_size - pos ) ) );
+		return p != 0 ? static_cast< size_type >( p - m_data ) : npos;
 	}
 	
-	inline size_type
+	size_type
 	find( const char *s, size_type len, size_type pos = 0 ) const
 	{
 		size_type ret = npos;
@@ -1651,7 +1632,7 @@ public:
 		return ret;
 	}
 
-	inline size_type
+	size_type
 	rfind( elem_type c, size_type pos = npos ) const
 	{
 		if ( m_size != 0 )
@@ -1690,7 +1671,7 @@ public:
 	checksum_type
 	checksum( size_type offset, size_type length ) const;
 
-	inline std::string
+	std::string
 	to_string() const
 	{
 		std::string result;
@@ -1706,14 +1687,14 @@ public:
 
 private:
 
-	static inline void
+	static void
 	clear_error( std::error_code& ec )
 	{
 		static const std::error_code no_error;
 		ec = no_error;
 	}
 
-	inline _buffer_shared*
+	_buffer_shared*
 	share( buffer const& rhs ) const
 	{
 		_buffer_shared* result = nullptr;
@@ -1730,7 +1711,7 @@ private:
 		return result;
 	}
 
-	inline void
+	void
 	adopt( buffer const& rhs )
 	{
 		assert( m_shared == nullptr );
@@ -1749,7 +1730,7 @@ private:
 		}
 	}
 
-	inline void
+	void
 	unshare()
 	{
 		if ( m_shared )
@@ -1821,19 +1802,18 @@ public:
 	}
 
 
-	inline void
+	void
 	clear()
 	{
 		m_buf.clear();
 	}
 	
-	inline
 	operator std::string_view () const noexcept
 	{
 		return std::string_view{ reinterpret_cast< const char* >( m_buf.m_data ), m_buf.m_size };
 	}
 
-	inline std::string_view
+	std::string_view
 	view() const noexcept
 	{
 		return std::string_view{ reinterpret_cast< const char* >( m_buf.m_data ), m_buf.m_size };
@@ -1850,26 +1830,25 @@ class bufwriter
 {
 public:
 
-	inline
 	bufwriter( std::size_t size )
 	:
 	m_buf{ size },
 	m_pos{ 0 }
 	{}
 
-	inline void
+	void
 	reset()
 	{
 		m_pos = 0;
 	}
 
-	inline std::size_t
+	std::size_t
 	position() const
 	{
 		return m_pos;
 	}
 
-	inline void 
+	void 
 	putn( const void* src, std::size_t n )
 	{
 		accommodate( n );
@@ -1877,7 +1856,7 @@ public:
 		m_pos += n;
 	}
 
-	inline void 
+	void 
 	put( std::uint8_t b )
 	{
 		accommodate( 1 );
@@ -1885,7 +1864,7 @@ public:
 		++m_pos;
 	}
 
-	inline std::uint8_t* 
+	std::uint8_t* 
 	accommodate( std::size_t n )
 	{
 		auto remaining = m_buf.size() - m_pos;
@@ -1898,21 +1877,21 @@ public:
 		return m_buf.mutable_data() + m_pos;
 	}
 
-	inline void 
+	void 
 	advance( std::size_t n )
 	{
 		m_pos += n;
 	}
 
-	inline buffer
+	buffer
 	get_buffer()
 	{
 		m_buf.size( m_pos );
 		return m_buf;
 	}
 
-	inline void 
-	write(const char* src, std::size_t len)
+	void 
+	write( const char* src, std::size_t len )
 	{
 		putn( src, len );
 	}
@@ -1923,9 +1902,6 @@ private:
 	std::size_t m_pos;
 };
 
-}
+} // namespace nodeoze
 
-
-
-
-#endif
+#endif // NODEOZE_BUFFER_H

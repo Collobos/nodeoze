@@ -2,14 +2,7 @@
 #define NODEOZE_BSTREAM_OBSTREAMBUF_H
 
 #include <system_error>
-#include <cstdint>
-#include <assert.h>
-#include <cstdlib>
-#include <algorithm>
-#include <unistd.h>
-#include <nodeoze/bstream/error.h>
 #include <nodeoze/bstream/types.h>
-
 
 namespace nodeoze 
 {
@@ -132,7 +125,6 @@ public:
 
     // static constexpr buffer::size_type default_buffer_size = NODEOZE_BSTREAM_DEFAULT_OBMEMBUF_SIZE;
 
-    inline
     obstreambuf( byte_type* data, size_type size )
     :
     m_pbase_offset{ 0 },
@@ -155,7 +147,6 @@ public:
 
 protected:
 
-    inline
     obstreambuf()
     :
     m_pbase_offset{ 0 },
@@ -169,7 +160,6 @@ protected:
     m_writable{ true }
     {}
 
-    inline
     obstreambuf( obstreambuf&& rhs )
     : 
     m_pbase_offset{ rhs.m_pbase_offset },
@@ -186,218 +176,75 @@ protected:
 
 public:
 
-    inline void
-    flush( std::error_code& err )
-    {
-        clear_error( err );
-        if ( dirty() )
-        {
-            assert( writable() );
-            really_flush( err );
-            if ( ! err )
-            {
-                set_high_watermark();
-                last_touched( ppos() );
-                dirty( false );
-            }
-        }
-    }
+    void
+    flush( std::error_code& err );
 
-    inline void
-    flush()
-    {
-        if ( dirty() )
-        {
-            assert( writable() );
-            std::error_code err;
-            really_flush( err );
-            if ( err )
-            {
-                throw std::system_error{ err };
-            }
-            set_high_watermark();
-            last_touched( ppos() );
-            dirty( false );
-        }
-    }
+    void
+    flush();
 
-    inline void
-    put( byte_type byte, std::error_code& err )
-    {
-        make_writable();
-        if ( ! dirty() )
-        {
-            touch( err );
-            if ( err ) goto exit;
-        }
-        if ( pnext() >= pend() )
-        {
-            assert( pnext() == pend() );
-            overflow( 1, err );
-            if ( err ) goto exit;
-            assert( ! dirty() );
-        }
-        if ( ! dirty() )
-        {
-            dirty_start( pnext() );
-        }
-        *m_pnext++ = byte;
-        dirty( true );
+    void
+    put( byte_type byte, std::error_code& err );
 
-    exit:
-        return;
-    }
-
-    inline void
-    put( byte_type byte )
-    {
-        make_writable();
-        if ( ! dirty() )
-        {
-            touch();
-        }
-        if ( pnext() >= pend() )
-        {
-            assert( pnext() == pend() );
-            overflow( 1 );
-            assert( ! dirty() );
-        }
-        if ( ! dirty() )
-        {
-            dirty_start( pnext() );
-        }
-        *m_pnext++ = byte;
-        dirty( true );
-    }
+    void
+    put( byte_type byte );
 
     void
     putn( const byte_type* src, size_type n, std::error_code& err );
 
-    inline void
-    putn( const byte_type* src, size_type n )
-    {
-        std::error_code err;
-        putn( src, n, err );
-        if ( err )
-        {
-            throw std::system_error{ err };
-        }
-    }
+    void
+    putn( const byte_type* src, size_type n );
 
     void
     filln( const byte_type fill_byte, size_type n, std::error_code& err );
 
-    inline void
-    filln( const byte_type fill_byte, size_type n )
-    {
-        std::error_code err;
-        filln( fill_byte, n, err );
-        if ( err )
-        {
-            throw std::system_error{ err };
-        }
-    }
+    void
+    filln( const byte_type fill_byte, size_type n );
 
-
-    inline position_type
+    position_type
     seek( position_type pos, std::error_code& err )
     {
         return seek( bstream::seek_anchor::begin, pos, err );
     }
 
-    inline position_type
+    position_type
     seek( position_type pos )
     {
         return seek( bstream::seek_anchor::begin, pos );
     }
 
-    inline position_type
+    position_type
     seek( seek_anchor where, offset_type offset, std::error_code& err )
     {
         return really_seek( where, offset, err );
     }
 
-    inline position_type
-    seek( seek_anchor where, offset_type offset )
-    {
-        std::error_code err;
-        auto result = really_seek( where, offset, err );
-        if ( err )
-        {
-            throw std::system_error{ err };
-        }
-        return result;
-    }
+    position_type
+    seek( seek_anchor where, offset_type offset );
 
-    inline position_type
+    position_type
     tell( std::error_code& err )
     {
         return really_tell( seek_anchor::current, err );
     }
 
-    inline position_type
+    position_type
     tell( seek_anchor where, std::error_code& err )
     {
         return really_tell( where, err );
     }
 
-    inline position_type
-    tell( seek_anchor where = seek_anchor::current )
-    {
-        std::error_code err;
-        auto result = really_tell( where, err );
-        if ( err )
-        {
-            throw std::system_error{ err };
-        }
-        return result;
-    }
+    position_type
+    tell( seek_anchor where = seek_anchor::current );
 
 protected:
 
-    inline void
-    touch( std::error_code& err )
-    {
-        assert( ! dirty() );
-        assert( writable() );
-        auto pos = ppos();
-       
-        if ( last_touched() != pos )
-        {
-            really_touch( err );
-            if ( err ) goto exit;
-        }
+    void
+    touch( std::error_code& err );
 
-        assert( ppos() == pos );
-        assert( pos == last_touched() );
-        assert( ! dirty() );
-    exit:
-        return;
-    }
+    void
+    touch();
 
-    inline void
-    touch()
-    {
-        assert( ! dirty() );
-        assert( writable() );
-        auto pos = ppos();
-       
-        if ( last_touched() != pos )
-        {
-            std::error_code err;
-            really_touch( err );
-            if ( err )
-            {
-                throw std::system_error{ err };
-            }
-        }
-
-        assert( ppos() == pos );
-        assert( pos == last_touched() );
-        assert( ! dirty() );
-    }
-
-    inline void
+    void
     set_ptrs( byte_type * base, byte_type * next, byte_type * end )
     {
         m_pbase = base;
@@ -405,55 +252,31 @@ protected:
         m_pend = end;
     }
 
-    inline void
+    void
     pbase_offset( position_type offset )
     {
         m_pbase_offset = offset;
     }
 
-    inline position_type
+    position_type
     pbase_offset() const
     {
         return m_pbase_offset;
     }
 
-    inline void
-    overflow( size_type requested, std::error_code& err )
-    {
-        flush( err );
-        if ( err ) goto exit;
+    void
+    overflow( size_type requested, std::error_code& err );
 
-        really_overflow( requested, err );
-        if ( err ) goto exit;
+    void
+    overflow( size_type requested );
 
-        assert( pend() > pnext() );
-
-    exit:
-        return;
-    }
-
-    inline void
-    overflow( size_type requested )
-    {
-        flush();
-        std::error_code err;
-
-        really_overflow( requested, err );
-        if ( err )
-        {
-            throw std::system_error{ err };
-        }
-
-        assert( pend() > pnext() );
-    }
-
-    inline position_type
+    position_type
     get_high_watermark() const noexcept
     {
         return m_high_watermark;
     }
 
-    inline position_type
+    position_type
     set_high_watermark() 
     {
         if ( dirty() && ( ppos() > m_high_watermark ) )
@@ -463,109 +286,109 @@ protected:
         return m_high_watermark;
     }
 
-    inline void
+    void
     force_high_watermark( position_type hwm )
     {
         m_high_watermark = hwm;
     }
 
-    inline void
+    void
     reset_high_water_mark()
     {
         m_high_watermark = 0;
     }
 
-    inline position_type
+    position_type
     ppos() const noexcept
     {
         return pbase_offset() + ( pnext() - pbase() );
     }
 
-    inline bool
+    bool
     dirty() const noexcept
     {
         return m_dirty;
     }
 
-    inline void
+    void
     dirty( bool value ) noexcept
     {
         m_dirty = value;
     }
 
-    inline position_type
+    position_type
     last_touched() const noexcept
     {
         return m_last_touched;
     }
 
-    inline void
+    void
     last_touched( position_type touched )
     {
         m_last_touched = touched;
     }
 
-    inline byte_type*
+    byte_type*
     pbase() const noexcept
     {
         return m_pbase;
     }
 
-    inline void
+    void
     pbase( byte_type* p )
     {
         m_pbase = p;
     }
 
-    inline byte_type*
+    byte_type*
     pnext() const noexcept
     {
         return m_pnext;
     }
 
-    inline void
+    void
     pnext( byte_type* p )
     {
         m_pnext = p;
     }
 
-    inline byte_type*
+    byte_type*
     pend() const noexcept
     {
         return m_pend;
     }
 
-    inline void
+    void
     pend( byte_type* p )
     {
         m_pend = p;
     }
 
-    inline byte_type*
+    byte_type*
     dirty_start() const noexcept
     {
         return m_dirty_start;
     }
 
-    inline void
+    void
     dirty_start( byte_type* start ) noexcept
     {
         m_dirty_start = start;
     }
 
-    inline bool
+    bool
     writable() const noexcept
     {
         return m_writable;
     }
 
-    inline void
+    void
     writable( bool value )
     {
         m_writable = value;
     }
 
-    inline void
+    void
     make_writable()
     {
         if ( ! writable() )

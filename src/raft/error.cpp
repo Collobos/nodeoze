@@ -8,9 +8,9 @@ const char* raft::raft_category_impl::name() const noexcept
 	return "nodeoze raft";
 }
 
-std::string raft::raft_category_impl::message(int ev) const noexcept
+std::string raft::raft_category_impl::message( int ev ) const noexcept
 {
-	switch (static_cast<errc> (ev))
+	switch ( static_cast< errc > ( ev ) )
 	{
 	case raft::errc::ok:
 		return "success";
@@ -43,14 +43,14 @@ const std::error_category& raft::raft_category() noexcept
     return instance;
 }
 
-std::error_condition raft::make_error_condition(raft::errc e)
+std::error_condition raft::make_error_condition( raft::errc e )
 {
-    return std::error_condition(static_cast<int> (e), raft::raft_category());
+    return std::error_condition( static_cast< int > ( e ), raft::raft_category() );
 }
 
-std::error_code raft::make_error_code(raft::errc e)
+std::error_code raft::make_error_code( raft::errc e )
 {
-    return std::error_code(static_cast<int> (e), raft::raft_category());
+    return std::error_code( static_cast< int > ( e ), raft::raft_category() );
 }
 
 

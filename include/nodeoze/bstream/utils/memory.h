@@ -29,24 +29,24 @@ static_unique_ptr_cast( std::unique_ptr< Base >&& p )
 // }
 
 /*
-template<typename Derived, typename Base, typename Deleter>
-inline std::unique_ptr<Derived, Deleter> 
-static_unique_ptr_cast( std::unique_ptr<Base, Deleter>&& p )
+template< typename Derived, typename Base, typename Deleter >
+inline std::unique_ptr< Derived, Deleter > 
+static_unique_ptr_cast( std::unique_ptr< Base, Deleter >&& p )
 {
-    auto d = static_cast<Derived *>(p.release());
-    return std::unique_ptr<Derived, Deleter>(d, std::move(p.get_deleter()));
+    auto d = static_cast< Derived * >( p.release() );
+    return std::unique_ptr< Derived, Deleter >( d, std::move( p.get_deleter() ) );
 }
 
-template<typename Derived, typename Base, typename Deleter>
-inline std::unique_ptr<Derived, Deleter> 
-dynamic_unique_ptr_cast( std::unique_ptr<Base, Deleter>&& p )
+template< typename Derived, typename Base, typename Deleter >
+inline std::unique_ptr< Derived, Deleter > 
+dynamic_unique_ptr_cast( std::unique_ptr< Base, Deleter >&& p )
 {
-    if(Derived *result = dynamic_cast<Derived *>(p.get())) 
+    if( Derived *result = dynamic_cast< Derived * >( p.get() ) ) 
 	{
         p.release();
-        return std::unique_ptr<Derived, Deleter>(result, std::move(p.get_deleter()));
+        return std::unique_ptr< Derived, Deleter >( result, std::move( p.get_deleter() ) );
     }
-    return std::unique_ptr<Derived, Deleter>(nullptr, p.get_deleter());
+    return std::unique_ptr< Derived, Deleter >( nullptr, p.get_deleter() );
 }
 */
 

@@ -2,6 +2,7 @@
 #include <nodeoze/bstream.h>
 #include <nodeoze/bstream/ombstream.h>
 #include <nodeoze/bstream/imbstream.h>
+#include <nodeoze/bstream/stdlib.h>
 #include <utility>
 #include <thread>
 #include <chrono>
@@ -39,9 +40,9 @@ struct struct_A
 template<>
 struct bstream::serializer< test_4::struct_A >
 {
-	static inline bstream::obstream& put(bstream::obstream& os, test_4::struct_A const& obj)
+	static inline bstream::obstream& put( bstream::obstream& os, test_4::struct_A const& obj )
 	{
-		os.write_array_header(4);
+		os.write_array_header( 4 );
 		os << obj.m_0 << obj.m_1 << obj.m_2 << obj.m_3;
 		return os;
 	}
@@ -50,9 +51,9 @@ struct bstream::serializer< test_4::struct_A >
 template<>
 struct bstream::ref_deserializer< test_4::struct_A >
 {
-	static inline bstream::ibstream& get(bstream::ibstream& is, test_4::struct_A& obj)
+	static inline bstream::ibstream& get( bstream::ibstream& is, test_4::struct_A& obj )
 	{
-		is.check_array_header(4);
+		is.check_array_header( 4 );
 		is >> obj.m_0 >> obj.m_1 >> obj.m_2 >> obj.m_3;
 		return is;
 	}
@@ -60,15 +61,15 @@ struct bstream::ref_deserializer< test_4::struct_A >
 
 using namespace test_4;
 
-TEST_CASE("nodeoze/smoke/bstream/composite_types/0")
+TEST_CASE( "nodeoze/smoke/bstream/composite_types/0" )
 {
-//	std::this_thread::sleep_for (std::chrono::seconds(10));
+//	std::this_thread::sleep_for ( std::chrono::seconds( 10 ) );
 
 	bstream::context<> cntxt;
 	
 	bstream::ombstream os{ 1024, cntxt };
 
-    struct_A a0{ -7, 3.5, "zoot", {1, 1, 2, 3, 5, 8, 13 } };
+    struct_A a0{ -7, 3.5, "zoot", { 1, 1, 2, 3, 5, 8, 13 } };
 
 	os << a0;
 	
@@ -82,7 +83,7 @@ TEST_CASE("nodeoze/smoke/bstream/composite_types/0")
 
     using p = std::pair< std::string, test_4::struct_A >;
 
-    p p0 = std::make_pair< std::string, test_4::struct_A>( "allures", struct_A{ a0 } );
+    p p0 = std::make_pair< std::string, test_4::struct_A >( "allures", struct_A{ a0 } );
 
     os.clear();
 

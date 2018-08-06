@@ -193,24 +193,45 @@ set(NODEOZE_SRCS
 	include/nodeoze/bstream/ofbstream.h
 	include/nodeoze/bstream/typecode.h
 	include/nodeoze/bstream/obstreambuf.h
-	src/obstreambuf.cpp
 	include/nodeoze/bstream/ibstreambuf.h
-	src/ibstreambuf.cpp
 	include/nodeoze/bstream/obmembuf.h
-	src/obmembuf.cpp
 	include/nodeoze/bstream/ibmembuf.h
 	include/nodeoze/bstream/obfilebuf.h
-	src/obfilebuf.cpp
+	include/nodeoze/bstream/ibstream_traits.h
+	include/nodeoze/bstream/numeric_deserializers.h
+	include/nodeoze/bstream/context.h
+	include/nodeoze/bstream/fwd_decls.h
+	include/nodeoze/bstream/obstream_traits.h
+	include/nodeoze/bstream/stdlib.h
+	include/nodeoze/bstream/stdlib/chrono.h
+	include/nodeoze/bstream/stdlib/deque.h
+	include/nodeoze/bstream/stdlib/forward_list.h
+	include/nodeoze/bstream/stdlib/list.h
+	include/nodeoze/bstream/stdlib/map.h
+	include/nodeoze/bstream/stdlib/pair.h
+	include/nodeoze/bstream/stdlib/set.h
+	include/nodeoze/bstream/stdlib/tuple.h
+	include/nodeoze/bstream/stdlib/unordered_map.h
+	include/nodeoze/bstream/stdlib/unordered_set.h
+	include/nodeoze/bstream/stdlib/vector.h
+	src/bstream/obfilebuf.cpp
+	src/bstream/obmembuf.cpp
+	src/bstream/ibmembuf.cpp
+	src/bstream/ibstreambuf.cpp
+	src/bstream/obstreambuf.cpp
+	src/bstream/ibfilebuf.cpp
+	src/bstream/ibstream.cpp
+	src/bstream/obstream.cpp
+	src/bstream/numstream.cpp
+	src/bstream/error.cpp
+	src/bstream/error_category_context.cpp
 	include/nodeoze/bstream/ibfilebuf.h
-	src/ibfilebuf.cpp
 	include/nodeoze/bstream/utils/preprocessor.h
 	include/nodeoze/bstream/utils/traits.h
 	include/nodeoze/bstream/utils/memory.h
 	include/nodeoze/dump.h
 	include/nodeoze/bstream/numstream.h
-	src/error_category_context.cpp
 	src/umstream.cpp
-	src/ibstream.cpp
 	src/raft/error.cpp
 	include/nodeoze/raft/error.h
 	include/nodeoze/raft/log.h

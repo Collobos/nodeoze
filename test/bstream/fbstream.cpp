@@ -79,7 +79,7 @@ TEST_CASE( "nodeoze/smoke/bstream/fbstream/write_read_ate" )
     {
         bstream::ofbstream os( "fbstream_test_file", bstream::open_mode::append );
         auto pos = os.tell( seek_anchor::current );
-        CHECK( pos == 26);
+        CHECK( pos == 26 );
         buffer outbuf{ "0123456789" };
         os.putn( outbuf );
         auto zpos = os.seek( seek_anchor::begin, 0 );

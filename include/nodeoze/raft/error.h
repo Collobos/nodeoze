@@ -29,12 +29,12 @@ class raft_category_impl : public std::error_category
 public:
 	virtual const char* name() const noexcept override;
 
-	virtual std::string message(int ev) const noexcept override;
+	virtual std::string message( int ev ) const noexcept override;
 };
 
-std::error_condition make_error_condition(nodeoze::raft::errc e);
+std::error_condition make_error_condition( nodeoze::raft::errc e );
 
-std::error_code make_error_code(nodeoze::raft::errc e);
+std::error_code make_error_code( nodeoze::raft::errc e );
 
 
 } // namespace raft
@@ -43,7 +43,7 @@ std::error_code make_error_code(nodeoze::raft::errc e);
 namespace std
 {
   template <>
-  struct is_error_condition_enum<nodeoze::raft::errc> : public true_type {};
+  struct is_error_condition_enum< nodeoze::raft::errc > : public true_type {};
 }
 
 #endif // NODEOZE_RAFT_ERROR_H

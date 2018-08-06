@@ -4,7 +4,7 @@ using namespace nodeoze;
 using namespace bstream;
 
 bool
-bstream::obmembuf::really_make_writable()
+obmembuf::really_make_writable()
 {
     if ( ! m_buf.is_writable() )
     {
@@ -17,14 +17,14 @@ bstream::obmembuf::really_make_writable()
 }
 
 void
-bstream::obmembuf::really_flush( std::error_code& err )
+obmembuf::really_flush( std::error_code& err )
 {
     clear_error( err );
     assert( dirty() && pnext() > dirty_start() );
 }
 
 void
-bstream::obmembuf::really_touch( std::error_code& err )
+obmembuf::really_touch( std::error_code& err )
 {
     clear_error( err );
     auto hwm = get_high_watermark();
@@ -57,7 +57,7 @@ exit:
 }
 
 position_type
-bstream::obmembuf::really_seek( seek_anchor where, offset_type offset, std::error_code& err )
+obmembuf::really_seek( seek_anchor where, offset_type offset, std::error_code& err )
 {
     clear_error( err );
     position_type result = invalid_position;
@@ -108,7 +108,7 @@ exit:
 }
 
 void
-bstream::obmembuf::really_overflow( size_type n, std::error_code& err )
+obmembuf::really_overflow( size_type n, std::error_code& err )
 {
     clear_error( err );
     assert( std::less_equal< byte_type * >()( pnext(), pend() ) );
@@ -118,4 +118,43 @@ bstream::obmembuf::really_overflow( size_type n, std::error_code& err )
     resize( required );
     auto new_base = m_buf.data();
     set_ptrs( new_base, new_base + pos, new_base + m_buf.size() );
+}
+
+obmembuf& 
+obmembuf::clear() noexcept
+{
+    reset_ptrs();
+    reset_high_water_mark();
+    last_touched( 0UL );
+    dirty( false );
+    return *this;
+}
+
+buffer 
+obmembuf::get_buffer( bool force_copy )
+{
+    if ( ! force_copy && m_buf.is_copy_on_write() )
+    {
+        writable( false );
+    }
+    if ( dirty() )
+    {
+        set_high_watermark();
+    }
+    return m_buf.slice( 0, get_high_watermark(), force_copy );
+}
+
+buffer
+obmembuf::release_buffer()
+{
+    if ( dirty() )
+    {
+        set_high_watermark();
+    }
+    m_buf.size( get_high_watermark() );
+    reset_high_water_mark();
+    last_touched( 0UL );
+    dirty( false );
+    set_ptrs( nullptr, nullptr, nullptr );
+    return std::move( m_buf );
 }

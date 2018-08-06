@@ -24,72 +24,68 @@ public:
     ifbstream( ifbstream const& ) = delete;
     ifbstream( ifbstream&& ) = delete;
 
-    inline
     ifbstream( std::unique_ptr< ibfilebuf > fbuf, context_base const& cntxt = get_default_context() )
     : ibstream{ std::move( fbuf ), cntxt }
     {}
 
-    inline
     ifbstream( ibfilebuf&& fbuf, context_base const& cntxt = get_default_context() )
     :
     ibstream{ std::make_unique< ibfilebuf >( std::move( fbuf ) ), cntxt }
     {}
 
-    inline
     ifbstream( std::string const& filename, context_base const& cntxt = get_default_context() )
     :
     ibstream{ std::make_unique< ibfilebuf >( filename ), cntxt }
     {}
 
-    inline
     ifbstream( std::string const& filename, std::error_code& err, context_base const& cntxt = get_default_context() )
     :
     ibstream{ std::make_unique< ibfilebuf >( filename, err ), cntxt }
     {}
 
-    inline void
+    void
     open( std::string const& filename )
     {
         get_filebuf().open( filename );
     }
 
-    inline void
+    void
     open( std::string const& filename, std::error_code& err )
     {
         get_filebuf().open( filename, err );
     }
 
-    inline bool
+    bool
     is_open() const
     {
         return get_filebuf().is_open();
     }
 
-    inline void
+    void
     close()
     {
         get_filebuf().close();
     }
 
-    inline void
+    void
     close( std::error_code& err )
     {
         get_filebuf().close( err );
     }
 
-    inline ibfilebuf&
+    ibfilebuf&
     get_filebuf()
     {
         return reinterpret_cast< ibfilebuf& >( get_streambuf() );
     }
 
-    inline ibfilebuf const&
+    ibfilebuf const&
     get_filebuf() const
     {
         return reinterpret_cast< ibfilebuf const& >( get_streambuf() );
     }
 
-    inline std::unique_ptr< ibfilebuf >
+    std::unique_ptr< ibfilebuf >
     release_filebuf()
     {
         return bstream::utils::static_unique_ptr_cast< ibfilebuf >( release_streambuf() );

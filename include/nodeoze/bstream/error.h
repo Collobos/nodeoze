@@ -42,14 +42,14 @@ namespace bstream
 class type_error : public std::logic_error
 {
 public:
-	explicit type_error(const std::string& what_arg) 
+	explicit type_error( const std::string& what_arg ) 
 	: 
-	std::logic_error{what_arg} 
+	std::logic_error{ what_arg } 
 	{}
 
-	explicit type_error(const char* what_arg)
+	explicit type_error( const char* what_arg )
 	: 
-	std::logic_error{what_arg} 
+	std::logic_error{ what_arg } 
 	{}
 };
 
@@ -71,41 +71,8 @@ enum class errc
 class bstream_category_impl : public std::error_category
 {
 public:
-	virtual const char* name() const noexcept override
-	{
-		return "nodeoze::bstream";
-	}
-
-	virtual std::string message(int ev) const noexcept override
-	{
-		switch ( static_cast<errc> (ev) )
-		{
-		case bstream::errc::ok:
-			return "success";
-		case bstream::errc::read_past_end_of_stream:
-			return "read past end of stream";
-		case bstream::errc::type_error:
-			return "type error";
-		case bstream::errc::member_count_error:
-			return "member count error";
-		case bstream::errc::context_mismatch:
-			return "context mismatch";
-		case bstream::errc::invalid_err_category:
-			return "invalid error category";
-		case bstream::errc::invalid_ptr_downcast:
-			return "invalid pointer downcast";
-		case bstream::errc::abstract_non_poly_class:
-			return "abstract class not found in polymorphic context";
-		case bstream::errc::invalid_operation:
-			return "invalid operation";
-		case bstream::errc::invalid_state:
-			return "invalid state";
-		case bstream::errc::ibstreambuf_not_shareable:
-			return "bstream buffer is not shareable";
-		default:
-			return "unknown bstream error";
-		}
-	}
+	virtual const char* name() const noexcept override;
+	virtual std::string message( int ev ) const noexcept override;
 };
 
 inline std::error_category const& bstream_category() noexcept
@@ -124,13 +91,6 @@ inline std::error_code
 make_error_code( errc e )
 {
     return std::error_code( static_cast< int >( e ), bstream_category() );
-}
-
-inline void
-clear_error( std::error_code& ec )
-{
-	static const std::error_code good = make_error_code( bstream::errc::ok );
-	ec = good;
 }
 
 } // namespace bstream

@@ -3,10 +3,8 @@
 
 #include <vector>
 #include <unordered_map>
-#include <deque>
 #include <initializer_list>
 #include <system_error>
-#include <nodeoze/bstream/error.h>
 
 namespace nodeoze
 {

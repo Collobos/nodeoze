@@ -18,7 +18,7 @@ using term_type =				std::uint64_t;
 using file_position_type =      std::int64_t;
 
 inline void
-clear_error(std::error_code& err)
+clear_error( std::error_code& err )
 {
 	static const auto ok = make_error_code( raft::errc::ok );
 	err = ok;
